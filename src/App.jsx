@@ -32,6 +32,8 @@ import AuditView from './views/admin/AuditView.jsx';
 import { AdminConsoleLayout } from './components/superadmin/AdminConsoleLayout.jsx';
 import SuperDashboardView from './views/superadmin/SuperDashboardView.jsx';
 import PatientsView from './views/superadmin/PatientsView.jsx';
+import PatientsMasterView from './views/superadmin/PatientsMasterView.jsx';
+import PatientProfileView from './views/superadmin/PatientProfileView.jsx';
 import ClinicsMasterView from './views/superadmin/ClinicsMasterView.jsx';
 import AgentsView from './views/superadmin/AgentsView.jsx';
 import ExecutivesView from './views/superadmin/ExecutivesView.jsx';
@@ -155,7 +157,9 @@ export default function App() {
         }
       >
         <Route path="/super" element={<SuperDashboardView />} />
-        <Route path="/super/patients" element={<PatientsView />} />
+        <Route path="/super/attendance" element={<PatientsView />} />
+        <Route path="/super/patients" element={<PatientsMasterView />} />
+        <Route path="/super/patients/:key" element={<PatientProfileView />} />
         <Route path="/super/clinics" element={<ClinicsMasterView />} />
         <Route path="/super/agents" element={<AgentsView />} />
         <Route path="/super/executives" element={<ExecutivesView />} />

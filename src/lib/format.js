@@ -41,3 +41,12 @@ export const initials = (name) =>
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+// Age from a date of birth. Stored as dob rather than a number so it stays
+// correct as time passes.
+export const ageOf = (dob) => {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.floor((Date.now() - d.getTime()) / (365.2425 * 24 * 60 * 60 * 1000));
+};

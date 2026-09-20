@@ -19,7 +19,8 @@ const NAV_IDLE = `${NAV_BASE} text-slate-400 hover:text-white hover:bg-slate-800
 
 const CORE = [
   { to: '/super', end: true, icon: 'fa-chart-line', label: 'Global Analytics' },
-  { to: '/super/patients', icon: 'fa-hospital-user', label: 'Patient Attendance', badge: 'patientsToday' },
+  { to: '/super/patients', icon: 'fa-hospital-user', label: 'Patients Master', badge: 'patientsToday' },
+  { to: '/super/attendance', icon: 'fa-chart-simple', label: 'OPD Attendance' },
   { to: '/super/clinics', icon: 'fa-hospital', label: 'Clinics Master', badge: 'clinics' },
   { to: '/super/agents', icon: 'fa-users-gear', label: 'Field Agents', badge: 'agents' },
   { to: '/super/executives', icon: 'fa-user-tie', label: 'Executive Managers' },

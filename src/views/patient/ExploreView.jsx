@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, unwrap } from '../../lib/api.js';
 import { useGeolocation } from '../../hooks/useGeolocation.js';
@@ -14,8 +14,17 @@ import { SPECIALTIES } from '../../lib/constants.js';
 import clsx from 'clsx';
 
 export default function ExploreView() {
-  const { coords, locate, status: geoStatus } = useGeolocation();
-  const { isAuthed } = useAuth();
+  const { isAuthed, user } = useAuth();
+  // A location saved on the profile beats the city centre and survives a new
+  // device, so seed from it before asking the browser again.
+  const saved = user?.lastKnownLocation?.coordinates
+    ? {
+        lat: user.lastKnownLocation.coordinates[1],
+        lng: user.lastKnownLocation.coordinates[0],
+        label: user.lastKnownLocation.label || 'Your location',
+      }
+    : null;
+  const { coords, locate, locateOnce, status: geoStatus, accuracy, isFallback } = useGeolocation({ initial: saved });
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -45,9 +54,45 @@ export default function ExploreView() {
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [specialty, radius]);
 
+  // Debounced live search: the list updates as you type rather than only on
+  // Enter. 350ms matches the address autocomplete, and the first render is
+  // skipped so this does not duplicate the mount load above.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return undefined; }
+    const id = setTimeout(() => load(), 350);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
+  /** Remember where they are, so the next visit does not start from scratch. */
+  const persist = useCallback(async (c) => {
+    if (!isAuthed || !c?.lat) return;
+    try {
+      await api.patch('/api/patients/me/location', { lat: c.lat, lng: c.lng, accuracy });
+    } catch {
+      // Not worth interrupting a search over — the location still works today.
+    }
+  }, [isAuthed, accuracy]);
+
+  // Ask once, on the first Explore visit. Until they answer, every distance on
+  // screen is measured from the city centre rather than from them.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const c = await locateOnce();
+      if (!alive || !c) return;
+      load(c);
+      persist(c);
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const useMyLocation = async () => {
     const c = await locate();
     if (geoStatus === 'denied') toast.warn('Location permission denied — showing Kolkata city centre');
+    else persist(c);
     load(c);
   };
 
@@ -93,6 +138,7 @@ export default function ExploreView() {
             </button>
           </div>
 
+          {/* Results update as you type; Enter just avoids the 350ms wait. */}
           <form
             className="md:col-span-8 flex items-center bg-slate-50 rounded-xl px-3 py-2 border border-slate-200"
             onSubmit={(e) => { e.preventDefault(); load(); }}
@@ -108,12 +154,33 @@ export default function ExploreView() {
               />
             </div>
             {search && (
-              <button type="button" onClick={() => { setSearch(''); load(); }} className="text-slate-400 hover:text-slate-600 px-1">
+              <button type="button" onClick={() => setSearch('')} className="text-slate-400 hover:text-slate-600 px-1">
                 <Icon name="cross" className="w-3.5 h-3.5" />
               </button>
             )}
           </form>
         </div>
+
+        {/* Distances measured from a default point are not distances. Say so
+            plainly rather than presenting "7.7 km" as if it were theirs. */}
+        {isFallback && geoStatus !== 'locating' && (
+          <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px] bg-amber-400/15 border border-amber-300/30 text-amber-100 rounded-xl px-3 py-2">
+            <Icon name="location" className="w-3.5 h-3.5 shrink-0" />
+            <span>
+              {geoStatus === 'denied'
+                ? 'Location is blocked, so these distances are from Kolkata city centre.'
+                : 'Distances are from Kolkata city centre until you share your location.'}
+            </span>
+            <button type="button" onClick={useMyLocation} className="font-bold underline underline-offset-2 hover:text-white">
+              Use my location
+            </button>
+          </div>
+        )}
+        {geoStatus === 'locating' && (
+          <p className="mt-3 text-[11px] text-slate-300">
+            <Icon name="location" className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Finding your location…
+          </p>
+        )}
       </DarkHero>
 
       <div className="space-y-3">

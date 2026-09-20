@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { Icon } from '../ui/Icon.jsx';
 import { Button } from '../ui/Button.jsx';
 import { inr, token } from '../../lib/format.js';
+import { directionsUrl } from '../../lib/maps.js';
 
 export function DoctorCard({ doctor, onBook }) {
   const { session, queue, hospital } = doctor;
@@ -45,7 +46,25 @@ export function DoctorCard({ doctor, onBook }) {
 
         <div className="mt-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
           <p className="font-semibold text-slate-800 truncate">{hospital.name}</p>
-          <p className="text-[11px] text-slate-500 truncate">{hospital.address?.line1}, {hospital.address?.city}</p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-[11px] text-slate-500 truncate">{hospital.address?.line1}, {hospital.address?.city}</p>
+            {/* Links to the exact pin when we have one, so the patient is not
+                relying on Google matching a clinic name it may not know. */}
+            <a
+              href={hospital.coordinates
+                ? directionsUrl(hospital.coordinates)
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  [hospital.name, hospital.address?.line1, hospital.address?.city].filter(Boolean).join(', '),
+                )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 hover:text-teal-800 hover:underline"
+            >
+              <Icon name="location" className="w-3 h-3" />
+              Get direction
+            </a>
+          </div>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center text-xs">
