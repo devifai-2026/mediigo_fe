@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+  ::selection { background: #14b8a6; color: #fff; }
+}
+
+@layer components {
+  .glass-header { @apply bg-white/95 backdrop-blur-md border-b border-slate-200; }
+  .glass-card { @apply bg-white border border-slate-200; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+}
+
+/* Receipts print from the #print-root portal. visibility:hidden beats
+   display:none here — it preserves layout and avoids reflow-induced blank
+   pages. 80mm is the thermal roll clinics actually use. */
+@media print {
+  body * { visibility: hidden; }
+  #print-root, #print-root * { visibility: visible; }
+  #print-root { position: absolute; inset: 0; margin: 0; padding: 0; }
+  .no-print { display: none !important; }
+  @page { size: 80mm auto; margin: 4mm; }
+}
