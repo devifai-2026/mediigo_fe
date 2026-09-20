@@ -48,6 +48,14 @@ const proxy = createProxyMiddleware({
   cookieDomainRewrite: '',
   proxyTimeout: 30000,
   on: {
+    // The browser's request to US is same-origin, but it still sends an Origin
+    // header, and forwarding it makes the backend evaluate its CORS allowlist
+    // against a request that was never cross-origin. Drop it so this reaches
+    // the backend as the plain server-to-server call it actually is.
+    proxyReq: (proxyReq) => {
+      proxyReq.removeHeader('origin');
+      proxyReq.removeHeader('referer');
+    },
     error: (err, _req, res) => {
       console.error(`proxy error: ${err.message}`);
       if (res.writeHead && !res.headersSent) {
