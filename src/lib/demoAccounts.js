@@ -13,8 +13,14 @@ export const DEMO_OTP = '1234';
 export const DEMO_ACCOUNTS = [
   { role: ROLES.PATIENT, name: 'Rajesh Kumar', phone: '9876543210', note: '3 policies in the vault', kind: 'otp' },
   { role: ROLES.PATIENT, name: 'Priya Sharma', phone: '9876543211', kind: 'otp' },
-  { role: ROLES.DOCTOR, name: 'Dr. Sandeep Dhore', phone: '9000000101', note: 'General Medicine · Chamber 104', kind: 'password' },
-  { role: ROLES.DOCTOR, name: 'Dr. Ananya Roy', phone: '9000000102', note: 'Cardiology · Chamber 201', kind: 'password' },
+  // Every doctor a patient can book must be listed, or whoever is testing the
+  // booking flow cannot sign in as the doctor they just booked.
+  { role: ROLES.DOCTOR, name: 'Dr. Sandeep Dhore', phone: '9000000101', note: 'General Medicine · Sunrise Multispeciality', kind: 'password' },
+  { role: ROLES.DOCTOR, name: 'Dr. Ananya Roy', phone: '9000000102', note: 'Cardiology · Sunrise Multispeciality', kind: 'password' },
+  { role: ROLES.DOCTOR, name: 'Dr. Vikram Joshi', phone: '9000000103', note: 'Orthopedics · Sunrise Multispeciality', kind: 'password' },
+  { role: ROLES.DOCTOR, name: 'Dr. Priya Nair', phone: '9000000104', note: 'Pediatrics · CareWell Polyclinic', kind: 'password' },
+  { role: ROLES.DOCTOR, name: 'Dr. Sunita Rao', phone: '9000000105', note: 'Dermatology · CareWell Polyclinic', kind: 'password' },
+  { role: ROLES.DOCTOR, name: 'Dr. Kavita Reddy', phone: '9000000106', note: 'ENT · CareWell Polyclinic', kind: 'password' },
   { role: ROLES.RECEPTIONIST, name: 'Riya Sen', phone: '9000000031', note: 'Sunrise Multispeciality', kind: 'password' },
   { role: ROLES.RECEPTIONIST, name: 'Arjun Ghosh', phone: '9000000032', note: 'CareWell Polyclinic', kind: 'password' },
   { role: ROLES.FIELD_AGENT, name: 'Suresh Kumar', phone: '9000000021', note: 'Kolkata cluster', kind: 'password' },

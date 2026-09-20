@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { useApi } from '../../hooks/useApi.js';
 import { api, unwrap } from '../../lib/api.js';
@@ -176,7 +177,11 @@ export default function StaffView() {
               {rows.map((u) => (
                 <tr key={u.id} className={clsx('hover:bg-slate-50 transition', !u.isActive && 'opacity-60')}>
                   <td className="py-3 px-4">
-                    <p className="font-bold text-slate-900">{u.name}</p>
+                    {/* Only the name links: the row also carries action buttons,
+                        so making the whole row clickable would swallow them. */}
+                    <Link to={`/super/staff/${u.id}`} className="font-bold text-slate-900 hover:text-indigo-600 hover:underline">
+                      {u.name}
+                    </Link>
                     <p className="text-[11px] text-slate-500 font-mono">{fmtPhone(u.phone)}</p>
                     {u.email && <p className="text-[10px] text-slate-400">{u.email}</p>}
                   </td>
@@ -200,6 +205,10 @@ export default function StaffView() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-end gap-1">
+                      <Link to={`/super/staff/${u.id}`} title="View profile"
+                        className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg inline-block">
+                        <i className="fa-solid fa-id-card text-xs" />
+                      </Link>
                       <button type="button" title="Edit details" onClick={() => open('edit', u)}
                         className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
                         <i className="fa-solid fa-pen text-xs" />

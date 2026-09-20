@@ -2,26 +2,36 @@ import { useState, useEffect } from 'react';
 import { api, unwrap } from '../../lib/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useApi } from '../../hooks/useApi.js';
+import { AddressAutocomplete } from '../onboarding/AddressAutocomplete.jsx';
 
 /**
  * Super Admin direct onboarding. Layout follows the prototype's
  * modal-new-clinic, but it creates a real submission and approves it in one
  * step rather than pushing an object into an in-memory array.
  */
+const BLANK = {
+  doctorName: '', clinicName: '', code: '', specialty: '', education: '',
+  regNo: '', phone: '', districtId: '', isOnline: 'true',
+  line1: '', city: '', pincode: '', state: 'West Bengal',
+  lat: null, lng: null, placeId: '', formatted: '',
+  feeFresh: 500, feeFollowup: 300, feeEmergency: 800,
+};
+
 export function AddClinicModal({ open, onClose, onDone }) {
   const toast = useToast();
   const { data: districts } = useApi(open ? '/api/superadmin/districts' : null, { skip: !open });
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({
-    doctorName: '', clinicName: '', code: '', specialty: '', education: '',
-    regNo: '', phone: '', districtId: '', isOnline: 'true',
-    line1: '', city: '', pincode: '', state: 'West Bengal',
-    feeFresh: 500, feeFollowup: 300, feeEmergency: 800,
-  });
+  const [form, setForm] = useState(BLANK);
 
   useEffect(() => {
     if (districts?.length && !form.districtId) setForm((f) => ({ ...f, districtId: districts[0]._id }));
   }, [districts, form.districtId]);
+
+  // Clear on close, or the next clinic inherits this one's details — including
+  // its map pin, which would put two clinics at the same coordinates.
+  useEffect(() => {
+    if (!open) setForm(BLANK);
+  }, [open]);
 
   if (!open) return null;
 
@@ -43,6 +53,11 @@ export function AddClinicModal({ open, onClose, onDone }) {
           type: 'CLINIC',
           subscriptionPlan: 'BASIC',
           address: { line1: form.line1, city: form.city, state: form.state, pincode: form.pincode },
+          // Pass the Places pin through so the server trusts it instead of
+          // re-geocoding the typed address to a slightly different spot.
+          ...(form.lat != null && form.lng != null
+            ? { geocode: { lat: form.lat, lng: form.lng, placeId: form.placeId, formatted: form.formatted } }
+            : {}),
           primaryContact: { name: form.doctorName, phone: form.phone.replace(/\D/g, '').slice(-10) },
         },
       }));
@@ -78,6 +93,35 @@ export function AddClinicModal({ open, onClose, onDone }) {
         </div>
 
         <form onSubmit={submit} className="space-y-4 text-xs">
+          {/* Searching Places fills the address, PIN and coordinates. A clinic
+              that is not listed on Google is normal — every field below stays
+              editable, so typing the whole thing by hand still works. */}
+          {/* Keyed on open: the search box holds its own query text, which
+              would otherwise still show the previous clinic on reopen. */}
+          <AddressAutocomplete
+            key={String(open)}
+            onResolved={(r) => setForm((f) => ({
+              ...f,
+              // Only fill the clinic name if it has not been typed already.
+              clinicName: f.clinicName || r.name || '',
+              line1: r.line1 || f.line1,
+              city: r.city || f.city,
+              state: r.state || f.state,
+              pincode: r.pincode || f.pincode,
+              lat: r.lat, lng: r.lng, placeId: r.placeId, formatted: r.formatted,
+            }))}
+          />
+
+          {form.lat != null && (
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 flex items-start gap-2">
+              <i className="fa-solid fa-location-dot mt-0.5 shrink-0" />
+              <span>
+                Location pinned at {form.lat.toFixed(5)}, {form.lng.toFixed(5)} — this clinic will appear
+                correctly in patient search. Edit any field below if Google got it wrong.
+              </span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Front Desk Contact Name *</label>

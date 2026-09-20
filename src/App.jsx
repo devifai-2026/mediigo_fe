@@ -36,6 +36,7 @@ import ClinicsMasterView from './views/superadmin/ClinicsMasterView.jsx';
 import AgentsView from './views/superadmin/AgentsView.jsx';
 import ExecutivesView from './views/superadmin/ExecutivesView.jsx';
 import StaffView from './views/superadmin/StaffView.jsx';
+import StaffProfileView from './views/superadmin/StaffProfileView.jsx';
 import MasterApprovalsView from './views/superadmin/MasterApprovalsView.jsx';
 import FinancialAuditView from './views/superadmin/FinancialAuditView.jsx';
 import ComplaintsView from './views/superadmin/ComplaintsView.jsx';
@@ -159,6 +160,7 @@ export default function App() {
         <Route path="/super/agents" element={<AgentsView />} />
         <Route path="/super/executives" element={<ExecutivesView />} />
         <Route path="/super/staff" element={<StaffView />} />
+        <Route path="/super/staff/:id" element={<StaffProfileView />} />
         <Route path="/super/approvals" element={<MasterApprovalsView />} />
         <Route path="/super/financials" element={<FinancialAuditView />} />
         <Route path="/super/complaints" element={<ComplaintsView />} />
