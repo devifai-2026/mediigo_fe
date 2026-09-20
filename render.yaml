@@ -1,0 +1,32 @@
+# Render Blueprint for the Mediigo frontend.
+#
+# A Web Service rather than a Static Site on purpose: server.js proxies /api
+# and /socket.io to the backend, keeping the browser same-origin so the
+# httpOnly refresh cookie stays first-party.
+#
+# Note: if the service was first created by hand in the dashboard, those manual
+# settings keep winning until it is synced as a Blueprint.
+services:
+  - type: web
+    name: mediigo-fe
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    # Deliberately DB-free and declared before the proxy, so a backend outage
+    # never marks the frontend itself unhealthy.
+    healthCheckPath: /healthz
+    envVars:
+      # package.json asks for >=20, which Render resolves to the newest major
+      # (Node 26) — untested here. Pin to current LTS.
+      - key: NODE_VERSION
+        value: "22"
+      - key: API_PROXY_TARGET
+        value: https://mediigo-be.onrender.com
+      # Build-time and PUBLIC: inlined into the bundle. Restrict it by HTTP
+      # referrer in the Google Cloud console, not by hiding it.
+      - key: VITE_GMAPS_KEY
+        sync: false
+      # VITE_API_URL and VITE_SOCKET_URL are intentionally absent. Empty means
+      # relative URLs, which is what routes the browser through the proxy above.
+      # VITE_PORTAL is also absent: unset serves every role from one login.

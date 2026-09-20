@@ -13,12 +13,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, 'dist');
 
 const PORT = process.env.PORT || 4173;
-// Server-side only: no VITE_ prefix, so it is never inlined into the bundle.
-const API_TARGET = process.env.API_PROXY_TARGET;
 
-if (!API_TARGET) {
-  console.error('\nAPI_PROXY_TARGET is required (e.g. https://mediigo-be.onrender.com)\n');
-  process.exit(1);
+// The deployed backend. Only ever read server-side — no VITE_ prefix, so it is
+// never inlined into the browser bundle.
+const DEFAULT_API_TARGET = 'https://mediigo-be.onrender.com';
+const API_TARGET = process.env.API_PROXY_TARGET || DEFAULT_API_TARGET;
+
+if (!process.env.API_PROXY_TARGET) {
+  // Not fatal: the default is correct for the standard deploy, and a frontend
+  // that cannot reach its API is more useful up (serving the SPA) than dead.
+  console.warn(`API_PROXY_TARGET not set — defaulting to ${DEFAULT_API_TARGET}`);
 }
 
 const app = express();
