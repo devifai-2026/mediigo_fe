@@ -56,6 +56,9 @@ export default function DoctorChamberView() {
 
   const s = snapshot;
   const current = s?.tokens?.find((t) => t.status === 'IN_CHAMBER');
+  // The server states this outright rather than leaving each client to infer
+  // it from an absent IN_CHAMBER row.
+  const hasCalled = s?.chamberState === 'DONE';
 
   return (
     <div className="space-y-5">
@@ -83,12 +86,28 @@ export default function DoctorChamberView() {
               </span>
             </div>
             <div className="flex items-baseline gap-4 mt-2">
-              <span className="text-xs text-slate-300">Now consulting</span>
-              <h1 className="text-5xl sm:text-6xl font-black text-teal-400 tracking-tight">
+              {/* "Now consulting #03" stayed on screen after that patient was
+                  marked complete, reading as though they were still in the
+                  room. The number is only "now" while someone is IN_CHAMBER. */}
+              <span className="text-xs text-slate-300">
+                {current ? 'Now consulting' : hasCalled ? 'Last seen' : 'Next up'}
+              </span>
+              <h1 className={`text-5xl sm:text-6xl font-black tracking-tight ${current ? 'text-teal-400' : 'text-slate-400'}`}>
                 {token(s?.currentToken ?? 0)}
               </h1>
+              {!current && hasCalled && (
+                <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                  <Icon name="check" className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Done
+                </span>
+              )}
             </div>
-            {current && <p className="text-sm text-slate-300 mt-1">{current.name}</p>}
+            {current
+              ? <p className="text-sm text-slate-300 mt-1">{current.name}</p>
+              : <p className="text-sm text-slate-400 mt-1">
+                  {hasCalled
+                    ? (s?.counts?.waiting ? 'Consultation finished — call the next patient' : 'Consultation finished — no one waiting')
+                    : (s?.counts?.waiting ? 'Nobody in the chamber yet' : 'No patients in the queue')}
+                </p>}
             <p className="text-xs text-slate-400 mt-2">
               Chamber {s?.chamberNumber || '—'} · {s?.counts?.waiting ?? 0} waiting
             </p>

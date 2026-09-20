@@ -5,6 +5,28 @@ import { Icon } from '../ui/Icon.jsx';
 import { token } from '../../lib/format.js';
 import { TOKEN_STATUS } from '../../lib/constants.js';
 
+/**
+ * Emergency marker. It pulses while the patient is still in the queue, and
+ * stops once they have been seen — a badge that animates forever stops being
+ * read as urgent, and a busy front desk tunes it out.
+ */
+function EmergencyBadge({ done = false }) {
+  return (
+    <span className={clsx(
+      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border',
+      done ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-rose-600 text-white border-rose-700',
+    )}>
+      {!done && (
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+        </span>
+      )}
+      Emergency
+    </span>
+  );
+}
+
 export function QueueRoster({ tokens = [], onAction, readOnly = false, filter = 'ALL' }) {
   const rows = filter === 'ALL' ? tokens : tokens.filter((t) => t.status === filter);
 
@@ -25,10 +47,25 @@ export function QueueRoster({ tokens = [], onAction, readOnly = false, filter = 
         </thead>
         <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
           {rows.map((t) => (
-            <tr key={t.tokenId} className="hover:bg-slate-50/80 transition-colors">
-              <td className="py-3.5 px-4 font-black text-teal-700 text-sm">{token(t.tokenNumber)}</td>
+            <tr
+              key={t.tokenId}
+              className={clsx(
+                'transition-colors',
+                // An emergency has to be findable at a glance in a long list,
+                // so the whole row is tinted rather than just the badge.
+                t.isEmergency && t.status !== TOKEN_STATUS.COMPLETED
+                  ? 'bg-rose-50/70 hover:bg-rose-50'
+                  : 'hover:bg-slate-50/80',
+              )}
+            >
+              <td className={clsx('py-3.5 px-4 font-black text-sm', t.isEmergency ? 'text-rose-700' : 'text-teal-700')}>
+                {token(t.tokenNumber)}
+              </td>
               <td className="py-3.5 px-4">
-                <p className="font-bold text-slate-900">{t.name}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-bold text-slate-900">{t.name}</p>
+                  {t.isEmergency && <EmergencyBadge done={t.status === TOKEN_STATUS.COMPLETED} />}
+                </div>
                 {t.skipReason && <p className="text-[10px] text-rose-500">{t.skipReason}</p>}
               </td>
               <td className="py-3.5 px-4 text-center">
