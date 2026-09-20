@@ -10,6 +10,7 @@ import { api } from '../../lib/api.js';
 import { Select } from '../../components/ui/Field.jsx';
 import { StatCard } from '../../components/ui/StatCard.jsx';
 import { QueueRoster, SkippedDrawer } from '../../components/queue/QueueRoster.jsx';
+import { AvailabilityManager } from '../../components/doctor/AvailabilityManager.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { token } from '../../lib/format.js';
@@ -79,6 +80,14 @@ export default function ReceptionQueueView() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <QueueRoster tokens={s?.tokens ?? []} onAction={onAction} />
       </div>
+
+      {/* The desk fields the phone call when a doctor cannot come in, so it
+          needs to close a sitting without waiting for the doctor to log in. */}
+      {doctorId && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <AvailabilityManager doctorId={doctorId} />
+        </div>
+      )}
     </div>
   );
 }
