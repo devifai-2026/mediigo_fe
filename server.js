@@ -90,8 +90,61 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(dist, 'index.html'));
 });
 
+/**
+ * Keep the backend warm.
+ *
+ * Render's free tier spins a service down after ~15 minutes without INBOUND
+ * traffic, and the cold start that follows takes 20-50s — long enough that the
+ * browser abandons the request and Render's edge serves its own 502 page before
+ * our proxy timeout ever fires. A visitor's first click after an idle period
+ * therefore looks like an outage rather than a slow load.
+ *
+ * This ping is a real inbound HTTP request to the BACKEND, so it resets that
+ * idle timer. Note it can only ever keep the OTHER service warm: a process
+ * cannot ping itself awake, because an internal call generates no inbound
+ * traffic and the timer dies with the process it lives in. Keeping THIS service
+ * warm needs an external monitor hitting /healthz — see README.
+ *
+ * /healthz is the right target: it is exempt from the backend's rate limiter
+ * and deliberately does not touch the database, so this costs one cheap
+ * round-trip and can never consume a real user's request budget.
+ */
+const KEEPALIVE_MS = Number(process.env.KEEPALIVE_INTERVAL_MS || 10 * 60 * 1000);
+// Opt-out rather than opt-in: the default deploy is free-tier and wants this.
+const KEEPALIVE_ENABLED = process.env.KEEPALIVE_ENABLED !== 'false';
+
+const pingBackend = async () => {
+  const url = `${API_TARGET.replace(/\/$/, '')}/healthz`;
+  const startedAt = Date.now();
+  try {
+    // Abort well short of the interval so a hung socket can never stack pings.
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(60_000),
+      headers: { 'user-agent': 'mediigo-fe-keepalive' },
+    });
+    const ms = Date.now() - startedAt;
+    // Only worth a line when it was slow enough to have been a cold start —
+    // otherwise this would write a log entry every ten minutes forever.
+    if (!res.ok) console.warn(`keepalive: backend returned ${res.status} in ${ms}ms`);
+    else if (ms > 5000) console.log(`keepalive: backend woke in ${ms}ms (was likely asleep)`);
+  } catch (err) {
+    console.warn(`keepalive: backend unreachable after ${Date.now() - startedAt}ms — ${err.message}`);
+  }
+};
+
 const server = app.listen(PORT, () => {
   console.log(`Mediigo client on :${PORT} — proxying /api to ${API_TARGET}`);
+
+  if (!KEEPALIVE_ENABLED) {
+    console.log('keepalive: disabled via KEEPALIVE_ENABLED=false');
+    return;
+  }
+  console.log(`keepalive: pinging ${API_TARGET}/healthz every ${Math.round(KEEPALIVE_MS / 60000)} min`);
+  // unref() so this timer never holds the process open during a shutdown.
+  setInterval(pingBackend, KEEPALIVE_MS).unref();
+  // One immediate ping: a fresh deploy usually means the backend is cold too,
+  // and waking it now beats making the first real visitor wait for it.
+  pingBackend();
 });
 
 // Without this, socket.io's HTTP->WebSocket upgrade never reaches the proxy.

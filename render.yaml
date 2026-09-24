@@ -23,6 +23,15 @@ services:
         value: "22"
       - key: API_PROXY_TARGET
         value: https://mediigo-be.onrender.com
+      # Free tier spins down after ~15 min idle; server.js pings the backend's
+      # /healthz on this interval to keep it warm. Set ENABLED=false on a paid
+      # instance. NOTE: this only keeps the BACKEND awake — a service cannot
+      # ping itself awake, so keeping THIS one warm needs an external monitor
+      # on /healthz. See README.
+      - key: KEEPALIVE_ENABLED
+        value: "true"
+      - key: KEEPALIVE_INTERVAL_MS
+        value: "600000"
       # Build-time and PUBLIC: inlined into the bundle. Restrict it by HTTP
       # referrer in the Google Cloud console, not by hiding it.
       - key: VITE_GMAPS_KEY
