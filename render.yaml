@@ -36,6 +36,17 @@ services:
       # referrer in the Google Cloud console, not by hiding it.
       - key: VITE_GMAPS_KEY
         sync: false
-      # VITE_API_URL and VITE_SOCKET_URL are intentionally absent. Empty means
-      # relative URLs, which is what routes the browser through the proxy above.
-      # VITE_PORTAL is also absent: unset serves every role from one login.
+      # The browser calls the API DIRECTLY rather than via server.js's /api
+      # proxy. Cloudflare fronts this Render service and was rate-limiting real
+      # browsers by IP — returning 429s our Express app cannot produce, since it
+      # has no rate limiter left. Going direct takes that layer out of the API
+      # path entirely.
+      #
+      # This makes API calls cross-origin, so the backend sets its refresh
+      # cookie SameSite=None; Secure and echoes the CORS origin with
+      # credentials. Both are already deployed.
+      - key: VITE_API_URL
+        value: https://darkslategrey-penguin-138082.hostingersite.com
+      - key: VITE_SOCKET_URL
+        value: https://darkslategrey-penguin-138082.hostingersite.com
+      # VITE_PORTAL is absent: unset serves every role from one login.
