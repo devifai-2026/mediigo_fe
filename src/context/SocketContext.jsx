@@ -8,7 +8,11 @@ const SocketContext = createContext(null);
 export const useSocket = () => useContext(SocketContext);
 
 export function SocketProvider({ children }) {
-  const { isAuthed } = useAuth();
+  // The user id, not just isAuthed: signing out and back in as someone else
+  // never flips isAuthed to false long enough to tear the socket down, so the
+  // connection would keep the PREVIOUS user's token and their joined rooms.
+  const { isAuthed, user } = useAuth();
+  const userId = user?._id ?? user?.id ?? null;
   const [connected, setConnected] = useState(false);
   const socketRef = useRef(null);
   // Rooms are re-joined from here on every reconnect.
@@ -45,8 +49,11 @@ export function SocketProvider({ children }) {
       socket.close();
       socketRef.current = null;
       setConnected(false);
+      // Rooms belong to the session that joined them. Carrying them into the
+      // next sign-in would re-join another user's chamber.
+      roomsRef.current.clear();
     };
-  }, [isAuthed, displayToken]);
+  }, [isAuthed, displayToken, userId]);
 
   const joinChamber = useCallback((doctorId) => {
     if (!doctorId) return;

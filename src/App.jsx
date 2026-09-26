@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext.jsx';
 import { RequireAuth, RequireRole, RedirectHome } from './components/guards/Guards.jsx';
 import { PortalShell } from './components/layout/PortalShell.jsx';
 import { ROLES } from './lib/constants.js';
@@ -79,8 +80,23 @@ const ADMIN_NAV = [
 ];
 
 export default function App() {
+  const { user } = useAuth();
+
+  /**
+   * Remount the whole routed tree when the signed-in identity changes.
+   *
+   * Without this React reconciles by position: the district-admin and
+   * super-admin trees share PortalShell-shaped layouts, so signing out and
+   * back in as a different role REUSED the same component instances, and with
+   * them the data useApi had already fetched for the previous user. The new
+   * role saw the old role's dashboard until a manual reload tore everything
+   * down. Keying on the user id forces a genuine unmount/remount, which is the
+   * same teardown a reload gives — without the reload.
+   */
+  const identity = user?._id ?? user?.id ?? 'guest';
+
   return (
-    <Routes>
+    <Routes key={identity}>
       <Route path="/" element={<RedirectHome />} />
       <Route path="/login" element={<LoginView />} />
       <Route path="/403" element={<ForbiddenView />} />
