@@ -22,7 +22,7 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: API_PROXY_TARGET
-        value: https://mediigo-be.onrender.com
+        value: https://darkslategrey-penguin-138082.hostingersite.com
       # Free tier spins down after ~15 min idle; server.js pings the backend's
       # /healthz on this interval to keep it warm. Set ENABLED=false on a paid
       # instance. NOTE: this only keeps the BACKEND awake — a service cannot

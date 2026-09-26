@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 4173;
 
 // The deployed backend. Only ever read server-side — no VITE_ prefix, so it is
 // never inlined into the browser bundle.
-const DEFAULT_API_TARGET = 'https://mediigo-be.onrender.com';
+const DEFAULT_API_TARGET = 'https://darkslategrey-penguin-138082.hostingersite.com';
 const API_TARGET = process.env.API_PROXY_TARGET || DEFAULT_API_TARGET;
 
 if (!process.env.API_PROXY_TARGET) {
@@ -105,9 +105,14 @@ app.get('*', (_req, res) => {
  * traffic and the timer dies with the process it lives in. Keeping THIS service
  * warm needs an external monitor hitting /healthz — see README.
  *
- * /healthz is the right target: it is exempt from the backend's rate limiter
- * and deliberately does not touch the database, so this costs one cheap
- * round-trip and can never consume a real user's request budget.
+ * /healthz is the right target: it deliberately does not touch the database, so
+ * this costs one cheap round-trip.
+ *
+ * The backend now lives on Hostinger rather than Render's free tier, so it does
+ * not spin down and this ping is mostly redundant for it. Kept because it is
+ * harmless, and because it surfaces an unreachable backend in the frontend's
+ * own logs rather than only when a user hits it. Set KEEPALIVE_ENABLED=false to
+ * turn it off.
  */
 const KEEPALIVE_MS = Number(process.env.KEEPALIVE_INTERVAL_MS || 10 * 60 * 1000);
 // Opt-out rather than opt-in: the default deploy is free-tier and wants this.
