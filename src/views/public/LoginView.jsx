@@ -3,13 +3,14 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
-import { Logo, Icon } from '../../components/ui/Icon.jsx';
+import { Icon } from '../../components/ui/Icon.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input } from '../../components/ui/Field.jsx';
 import { OtpInput } from '../../components/ui/OtpInput.jsx';
 import { ROLE_HOME, ROLES } from '../../lib/constants.js';
 import { ACTIVE_PORTAL } from '../../lib/portals.js';
 import { DemoAccounts } from '../../components/ui/DemoAccounts.jsx';
+import { PortalThemeProvider } from '../../context/PortalTheme.jsx';
 
 export default function LoginView() {
   const navigate = useNavigate();
@@ -87,30 +88,68 @@ export default function LoginView() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-700/40">
-        <div className="text-center mb-6">
-          <Logo className="w-16 h-16 mx-auto mb-3 shadow-lg shadow-teal-500/20" rounded="rounded-2xl" />
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            Medi<span className="text-teal-600">igo</span>
-          </h1>
-          <p className="text-xs text-slate-500 font-semibold mt-1">
-            {ACTIVE_PORTAL ? ACTIVE_PORTAL.label : 'Healthcare OPD & Clinic Network'}
-          </p>
+    <PortalThemeProvider value="patient">
+    <div className="min-h-screen flex flex-col bg-white font-display">
+      <header className="bg-white border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+          <Link to="/explore" className="flex items-center gap-2 min-w-0">
+            <img src="/logo-mark.png" alt="" className="w-9 h-auto" />
+            <div className="min-w-0 leading-none">
+              <span className="block text-lg font-bold text-mg-navy tracking-tight">Mediigo</span>
+              <span className="block text-[9px] text-slate-600 mt-0.5">Book Doctor Easily</span>
+            </div>
+          </Link>
+          {servesPatient && (
+            <Link to="/explore" className="text-xs text-mg-teal hover:text-mg-tealDark font-medium">
+              Browse clinics →
+            </Link>
+          )}
         </div>
+      </header>
+      <div className="h-2 bg-mg-blue" />
+
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 sm:py-12 grid lg:grid-cols-2 gap-8 items-stretch">
+        {/* The homepage hero, so signing in feels like the same product. */}
+        <section className="mg-hero hidden lg:flex flex-col p-8 min-h-[560px]">
+          <p className="flex items-center gap-2 text-sm">
+            <span className="w-2 h-2 rounded-full bg-red-500" />
+            Real time queue telemetry
+          </p>
+          <h2 className="mt-8 text-4xl font-semibold tracking-tight leading-tight">
+            Find &amp; Book<br />Doctors Nearby
+          </h2>
+          <p className="mt-3 text-sm text-white/90 max-w-sm leading-relaxed">
+            Skip the crowded waiting room. Get a digital token, real-time wait estimates and a alert when your turn is close.
+          </p>
+          <img
+            src="/assets/herobanner.png"
+            alt=""
+            className="mt-auto -mb-8 w-full max-w-[520px] self-center pointer-events-none select-none"
+          />
+        </section>
+
+        <section className="mg-card p-6 sm:p-8 w-full max-w-md mx-auto lg:max-w-none">
+          <div className="mb-6">
+            <h1 className="mg-title">
+              {step === 'otp' ? 'Verify your number' : mode === 'staff' ? 'Clinic & staff sign in' : 'Sign in to Mediigo'}
+            </h1>
+            <p className="text-xs text-mg-teal mt-1">
+              {ACTIVE_PORTAL ? ACTIVE_PORTAL.label : 'Healthcare OPD & Clinic Network'}
+            </p>
+          </div>
 
         {step === 'entry' && (
           <>
             {servesPatient && servesStaff && (
-            <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-2xl mb-6 border border-slate-200">
+            <div className="grid grid-cols-2 gap-1 p-1 bg-mg-surface rounded-full mb-6">
               {[['patient', 'Patient'], ['staff', 'Clinic / Staff']].map(([key, label]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setMode(key)}
                   className={clsx(
-                    'py-2.5 text-xs font-bold rounded-xl transition-all',
-                    mode === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800',
+                    'py-2 text-xs font-medium rounded-full transition-all',
+                    mode === key ? 'bg-mg-blue text-white' : 'text-slate-600 hover:text-slate-900',
                   )}
                 >
                   {label}
@@ -138,7 +177,7 @@ export default function LoginView() {
                 <Button type="submit" loading={busy} className="w-full" size="lg">
                   Send OTP on WhatsApp
                 </Button>
-                <Link to="/explore" className="block text-center text-xs font-bold text-slate-500 hover:text-teal-700 pt-1">
+                <Link to="/explore" className="block text-center text-xs font-medium text-mg-teal hover:text-mg-tealDark pt-1">
                   Browse clinics without signing in →
                 </Link>
 
@@ -173,7 +212,7 @@ export default function LoginView() {
         {step === 'otp' && (
           <div className="space-y-5">
             <div className="text-center">
-              <p className="text-sm font-bold text-slate-900">Enter the verification code</p>
+              <p className="text-sm font-medium text-slate-900">Enter the verification code</p>
               {hint && <p className="text-[11px] text-slate-500 mt-1">{hint}</p>}
             </div>
             <OtpInput length={4} value={otp} onChange={setOtp} onComplete={submitOtp} />
@@ -183,13 +222,15 @@ export default function LoginView() {
             <button
               type="button"
               onClick={() => { setStep('entry'); setOtp(''); setHint(null); }}
-              className="w-full text-xs font-bold text-slate-500 hover:text-slate-800"
+              className="w-full text-xs font-medium text-mg-teal hover:text-mg-tealDark"
             >
               ← Use a different number
             </button>
           </div>
         )}
-      </div>
+        </section>
+      </main>
     </div>
+    </PortalThemeProvider>
   );
 }

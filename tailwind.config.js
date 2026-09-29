@@ -26,6 +26,15 @@ export default {
           rose: '#E11D48',
           slateBg: '#F1F5F9',
         },
+        // Patient-facing homepage palette, sampled from the Mediigo design.
+        mg: {
+          blue: '#1E3FA0',
+          navy: '#1E3A8A',
+          teal: '#3E9A92',
+          tealDark: '#2F7F78',
+          mint: '#6CC3AA',
+          surface: '#F3F5F8',
+        },
         cash: colors.emerald[600],
         upi: colors.blue[600],
         warn: colors.amber[500],
@@ -33,6 +42,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Poppins', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       backgroundImage: {

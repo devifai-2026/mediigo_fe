@@ -59,10 +59,10 @@ export default function BookingsView() {
   const rows = groups[tab];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">My token passes</h2>
-        <p className="text-xs text-slate-500">Current and past OPD consultations</p>
+        <h2 className="mg-title">My Bookings</h2>
+        <p className="text-xs text-slate-500 mt-1">Current and past OPD consultations</p>
       </div>
 
       <FilterPills
@@ -84,27 +84,29 @@ export default function BookingsView() {
           onAction={() => { window.location.href = '/explore'; }}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {rows.map((t) => (
-            <div key={t._id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <div key={t._id} className="mg-card p-4 space-y-3">
               {t.status === 'RESCHEDULE_NEEDED' && (
                 <RescheduleBanner token={{ ...t, tokenId: t._id }} onDone={refetch} />
               )}
               <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 grid place-items-center shrink-0">
-                <span className="text-lg font-black text-teal-700">{token(t.tokenNumber)}</span>
+              <div className="w-16 h-16 mg-panel grid place-items-center shrink-0 text-center">
+                <span className="block text-[9px] font-medium text-slate-600 leading-none">Token</span>
+                <span className="block text-xl font-bold text-mg-navy leading-none -mt-3">{token(t.tokenNumber)}</span>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-bold text-slate-900 text-sm truncate">{t.doctorId?.name}</p>
+                  <p className="font-medium text-slate-900 text-[15px] truncate">{t.doctorId?.name}</p>
                   <StatusBadge status={t.status} />
                 </div>
-                <p className="text-[11px] text-slate-500 truncate">
-                  {t.doctorId?.specialty} · {t.hospitalId?.name}
+                <p className="text-[11px] truncate">
+                  <span className="text-mg-teal">{t.doctorId?.specialty}</span>
+                  <span className="text-slate-500"> · {t.hospitalId?.name}</span>
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   {relativeDay(t.date)} · {t.patientSnapshot?.name}
-                  {t.isPaid ? <span className="text-emerald-600 font-semibold"> · Paid</span> : <span className="text-amber-600 font-semibold"> · Pay at desk</span>}
+                  {t.isPaid ? <span className="text-mg-teal font-medium"> · Paid</span> : <span className="text-amber-600 font-medium"> · Pay at desk</span>}
                 </p>
               </div>
               <div className="flex flex-col gap-1.5 shrink-0">

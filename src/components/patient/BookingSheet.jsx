@@ -91,31 +91,31 @@ export function BookingSheet({ doctor, onClose }) {
     return (
       <Modal open onClose={() => { setTicket(null); onClose(); }} variant="sheet" size="sm">
         <div className="text-center -m-5">
-          <div className="bg-hero-chamber text-white p-6 pt-8 rounded-t-3xl sm:rounded-t-3xl">
-            <div className="w-12 h-12 rounded-full bg-teal-500/20 border border-teal-400/40 grid place-items-center mx-auto mb-2">
-              <svg className="w-6 h-6 text-teal-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mg-hero rounded-none rounded-t-xl p-6 pt-8">
+            <div className="w-12 h-12 rounded-full bg-white grid place-items-center mx-auto mb-2">
+              <svg className="w-6 h-6 text-mg-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-xs font-bold text-teal-300 uppercase tracking-wider">Booking confirmed</p>
-            <h3 className="text-3xl font-black mt-1">{token(ticket.tokenNumber)}</h3>
-            <p className="text-xs text-slate-300 mt-1">{ticket.patientSnapshot?.name}</p>
+            <p className="text-sm font-medium">Booking confirmed</p>
+            <h3 className="text-4xl font-bold mt-1">{token(ticket.tokenNumber)}</h3>
+            <p className="text-xs text-white/85 mt-1">{ticket.patientSnapshot?.name}</p>
           </div>
 
           <div className="p-5 space-y-3">
-            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-left text-xs space-y-1">
-              <p className="font-bold text-slate-900">{ticket.doctor.name}</p>
-              <p className="text-slate-500">{ticket.doctor.specialty} · Chamber {ticket.doctor.chamberNumber || '—'}</p>
+            <div className="mg-panel p-3 text-left text-xs space-y-1">
+              <p className="font-medium text-slate-900">{ticket.doctor.name}</p>
+              <p className="text-mg-teal">{ticket.doctor.specialty} · Chamber {ticket.doctor.chamberNumber || '—'}</p>
               <p className="text-slate-500">{ticket.doctor.hospital.name}</p>
               <p className="text-[11px] text-slate-400">{ticket.doctor.hospital.address?.line1}</p>
             </div>
 
-            <div className="bg-slate-100 p-3 rounded-xl inline-block border border-slate-200">
+            <div className="bg-slate-100 p-3 rounded-md inline-block border border-slate-200">
               <QrCode value={`MEDIIGO:${ticket._id}`} size={128} />
             </div>
             <p className="text-[10px] font-mono font-bold text-slate-500">{ticket._id}</p>
 
-            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-2.5">
+            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2.5">
               Pay {inr(fee)} at the front desk when you arrive.
             </p>
 
@@ -144,15 +144,15 @@ export function BookingSheet({ doctor, onClose }) {
       <div className="space-y-5">
         {user?.familyMembers?.length > 0 && (
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">Booking for</p>
+            <p className="text-[10px] font-medium text-slate-700 text-[11px] mb-2">Booking for</p>
             <div className="grid grid-cols-2 gap-2">
               {user.familyMembers.map((m) => (
                 <button
                   key={m._id}
                   type="button"
                   onClick={() => setMemberId(m._id)}
-                  className={clsx('p-2.5 rounded-xl text-xs text-left border-2 transition',
-                    memberId === m._id ? 'border-teal-600 bg-teal-50 text-teal-900 font-bold' : 'border-slate-200 bg-slate-50 text-slate-600')}
+                  className={clsx('p-2.5 rounded-md text-xs text-left border transition',
+                    memberId === m._id ? 'border-mg-teal bg-mg-teal/10 text-slate-900 font-medium' : 'border-slate-200 bg-slate-50 text-slate-600')}
                 >
                   <span className="block truncate">{m.name}</span>
                   <span className="text-[10px] text-slate-400 capitalize">{m.relation?.toLowerCase()}</span>
@@ -163,7 +163,7 @@ export function BookingSheet({ doctor, onClose }) {
               <button
                 type="button"
                 onClick={() => { onClose(); navigate('/profile'); }}
-                className="p-2.5 rounded-xl text-xs text-left border-2 border-dashed border-slate-300 text-slate-500 hover:border-teal-400 hover:text-teal-700 transition"
+                className="p-2.5 rounded-md text-xs text-left border border-dashed border-slate-300 text-slate-500 hover:border-mg-teal hover:text-mg-teal transition"
               >
                 <span className="block font-bold">+ Add someone</span>
                 <span className="text-[10px] text-slate-400">Child, parent, spouse</span>
@@ -176,7 +176,7 @@ export function BookingSheet({ doctor, onClose }) {
             none, booking is same-day and a date strip would be a lie. */}
         {days.length > 0 && (
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">Choose a date</p>
+            <p className="text-[10px] font-medium text-slate-700 text-[11px] mb-2">Choose a date</p>
             <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
               {days.map((d) => {
                 const open = d.shifts.some((sh) => sh.isBookable);
@@ -191,16 +191,16 @@ export function BookingSheet({ doctor, onClose }) {
                       setSlot({ date: d.date, shift: first?.shift });
                     }}
                     className={clsx(
-                      'shrink-0 w-14 py-2 rounded-xl border-2 text-center transition',
-                      active ? 'border-teal-600 bg-teal-50'
-                        : open ? 'border-slate-200 bg-white hover:border-teal-300'
+                      'shrink-0 w-14 py-2 rounded-md border text-center transition',
+                      active ? 'border-mg-teal bg-mg-teal/10'
+                        : open ? 'border-slate-200 bg-white hover:border-mg-teal/50'
                           : 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed',
                     )}
                   >
                     <span className="block text-[9px] font-bold uppercase text-slate-400">
                       {d.isToday ? 'Today' : DAY_LABEL[d.dayOfWeek]}
                     </span>
-                    <span className={clsx('block text-base font-black', active ? 'text-teal-700' : 'text-slate-800')}>
+                    <span className={clsx('block text-base font-bold', active ? 'text-mg-teal' : 'text-slate-800')}>
                       {Number(d.date.slice(8, 10))}
                     </span>
                   </button>
@@ -224,9 +224,9 @@ export function BookingSheet({ doctor, onClose }) {
                       disabled={!sh.isBookable}
                       onClick={() => setSlot({ date: day.date, shift: sh.shift })}
                       className={clsx(
-                        'p-2.5 rounded-xl border-2 text-left transition',
-                        slot?.shift === sh.shift && sh.isBookable ? 'border-teal-600 bg-teal-50'
-                          : sh.isBookable ? 'border-slate-200 bg-slate-50 hover:border-teal-300'
+                        'p-2.5 rounded-md border text-left transition',
+                        slot?.shift === sh.shift && sh.isBookable ? 'border-mg-teal bg-mg-teal/10'
+                          : sh.isBookable ? 'border-slate-200 bg-slate-50 hover:border-mg-teal/50'
                             : 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed',
                       )}
                     >
@@ -237,7 +237,7 @@ export function BookingSheet({ doctor, onClose }) {
                       <span className="block text-[10px] mt-0.5">
                         {sh.endedToday ? <span className="text-slate-400">Ended for today</span>
                           : sh.isFull ? <span className="text-amber-600 font-bold">Fully booked</span>
-                            : sh.remaining != null ? <span className="text-teal-700 font-semibold">{sh.remaining} left</span>
+                            : sh.remaining != null ? <span className="text-mg-teal font-semibold">{sh.remaining} left</span>
                               : <span className="text-slate-400">{sh.booked} booked</span>}
                       </span>
                     </button>
@@ -249,27 +249,27 @@ export function BookingSheet({ doctor, onClose }) {
         )}
 
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">Visit type</p>
+          <p className="text-[10px] font-medium text-slate-700 text-[11px] mb-2">Visit type</p>
           <div className="grid grid-cols-3 gap-2">
             {['fresh', 'followup', 'emergency'].map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setVisitType(v)}
-                className={clsx('p-3 rounded-2xl border-2 text-center transition',
-                  visitType === v ? 'border-teal-600 bg-teal-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300')}
+                className={clsx('p-3 rounded-lg border text-center transition',
+                  visitType === v ? 'border-mg-teal bg-mg-teal/10' : 'border-slate-200 bg-slate-50 hover:border-slate-300')}
               >
-                <span className={clsx('block text-[11px] font-extrabold', visitType === v ? 'text-teal-700' : 'text-slate-700')}>
+                <span className={clsx('block text-[11px] font-semibold', visitType === v ? 'text-mg-teal' : 'text-slate-700')}>
                   {VISIT_LABEL[v]}
                 </span>
-                <span className="block text-sm font-black text-slate-900 mt-1">{inr(doctor.fees[v])}</span>
+                <span className="block text-base font-bold text-mg-navy mt-1">{inr(doctor.fees[v])}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+          <label className="block text-[10px] font-medium text-slate-700 text-[11px] mb-2">
             Reason for the visit <span className="font-semibold normal-case tracking-normal text-slate-400">(optional)</span>
           </label>
           <textarea
@@ -277,17 +277,17 @@ export function BookingSheet({ doctor, onClose }) {
             onChange={(e) => setComplaint(e.target.value.slice(0, 300))}
             rows={2}
             placeholder="e.g. Fever and sore throat for 3 days"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs resize-none focus:outline-none focus:border-teal-500"
+            className="w-full bg-slate-50 border border-slate-200 rounded-md p-2.5 text-xs resize-none focus:outline-none focus:border-mg-teal"
           />
           <p className="text-[10px] text-slate-400 mt-1">Only the clinic and your doctor can see this.</p>
         </div>
 
-        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-2 text-xs">
+        <div className="mg-panel p-4 space-y-2 text-xs">
           <div className="flex justify-between"><span className="text-slate-500">Consultation</span><span className="font-bold">{inr(fee)}</span></div>
           <div className="flex justify-between text-slate-400"><span>Pay at desk</span><span>on arrival</span></div>
           <div className="flex justify-between pt-2 border-t border-slate-200">
             <span className="font-bold text-slate-700">Next available token</span>
-            <span className="font-black text-teal-700 text-sm">{token(doctor.queue.nextToken)}</span>
+            <span className="font-bold text-mg-teal text-lg">{token(doctor.queue.nextToken)}</span>
           </div>
         </div>
 

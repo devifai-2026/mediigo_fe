@@ -2,7 +2,7 @@ import { useState } from 'react';
 import clsx from 'clsx';
 import { api, unwrap } from '../../lib/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { DarkHero } from '../../components/layout/DarkHero.jsx';
+import { DarkHero, LivePill } from '../../components/layout/DarkHero.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input } from '../../components/ui/Field.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
@@ -53,7 +53,7 @@ export default function VaultView() {
   if (stage === 'loading') {
     return (
       <div className="space-y-4">
-        <DarkHero><h2 className="text-xl font-bold">Analysing your cover…</h2></DarkHero>
+        <DarkHero><h2 className="text-2xl font-semibold">Analysing your cover…</h2></DarkHero>
         <SkeletonRows rows={4} />
       </div>
     );
@@ -66,32 +66,32 @@ export default function VaultView() {
         <DarkHero>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-xs font-bold text-teal-300 uppercase tracking-wider">Policy vault</p>
-              <h2 className="text-2xl font-extrabold mt-1">Your protection score</h2>
-              <p className="text-xs text-slate-300 mt-1">
+              <LivePill>Policy vault</LivePill>
+              <h2 className="text-2xl sm:text-3xl font-semibold mt-4">Your protection score</h2>
+              <p className="text-xs text-white/85 mt-1">
                 {analysis.summary.policyCount} {analysis.summary.policyCount === 1 ? 'policy' : 'policies'} ·
                 Tier-{analysis.meta.cityTier} benchmark for {analysis.meta.district}
               </p>
             </div>
-            <div className="text-center bg-white/10 rounded-2xl border border-white/15 px-6 py-4">
+            <div className="text-center bg-white rounded-md px-6 py-4">
               <span className={clsx('text-5xl font-black', GRADE_TONE[analysis.grade])}>{analysis.grade}</span>
-              <p className="text-xs text-slate-300 mt-1">{analysis.protectionScore}/100</p>
+              <p className="text-xs text-slate-600 mt-1">{analysis.protectionScore}/100</p>
             </div>
           </div>
 
           <div className="mt-5 space-y-2">
-            <div className="flex justify-between text-xs text-slate-300">
+            <div className="flex justify-between text-xs text-white/85">
               <span>Effective cover today</span>
               <span>{inr(analysis.summary.effectiveCover)} of {inr(analysis.summary.recommendedCover)} recommended</span>
             </div>
-            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden p-0.5">
+            <div className="w-full h-2.5 bg-white/25 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full"
+                className="h-full bg-white rounded-full"
                 style={{ width: `${Math.min(100, (analysis.summary.effectiveCover / analysis.summary.recommendedCover) * 100)}%` }}
               />
             </div>
             {analysis.summary.nominalCover > analysis.summary.effectiveCover && (
-              <p className="text-[11px] text-amber-300">
+              <p className="text-[11px] text-amber-100">
                 You hold {inr(analysis.summary.nominalCover)} on paper, but separate indemnity policies do not stack —
                 a single hospitalisation draws on about {inr(analysis.summary.effectiveCover)}.
               </p>
@@ -100,11 +100,11 @@ export default function VaultView() {
         </DarkHero>
 
         <div className="space-y-3">
-          <h3 className="text-sm font-bold text-slate-900">
+          <h3 className="mg-title">
             {analysis.gaps.length} {analysis.gaps.length === 1 ? 'gap' : 'gaps'} found
           </h3>
           {analysis.gaps.map((g) => (
-            <div key={`${g.code}-${g.policyId ?? ''}`} className={clsx('rounded-2xl border p-4', SEVERITY[g.severity])}>
+            <div key={`${g.code}-${g.policyId ?? ''}`} className={clsx('rounded-lg border p-4', SEVERITY[g.severity])}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -125,41 +125,41 @@ export default function VaultView() {
         </div>
 
         {r && (
-          <div className="bg-hero-dark text-white rounded-3xl p-6 border border-slate-800">
-            <p className="text-xs font-bold text-teal-300 uppercase tracking-wider">Recommended structure</p>
-            <h3 className="text-xl font-extrabold mt-1">Base cover plus a super top-up</h3>
+          <div className="mg-hero p-6 sm:p-8">
+            <LivePill>Recommended structure</LivePill>
+            <h3 className="text-2xl font-semibold mt-3">Base cover plus a super top-up</h3>
             <div className="grid sm:grid-cols-3 gap-3 mt-4">
-              <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                <span className="text-[10px] text-slate-300 block">Base policy</span>
-                <span className="text-lg font-black text-teal-300">{inr(r.baseSumInsured)}</span>
+              <div className="bg-white rounded-md p-3 text-slate-900">
+                <span className="text-[11px] font-medium text-slate-700 block">Base policy</span>
+                <span className="text-xl font-bold text-mg-navy">{inr(r.baseSumInsured)}</span>
               </div>
               {r.superTopUp && (
-                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                  <span className="text-[10px] text-slate-300 block">Super top-up</span>
-                  <span className="text-lg font-black text-teal-300">{inr(r.superTopUp.sumInsured)}</span>
-                  <span className="text-[10px] text-slate-400 block">over {inr(r.superTopUp.deductible)} deductible</span>
+                <div className="bg-white rounded-md p-3 text-slate-900">
+                  <span className="text-[11px] font-medium text-slate-700 block">Super top-up</span>
+                  <span className="text-xl font-bold text-mg-navy">{inr(r.superTopUp.sumInsured)}</span>
+                  <span className="text-[10px] text-slate-500 block">over {inr(r.superTopUp.deductible)} deductible</span>
                 </div>
               )}
               {r.criticalIllness && (
-                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                  <span className="text-[10px] text-slate-300 block">Critical illness</span>
-                  <span className="text-lg font-black text-teal-300">{inr(r.criticalIllness.sumInsured)}</span>
+                <div className="bg-white rounded-md p-3 text-slate-900">
+                  <span className="text-[11px] font-medium text-slate-700 block">Critical illness</span>
+                  <span className="text-xl font-bold text-mg-navy">{inr(r.criticalIllness.sumInsured)}</span>
                 </div>
               )}
             </div>
             <ul className="mt-4 space-y-1.5">
-              <li className="text-xs text-slate-300 flex items-start gap-2">
-                <Icon name="check" className="w-3.5 h-3.5 text-teal-400 mt-0.5 shrink-0" />
+              <li className="text-xs text-white/85 flex items-start gap-2">
+                <Icon name="check" className="w-3.5 h-3.5 text-white mt-0.5 shrink-0" />
                 No room-rent sub-limit, which removes the proportionate-deduction risk entirely
               </li>
               {r.replaces.length > 0 && (
-                <li className="text-xs text-slate-300 flex items-start gap-2">
-                  <Icon name="check" className="w-3.5 h-3.5 text-teal-400 mt-0.5 shrink-0" />
+                <li className="text-xs text-white/85 flex items-start gap-2">
+                  <Icon name="check" className="w-3.5 h-3.5 text-white mt-0.5 shrink-0" />
                   Replaces {r.replaces.length} fragmented {r.replaces.length === 1 ? 'policy' : 'policies'}
                 </li>
               )}
             </ul>
-            <p className="text-[11px] text-slate-400 mt-4">
+            <p className="text-[11px] text-white/75 mt-4">
               Indicative premium {inr(r.estimatedPremiumRange.min)}–{inr(r.estimatedPremiumRange.max)} a year.
               {' '}{r.premiumNote}
             </p>
@@ -174,17 +174,17 @@ export default function VaultView() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-5">
+    <div className="max-w-2xl mx-auto space-y-6">
       <DarkHero>
-        <p className="text-xs font-bold text-teal-300 uppercase tracking-wider">Policy vault</p>
-        <h2 className="text-2xl font-extrabold mt-1">Find the gaps in your health cover</h2>
-        <p className="text-xs text-slate-300 mt-2">
+        <LivePill>Policy vault</LivePill>
+        <h2 className="text-2xl sm:text-3xl font-semibold mt-4">Find the gaps in your health cover</h2>
+        <p className="text-xs sm:text-sm text-white/90 mt-3 leading-relaxed">
           We look up policies linked to your Aadhaar and check them against real hospital costs in your city —
           room-rent limits, duplicated cover, and what a serious illness would actually cost you.
         </p>
       </DarkHero>
 
-      <form onSubmit={analyze} className="glass-card rounded-3xl p-6 space-y-4">
+      <form onSubmit={analyze} className="mg-card p-6 space-y-4">
         <Field label="Aadhaar number" required hint="Used only to look up linked policies. We store a one-way hash, never the number itself.">
           <Input
             inputMode="numeric"

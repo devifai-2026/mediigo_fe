@@ -73,42 +73,49 @@ export default function ProfileView() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div className="glass-card rounded-3xl p-6 shadow-sm space-y-6">
-        <div className="flex items-center gap-4 border-b border-slate-200 pb-5">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-700 to-teal-600 text-white grid place-items-center text-xl font-black">
-            {initials(user?.name)}
-          </div>
-          <div className="flex-grow min-w-0">
-            <h3 className="text-lg font-bold text-slate-900 truncate">{user?.name}</h3>
-            <p className="text-xs text-slate-500">+91 {fmtPhone(user?.phone)}</p>
-            <span className="inline-block mt-1 text-[9px] font-extrabold uppercase tracking-widest bg-teal-100 text-teal-800 px-2 py-0.5 rounded border border-teal-200">
-              Verified patient
-            </span>
-          </div>
-          <Button variant="secondary" size="sm" onClick={() => logout()}>
-            <Icon name="logout" className="w-3.5 h-3.5" /> Log out
-          </Button>
+    <div className="max-w-3xl mx-auto space-y-6">
+      <h2 className="mg-title">My Profile</h2>
+
+      <div className="mg-hero p-6 flex items-center gap-4">
+        <div className="w-16 h-16 rounded-full bg-white text-mg-navy grid place-items-center text-xl font-bold shrink-0">
+          {initials(user?.name)}
         </div>
+        <div className="flex-grow min-w-0">
+          <h3 className="text-xl font-semibold truncate">{user?.name}</h3>
+          <p className="text-xs text-white/85">+91 {fmtPhone(user?.phone)}</p>
+          <span className="inline-block mt-1.5 text-[9px] font-medium px-3 py-0.5 rounded-full bg-white text-mg-blue">
+            Verified patient
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => logout()}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-xs font-medium transition"
+        >
+          <Icon name="logout" className="w-3.5 h-3.5" /> Log out
+        </button>
+      </div>
+
+      <div className="mg-card p-5 sm:p-6 space-y-6">
 
         {/* What nearby search measures from. Shown so a patient can tell at a
             glance whether the distances they see are actually theirs. */}
-        <div className="border-b border-slate-200 pb-5">
+        <div className="border-b border-slate-100 pb-5">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-bold text-slate-900">Your location</h4>
+            <h4 className="text-base font-semibold text-slate-900">Your location</h4>
             <button
               type="button"
               onClick={updateLocation}
               disabled={locating}
-              className="text-xs text-teal-700 font-bold hover:underline disabled:opacity-50"
+              className="text-xs text-mg-teal font-medium hover:underline disabled:opacity-50"
             >
               {locating ? 'Locating…' : loc ? 'Update' : 'Set location'}
             </button>
           </div>
           {loc ? (
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
-              <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Icon name="location" className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+            <div className="p-3 mg-panel">
+              <p className="text-xs font-medium text-slate-800 flex items-center gap-1.5">
+                <Icon name="location" className="w-3.5 h-3.5 text-mg-teal shrink-0" />
                 {loc.label || 'Saved location'}
               </p>
               {loc.formatted && <p className="text-[10px] text-slate-500 mt-0.5">{loc.formatted}</p>}
@@ -126,17 +133,21 @@ export default function ProfileView() {
 
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-bold text-slate-900">Family profiles</h4>
-            <button type="button" onClick={() => setAdding(true)} className="text-xs text-teal-700 font-bold hover:underline">
+            <h4 className="text-base font-semibold text-slate-900">Family profiles</h4>
+            <button type="button" onClick={() => setAdding(true)} className="text-xs text-mg-teal font-medium hover:underline">
               + Add member
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {members.map((m) => (
-              <div key={m._id} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
+              <div key={m._id} className="p-3 mg-panel flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-white text-mg-navy grid place-items-center text-[11px] font-bold shrink-0">
+                  {initials(m.name)}
+                </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-800 truncate">{m.name}</p>
-                  <p className="text-[10px] text-slate-500 capitalize">
+                  <p className="text-xs font-medium text-slate-900 truncate">{m.name}</p>
+                  <p className="text-[10px] text-mg-teal capitalize">
                     {m.relation?.toLowerCase()}
                     {ageOf(m.dob) != null && <> · {ageOf(m.dob)}y</>}
                     {m.gender && <> · {m.gender}</>}
@@ -144,8 +155,9 @@ export default function ProfileView() {
                   {/* Members added before age and gender were required still
                       exist; prompt rather than block them from being booked. */}
                   {(!m.dob || !m.gender) && (
-                    <p className="text-[10px] text-amber-600 font-semibold">Add age and gender</p>
+                    <p className="text-[10px] text-amber-600 font-medium">Add age and gender</p>
                   )}
+                </div>
                 </div>
                 {m.relation !== 'SELF' && (
                   <button type="button" onClick={() => removeMember(m)} className="text-slate-400 hover:text-rose-600 p-1 shrink-0">

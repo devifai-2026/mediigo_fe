@@ -1,8 +1,10 @@
 import { useRef, useEffect } from 'react';
+import { useIsBrandTheme } from '../../context/PortalTheme.jsx';
 
 // Auto-advancing boxes with paste support — pasting a 4-digit code from an SMS
 // should just work rather than dropping every digit but the first.
 export function OtpInput({ length = 4, value, onChange, onComplete }) {
+  const brand = useIsBrandTheme();
   const refs = useRef([]);
 
   useEffect(() => { refs.current[0]?.focus(); }, []);
@@ -46,7 +48,9 @@ export function OtpInput({ length = 4, value, onChange, onComplete }) {
           onChange={handleChange(i)}
           onKeyDown={handleKey(i)}
           aria-label={`Digit ${i + 1}`}
-          className="w-12 h-14 text-center text-xl font-black bg-slate-50 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white transition"
+          className={brand
+            ? 'w-12 h-14 text-center text-xl font-bold text-mg-navy bg-white border border-slate-200 rounded-md focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal transition'
+            : 'w-12 h-14 text-center text-xl font-black bg-slate-50 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white transition'}
         />
       ))}
     </div>

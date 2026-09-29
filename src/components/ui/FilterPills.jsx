@@ -1,8 +1,12 @@
 import clsx from 'clsx';
+import { useIsBrandTheme } from '../../context/PortalTheme.jsx';
 
 export function FilterPills({ options, value, onChange, className }) {
+  const brand = useIsBrandTheme();
   return (
-    <div className={clsx('inline-flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl text-xs font-bold', className)}>
+    <div className={clsx('inline-flex items-center gap-1 p-1 text-xs',
+      brand ? 'bg-mg-surface rounded-full font-medium' : 'bg-slate-200/70 rounded-xl font-bold', className)}
+    >
       {options.map((o) => {
         const val = typeof o === 'string' ? o : o.value;
         const label = typeof o === 'string' ? o : o.label;
@@ -13,12 +17,15 @@ export function FilterPills({ options, value, onChange, className }) {
             type="button"
             onClick={() => onChange(val)}
             className={clsx(
-              'px-3 py-1 rounded-lg transition-all whitespace-nowrap',
-              value === val ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900',
+              'transition-all whitespace-nowrap',
+              brand ? 'px-4 py-1.5 rounded-full' : 'px-3 py-1 rounded-lg',
+              value === val
+                ? (brand ? 'bg-mg-blue text-white' : 'bg-white text-slate-900 shadow-sm')
+                : 'text-slate-600 hover:text-slate-900',
             )}
           >
             {label}
-            {count != null && <span className="ml-1 text-slate-400">({count})</span>}
+            {count != null && <span className={clsx('ml-1', brand && value === val ? 'text-white/70' : 'text-slate-400')}>({count})</span>}
           </button>
         );
       })}

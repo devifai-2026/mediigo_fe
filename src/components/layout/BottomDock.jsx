@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import clsx from 'clsx';
 import { Icon } from '../ui/Icon.jsx';
 
-export function BottomDock({ items }) {
+export function BottomDock({ items, brand = false }) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200 px-4 py-2 shadow-lg md:hidden">
       <div className="max-w-md mx-auto flex items-center justify-around">
@@ -12,7 +12,7 @@ export function BottomDock({ items }) {
             to={item.to}
             className={({ isActive }) =>
               clsx('flex flex-col items-center gap-1 p-1 relative transition-colors',
-                isActive ? 'text-teal-600' : 'text-slate-400 hover:text-teal-600')
+                isActive ? (brand ? 'text-mg-blue' : 'text-teal-600') : 'text-slate-400 hover:text-teal-600')
             }
           >
             {item.badge > 0 && (

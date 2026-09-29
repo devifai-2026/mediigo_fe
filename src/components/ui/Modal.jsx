@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { useFocusTrap } from '../../hooks/useFocusTrap.js';
 import { Icon } from './Icon.jsx';
+import { useIsBrandTheme } from '../../context/PortalTheme.jsx';
 
 const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
 
@@ -15,6 +16,7 @@ const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl'
  */
 export function Modal({ open, onClose, title, subtitle, children, size = 'md', variant = 'center', closeOnBackdrop = true }) {
   const panelRef = useRef(null);
+  const brand = useIsBrandTheme();
   useFocusTrap(panelRef, open);
 
   useEffect(() => {
@@ -47,14 +49,17 @@ export function Modal({ open, onClose, title, subtitle, children, size = 'md', v
         className={clsx(
           'bg-white w-full shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]',
           SIZES[size],
-          variant === 'sheet' ? 'rounded-t-3xl sm:rounded-3xl animate-slide-up' : 'rounded-3xl',
+          brand && 'font-display',
+          variant === 'sheet'
+            ? (brand ? 'rounded-t-xl sm:rounded-xl animate-slide-up' : 'rounded-t-3xl sm:rounded-3xl animate-slide-up')
+            : (brand ? 'rounded-xl' : 'rounded-3xl'),
         )}
       >
         {title && (
           <div className="flex items-start justify-between gap-3 p-5 pb-3 border-b border-slate-100 shrink-0">
             <div>
-              <h3 className="font-bold text-slate-900 text-base leading-tight">{title}</h3>
-              {subtitle && <p className="text-[11px] text-slate-500 mt-0.5">{subtitle}</p>}
+              <h3 className={clsx('text-slate-900 leading-tight', brand ? 'font-semibold text-lg' : 'font-bold text-base')}>{title}</h3>
+              {subtitle && <p className={clsx('text-[11px] mt-0.5', brand ? 'text-mg-teal' : 'text-slate-500')}>{subtitle}</p>}
             </div>
             <button
               type="button"

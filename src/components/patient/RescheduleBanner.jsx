@@ -53,7 +53,7 @@ export function RescheduleBanner({ token, onDone }) {
 
   return (
     <>
-      <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 flex items-start gap-2.5">
+      <div className="p-3 rounded-lg bg-amber-50 border border-amber-300 flex items-start gap-2.5">
         <Icon name="pause" className="w-4 h-4 text-amber-700 mt-0.5 shrink-0" />
         <div className="flex-grow min-w-0">
           <p className="text-xs font-bold text-amber-900">
@@ -66,7 +66,7 @@ export function RescheduleBanner({ token, onDone }) {
         <button
           type="button"
           onClick={load}
-          className="shrink-0 text-[11px] font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition"
+          className="shrink-0 text-[11px] font-medium text-white bg-mg-teal hover:bg-mg-tealDark px-3 py-1.5 rounded-md transition"
         >
           Choose a new time
         </button>
@@ -99,14 +99,14 @@ export function RescheduleBanner({ token, onDone }) {
                     setPicked({ date: d.date, shift: first?.shift });
                   }}
                   className={clsx(
-                    'shrink-0 w-14 py-2 rounded-xl border-2 text-center transition',
-                    picked?.date === d.date ? 'border-teal-600 bg-teal-50' : 'border-slate-200 bg-white hover:border-teal-300',
+                    'shrink-0 w-14 py-2 rounded-md border text-center transition',
+                    picked?.date === d.date ? 'border-mg-teal bg-mg-teal/10' : 'border-slate-200 bg-white hover:border-mg-teal/50',
                   )}
                 >
                   <span className="block text-[9px] font-bold uppercase text-slate-400">
                     {d.isToday ? 'Today' : DAY_LABEL[d.dayOfWeek]}
                   </span>
-                  <span className="block text-base font-black text-slate-800">{Number(d.date.slice(8, 10))}</span>
+                  <span className="block text-base font-bold text-slate-800">{Number(d.date.slice(8, 10))}</span>
                 </button>
               ))}
             </div>
@@ -122,8 +122,8 @@ export function RescheduleBanner({ token, onDone }) {
                       type="button"
                       onClick={() => setPicked({ date: day.date, shift: s.shift })}
                       className={clsx(
-                        'p-2.5 rounded-xl border-2 text-left transition',
-                        picked?.shift === s.shift ? 'border-teal-600 bg-teal-50' : 'border-slate-200 bg-slate-50 hover:border-teal-300',
+                        'p-2.5 rounded-md border text-left transition',
+                        picked?.shift === s.shift ? 'border-mg-teal bg-mg-teal/10' : 'border-slate-200 bg-slate-50 hover:border-mg-teal/50',
                       )}
                     >
                       <span className="block text-[11px] font-bold text-slate-800">{SHIFT_LABEL[s.shift] || s.shift}</span>

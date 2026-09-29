@@ -54,77 +54,84 @@ export default function TrackerView() {
   const hosp = active.hospitalId;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
+      <div>
+        <h2 className="mg-title">Live Tracker</h2>
+        <p className="text-xs text-slate-500 mt-1">Your place in the queue, updated as the doctor calls each token</p>
+      </div>
+
       <DarkHero>
-        <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-white/10">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <LivePill>Live queue telemetry</LivePill>
-            <h3 className="text-lg font-bold mt-2">{active.patientSnapshot?.name}</h3>
-            <p className="text-xs text-slate-300">{hosp?.name} · {doc?.name}</p>
+            <h3 className="text-2xl sm:text-3xl font-semibold mt-4">{active.patientSnapshot?.name}</h3>
+            <p className="text-xs sm:text-sm text-white/85 mt-1">{doc?.name} · {hosp?.name}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-right">
-            <span className="text-[10px] uppercase text-slate-300 block">Chamber</span>
-            <span className="text-xs font-bold">{doc?.chamberNumber || '—'}</span>
+          <div className="bg-white/15 px-4 py-2 rounded-md text-right">
+            <span className="text-[10px] text-white/80 block">Chamber</span>
+            <span className="text-sm font-semibold">{doc?.chamberNumber || '—'}</span>
           </div>
         </div>
 
         {view.onBreak && (
-          <div className="mt-4 p-3 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-200 text-xs font-semibold flex items-center gap-2">
+          <div className="mt-5 p-3 rounded-md bg-amber-400/20 text-white text-xs font-medium flex items-center gap-2">
             <Icon name="pause" className="w-4 h-4 shrink-0" />
             Doctor is on a break{view.breakReason ? ` (${view.breakReason})` : ''} — the queue is paused.
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 my-6 text-center">
-          <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10">
-            <span className="text-xs text-slate-300 block mb-1">Now consulting</span>
-            <span className="text-3xl font-extrabold text-amber-400">{token(view.current)}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 text-center text-slate-900">
+          <div className="bg-white rounded-md py-4">
+            <span className="text-[11px] font-medium text-slate-700 block">Current OPD Token</span>
+            <span className="block text-3xl font-bold text-mg-navy mt-1.5">{token(view.current)}</span>
           </div>
-          <div className="bg-teal-500/20 backdrop-blur-md p-4 rounded-xl border border-teal-400/30">
-            <span className="text-xs text-teal-200 block mb-1">Your token</span>
-            <span className="text-3xl font-extrabold text-teal-300">{token(view.mine)}</span>
+          <div className="bg-white rounded-md py-4">
+            <span className="text-[11px] font-medium text-slate-700 block">Your Token</span>
+            <span className="block text-3xl font-bold text-mg-teal mt-1.5">{token(view.mine)}</span>
           </div>
-          <div className="col-span-2 sm:col-span-1 bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 grid place-content-center">
-            <span className="text-xs text-slate-300 block mb-1">Approx. wait</span>
-            <span className="text-xl font-bold text-emerald-400">
+          <div className="col-span-2 sm:col-span-1 bg-white rounded-md py-4">
+            <span className="text-[11px] font-medium text-slate-700 block">Approx. Wait</span>
+            <span className="block text-2xl font-bold text-mg-navy mt-2">
               {view.wait == null ? 'Paused' : `~ ${duration(view.wait)}`}
             </span>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs text-slate-300">
+        <div className="mt-6 space-y-2">
+          <div className="flex justify-between text-xs text-white/85">
             <span>Queue progress</span>
             <span>{view.ahead} {view.ahead === 1 ? 'patient' : 'patients'} ahead</span>
           </div>
-          <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden p-0.5">
+          <div className="w-full h-2.5 bg-white/25 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full transition-all duration-500"
+              className="h-full bg-white rounded-full transition-all duration-500"
               style={{ width: `${view.pct}%` }}
             />
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap gap-2 justify-end">
-          {hosp?.contactPhone && (
-            <a href={`tel:${hosp.contactPhone}`} className="px-3.5 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5">
-              <Icon name="phone" className="w-3.5 h-3.5 text-teal-400" /> Call reception
-            </a>
-          )}
-          {hosp?.location?.coordinates && (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${hosp.location.coordinates[1]},${hosp.location.coordinates[0]}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3.5 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5"
-            >
-              <Icon name="location" className="w-3.5 h-3.5 text-teal-400" /> Directions
-            </a>
-          )}
-        </div>
+        {(hosp?.contactPhone || hosp?.location?.coordinates) && (
+          <div className="mt-6 flex flex-wrap gap-2 justify-end">
+            {hosp?.contactPhone && (
+              <a href={`tel:${hosp.contactPhone}`} className="px-4 py-2 bg-white hover:bg-white/90 text-mg-teal rounded-md text-xs font-medium inline-flex items-center gap-1.5">
+                <Icon name="phone" className="w-3.5 h-3.5" /> Call reception
+              </a>
+            )}
+            {hosp?.location?.coordinates && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${hosp.location.coordinates[1]},${hosp.location.coordinates[0]}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 bg-white hover:bg-white/90 text-mg-teal rounded-md text-xs font-medium inline-flex items-center gap-1.5"
+              >
+                <Icon name="location" className="w-3.5 h-3.5" /> Get Direction
+              </a>
+            )}
+          </div>
+        )}
       </DarkHero>
 
-      <Link to="/bookings" className="block text-center text-xs font-bold text-teal-700 hover:text-teal-800">
+      <Link to="/bookings" className="block text-center text-xs font-medium text-mg-teal hover:text-mg-tealDark">
         View all my bookings →
       </Link>
     </div>
