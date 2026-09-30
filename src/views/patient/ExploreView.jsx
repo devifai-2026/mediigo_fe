@@ -15,19 +15,13 @@ import { LivePill } from '../../components/layout/DarkHero.jsx';
 import { AnchoredMenu } from '../../components/ui/AnchoredMenu.jsx';
 import clsx from 'clsx';
 
-// Tiles for the "Browse by Specialities" grid. `value` is what the API
-// filters on; the label is what the design shows.
-const CATEGORIES = [
-  { label: 'All Clinics', value: '', img: '/categories/AllClinics.png' },
-  { label: 'General\nMedicine', value: 'General Medicine', img: '/categories/GeneralMedicine.png' },
-  { label: 'Pediatrics', value: 'Pediatrics', img: '/categories/Pediatrics.png' },
-  { label: 'Cardiology', value: 'Cardiology', img: '/categories/Group%2023.png' },
-  { label: 'Orthopedics', value: 'Orthopedics', img: '/categories/Orthopedics.png' },
-  { label: 'Dermatology', value: 'Dermatology', img: '/categories/Dermatology.png' },
-  { label: 'Ear\nThroat\nNose', value: 'ENT', img: '/categories/EarThroatNose.png' },
-  { label: 'Gynaecology', value: 'Gynecology', img: '/categories/Gynaecology.png' },
-  { label: 'Dentistry', value: 'Dentistry', img: '/categories/Dentistry.png' },
-];
+// "All Clinics" is not a specialty — it is the absence of a filter — so it
+// stays in code rather than the admin-managed list, where it could be hidden
+// and leave patients no way to clear the filter.
+const ALL_TILE = { label: 'All Clinics', value: '', img: '/categories/AllClinics.png' };
+
+// How many specialty tiles show before "more". Two rows on the widest grid.
+const TILE_LIMIT = 8;
 
 export default function ExploreView() {
   const { isAuthed, user } = useAuth();
@@ -67,6 +61,9 @@ export default function ExploreView() {
   const [cities, setCities] = useState([]);
   const [cityName, setCityName] = useState(null);
   const [locOpen, setLocOpen] = useState(false);
+  // Filters the city list. A network covering dozens of cities makes a plain
+  // scrolling list unusable, and the city you want is rarely the first four.
+  const [cityQuery, setCityQuery] = useState('');
   const locRef = useRef(null);
   // The query we last warned about, so one dead end produces one toast.
   const warnedFor = useRef(null);
@@ -74,6 +71,28 @@ export default function ExploreView() {
   const listRef = useRef(null);
   const filtersRef = useRef(null);
   const specialtyRef = useRef(null);
+
+  // The browse tiles, as an admin has arranged them. Falls back to nothing
+  // rather than a stale hardcoded list: showing a tile an admin has hidden
+  // would be worse than showing none.
+  const [tiles, setTiles] = useState([]);
+  const [showAllTiles, setShowAllTiles] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    api.get('/api/specialties')
+      .then((res) => {
+        if (!alive) return;
+        setTiles((res.data?.data ?? []).map((t) => ({
+          label: t.tileLabel || t.name,
+          value: t.name,
+          img: t.photoUrl,
+          doctorCount: t.doctorCount,
+        })));
+      })
+      .catch(() => { /* the search and dropdown still work without tiles */ });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -240,6 +259,15 @@ export default function ExploreView() {
   // needs to show progress reads this one flag.
   const locating = geoStatus === 'locating';
 
+  // All Clinics always leads, then the admin's order.
+  const allTiles = [ALL_TILE, ...tiles];
+  const visibleTiles = showAllTiles ? allTiles : allTiles.slice(0, TILE_LIMIT + 1);
+  const hiddenTileCount = Math.max(0, allTiles.length - (TILE_LIMIT + 1));
+
+  const visibleCities = cityQuery.trim()
+    ? cities.filter((c) => c.city.toLowerCase().includes(cityQuery.trim().toLowerCase()))
+    : cities;
+
   const onBook = (doctor) => {
     if (!isAuthed) {
       toast.push('Sign in to book a token');
@@ -279,7 +307,7 @@ export default function ExploreView() {
             <div ref={locRef} className="relative sm:w-[30%] min-w-0 border-b sm:border-b-0 sm:border-r border-slate-100">
               <button
                 type="button"
-                onClick={() => setLocOpen((v) => !v)}
+                onClick={() => { setLocOpen((v) => !v); setCityQuery(''); }}
                 title="Choose where to search from"
                 aria-expanded={locOpen}
                 className="w-full flex items-center gap-1.5 px-2 py-2 text-left text-[11px] min-w-0"
@@ -319,7 +347,25 @@ export default function ExploreView() {
                       <p className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-400 border-t border-slate-100">
                         Or browse a city
                       </p>
-                      {cities.map((c) => (
+
+                      {/* Only worth a filter once scanning the list is slower
+                          than typing. Below that it is just another control. */}
+                      {cities.length > 6 && (
+                        <div className="px-2 pb-1">
+                          <input
+                            value={cityQuery}
+                            onChange={(e) => setCityQuery(e.target.value)}
+                            placeholder="Search city…"
+                            aria-label="Search city"
+                            autoComplete="off"
+                            className="w-full px-2.5 py-1.5 text-[11px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-mg-teal placeholder:text-slate-400"
+                          />
+                        </div>
+                      )}
+
+                      {visibleCities.length === 0 ? (
+                        <p className="px-3 py-3 text-[11px] text-slate-400">No city matches “{cityQuery}”.</p>
+                      ) : visibleCities.map((c) => (
                         <button
                           key={c.city}
                           type="button"
@@ -454,9 +500,9 @@ export default function ExploreView() {
       <section>
         <h3 className="text-lg sm:text-xl font-semibold text-slate-900">Browse by Specialities</h3>
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {CATEGORIES.map((c) => (
+          {visibleTiles.map((c) => (
             <button
-              key={c.label}
+              key={c.value || 'all'}
               type="button"
               onClick={() => pickSpecialty(c.value)}
               aria-pressed={specialty === c.value}
@@ -465,23 +511,35 @@ export default function ExploreView() {
                 specialty === c.value ? 'border-mg-teal ring-1 ring-mg-teal' : 'border-slate-100',
               )}
             >
-              <img src={c.img} alt="" className="w-14 h-14 object-cover rounded shrink-0" />
+              {c.img ? (
+                <img src={c.img} alt="" className="w-14 h-14 object-cover rounded shrink-0" />
+              ) : (
+                // A specialty an admin added but has not given artwork yet.
+                // A neutral placeholder beats a broken-image icon.
+                <span className="w-14 h-14 rounded shrink-0 bg-mg-teal/10 text-mg-teal grid place-items-center">
+                  <Icon name="heart" className="w-6 h-6" />
+                </span>
+              )}
               <span className="text-xs text-slate-800 leading-snug whitespace-pre-line">{c.label}</span>
             </button>
           ))}
-          {/* Every speciality has a tile already, so "more" opens the full list. */}
-          <button
-            type="button"
-            onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              const el = specialtyRef.current;
-              el?.focus();
-              try { el?.showPicker?.(); } catch { /* not supported everywhere */ }
-            }}
-            className="flex items-center justify-center p-2.5 text-xs text-slate-800 hover:text-mg-teal"
-          >
-            more
-          </button>
+
+          {/* A real tile rather than bare text: as the odd one out it read like
+              a broken card. It says how many it hides, and toggles back. */}
+          {hiddenTileCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAllTiles((v) => !v)}
+              className="flex items-center gap-3 p-2.5 min-h-[76px] rounded-md border border-dashed border-slate-200 bg-white text-left transition hover:border-mg-teal hover:shadow-sm"
+            >
+              <span className="w-14 h-14 rounded shrink-0 bg-slate-50 text-slate-400 grid place-items-center">
+                <Icon name={showAllTiles ? 'chevronDown' : 'plus'} className={clsx('w-5 h-5', showAllTiles && 'rotate-180')} />
+              </span>
+              <span className="text-xs text-slate-800 leading-snug">
+                {showAllTiles ? 'Show less' : `${hiddenTileCount} more`}
+              </span>
+            </button>
+          )}
         </div>
       </section>
 
