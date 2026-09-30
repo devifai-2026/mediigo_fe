@@ -22,6 +22,7 @@ const CORE = [
   { to: '/super/patients', icon: 'fa-hospital-user', label: 'Patients Master', badge: 'patientsToday' },
   { to: '/super/attendance', icon: 'fa-chart-simple', label: 'OPD Attendance' },
   { to: '/super/clinics', icon: 'fa-hospital', label: 'Clinics Master', badge: 'clinics' },
+  { to: '/super/specialties', icon: 'fa-stethoscope', label: 'Specialties' },
   { to: '/super/agents', icon: 'fa-users-gear', label: 'Field Agents', badge: 'agents' },
   { to: '/super/executives', icon: 'fa-user-tie', label: 'Executive Managers' },
   { to: '/super/staff', icon: 'fa-id-badge', label: 'Staff Administration' },

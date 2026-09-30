@@ -8,6 +8,7 @@ import { api } from '../../lib/api.js';
 import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 import { ClinicProfile } from '../../components/superadmin/ClinicProfile.jsx';
 import { DoctorProfile } from '../../components/superadmin/DoctorProfile.jsx';
+import { AddDoctorModal } from '../../components/superadmin/AddDoctorModal.jsx';
 import { StatusBadge } from '../../components/ui/StatusBadge.jsx';
 import { FilterPills } from '../../components/ui/FilterPills.jsx';
 import { inr } from '../../lib/format.js';
@@ -26,6 +27,8 @@ export default function ClinicsMasterView() {
   const [openClinic, setOpenClinic] = useState(null);
   const [openDoctor, setOpenDoctor] = useState(null);
   const [busy, setBusy] = useState(null);
+  // Which clinic we are adding a doctor to, or null.
+  const [addingTo, setAddingTo] = useState(null);
 
   const rollup = data?.clinicRollup ?? [];
   const q = query.toLowerCase();
@@ -282,12 +285,22 @@ export default function ClinicsMasterView() {
         open={Boolean(openClinic)}
         onClose={() => setOpenClinic(null)}
         onOpenDoctor={(d) => { setOpenClinic(null); setOpenDoctor(d); }}
+        onAddDoctor={(c) => { setOpenClinic(null); setAddingTo(c); }}
+      />
+      <AddDoctorModal
+        open={Boolean(addingTo)}
+        onClose={() => setAddingTo(null)}
+        onDone={refetch}
+        hospitalId={addingTo?.id}
+        hospitalName={addingTo?.name}
+        districtId={addingTo?.districtId}
       />
       <DoctorProfile
         doctor={openDoctor}
         clinic={openDoctor ? clinicOf(openDoctor) : null}
         open={Boolean(openDoctor)}
         onClose={() => setOpenDoctor(null)}
+        onChanged={refetch}
       />
     </section>
   );

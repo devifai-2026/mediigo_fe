@@ -1,4 +1,8 @@
+import { useState, useEffect } from 'react';
 import clsx from 'clsx';
+import { api } from '../../lib/api.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import { PhotoField } from '../ui/PhotoCropper.jsx';
 import { Modal } from '../ui/Modal.jsx';
 import { ClinicMap } from './ClinicMap.jsx';
 import { inr } from '../../lib/format.js';
@@ -10,12 +14,53 @@ const Stat = ({ label, value, tone = 'text-slate-900' }) => (
   </div>
 );
 
-export function DoctorProfile({ doctor, clinic, open, onClose }) {
+export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
+  const toast = useToast();
+  const [photoBusy, setPhotoBusy] = useState(false);
+  // The console's doctor rows carry photoUrl; keep a local copy so the drawer
+  // updates the moment an upload lands rather than waiting for a console refetch.
+  const [photoUrl, setPhotoUrl] = useState(doctor?.photoUrl ?? null);
+
+  useEffect(() => { setPhotoUrl(doctor?.photoUrl ?? null); }, [doctor]);
+
   if (!open || !doctor) return null;
+
+  const uploadPhoto = async (file) => {
+    setPhotoBusy(true);
+    try {
+      const body = new FormData();
+      body.append('photo', file);
+      // Let the browser set the multipart boundary; forcing a Content-Type here
+      // omits it and the server rejects the body.
+      const res = await api.put(`/api/doctors/${doctor.id}/photo`, body, { headers: { 'Content-Type': undefined } });
+      setPhotoUrl(res.data?.data?.photo?.url ?? null);
+      toast.success('Photo updated');
+      onChanged?.();
+    } catch (e) { toast.error(e.message); } finally { setPhotoBusy(false); }
+  };
+
+  const removePhoto = async () => {
+    setPhotoBusy(true);
+    try {
+      await api.delete(`/api/doctors/${doctor.id}/photo`);
+      setPhotoUrl(null);
+      toast.success('Photo removed');
+      onChanged?.();
+    } catch (e) { toast.error(e.message); } finally { setPhotoBusy(false); }
+  };
 
   return (
     <Modal open={open} onClose={onClose} title={doctor.doctorName} subtitle={`${doctor.specialty} · ${doctor.clinicName}`} size="lg">
       <div className="space-y-5">
+        <PhotoField
+          value={photoUrl}
+          name={doctor.doctorName}
+          busy={photoBusy}
+          onUpload={uploadPhoto}
+          onRemove={removePhoto}
+          hint="Shown to patients on the doctor's card. Square, up to 8MB."
+        />
+
         <div className="flex items-center gap-2 flex-wrap">
           <span className={clsx(
             'text-[10px] font-bold px-2 py-0.5 rounded-full',

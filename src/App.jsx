@@ -36,6 +36,7 @@ import PatientsView from './views/superadmin/PatientsView.jsx';
 import PatientsMasterView from './views/superadmin/PatientsMasterView.jsx';
 import PatientProfileView from './views/superadmin/PatientProfileView.jsx';
 import ClinicsMasterView from './views/superadmin/ClinicsMasterView.jsx';
+import SpecialtiesView from './views/superadmin/SpecialtiesView.jsx';
 import AgentsView from './views/superadmin/AgentsView.jsx';
 import ExecutivesView from './views/superadmin/ExecutivesView.jsx';
 import StaffView from './views/superadmin/StaffView.jsx';
@@ -177,6 +178,7 @@ export default function App() {
         <Route path="/super/patients" element={<PatientsMasterView />} />
         <Route path="/super/patients/:key" element={<PatientProfileView />} />
         <Route path="/super/clinics" element={<ClinicsMasterView />} />
+        <Route path="/super/specialties" element={<SpecialtiesView />} />
         <Route path="/super/agents" element={<AgentsView />} />
         <Route path="/super/executives" element={<ExecutivesView />} />
         <Route path="/super/staff" element={<StaffView />} />

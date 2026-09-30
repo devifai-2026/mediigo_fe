@@ -11,7 +11,7 @@ const Stat = ({ label, value, tone = 'text-slate-900' }) => (
   </div>
 );
 
-export function ClinicProfile({ clinic, open, onClose, onOpenDoctor }) {
+export function ClinicProfile({ clinic, open, onClose, onOpenDoctor, onAddDoctor }) {
   if (!open || !clinic) return null;
   const a = clinic.address ?? {};
 
@@ -69,9 +69,18 @@ export function ClinicProfile({ clinic, open, onClose, onOpenDoctor }) {
         </div>
 
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">
-            Doctors at this clinic ({clinic.doctorCount})
-          </p>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Doctors at this clinic ({clinic.doctorCount})
+            </p>
+            <button
+              type="button"
+              onClick={() => onAddDoctor?.(clinic)}
+              className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            >
+              <i className="fa-solid fa-plus text-[9px]" /> Add doctor
+            </button>
+          </div>
           {clinic.doctors.length === 0 ? (
             <p className="text-[11px] text-slate-400 italic">No doctors attached yet.</p>
           ) : (
