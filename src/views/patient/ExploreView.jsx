@@ -264,6 +264,10 @@ export default function ExploreView() {
   const visibleTiles = showAllTiles ? allTiles : allTiles.slice(0, TILE_LIMIT + 1);
   const hiddenTileCount = Math.max(0, allTiles.length - (TILE_LIMIT + 1));
 
+  // The city with the most clinics — where an empty result is most likely to
+  // find something, and a far better offer than "widen your radius".
+  const biggestCity = cities[0] ?? null;
+
   const visibleCities = cityQuery.trim()
     ? cities.filter((c) => c.city.toLowerCase().includes(cityQuery.trim().toLowerCase()))
     : cities;
@@ -605,9 +609,19 @@ export default function ExploreView() {
             <EmptyState
               icon="search"
               title="No clinics found nearby"
-              hint="Try a wider radius, clear the specialty filter, or search by a doctor's name."
-              action="Reset filters"
-              onAction={() => { setSpecialty(''); setSearch(''); setRadius(25); }}
+              // Widening the radius is useless advice when the whole network is
+              // in another state, so when we know a city that HAS clinics, offer
+              // to go there instead of suggesting a filter change that cannot help.
+              hint={biggestCity
+                ? `The nearest clinics are in ${biggestCity.city}. Browse there, or search by a doctor's name.`
+                : 'Try a wider radius, clear the specialty filter, or search by a doctor\'s name.'}
+              action={biggestCity ? `Browse ${biggestCity.city}` : 'Reset filters'}
+              onAction={() => {
+                setSpecialty('');
+                setSearch('');
+                if (biggestCity) useCity(biggestCity);
+                else setRadius(25);
+              }}
             />
           )}
         </div>

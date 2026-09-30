@@ -18,6 +18,15 @@ import { initialsOf } from '../../lib/format.js';
 const OUTPUT = 512;
 const MAX_ZOOM = 4;
 
+// One source of truth for what is accepted. The file picker, the hint text and
+// the pre-upload guard all read these, so the UI cannot promise something the
+// server will reject — which is what "image/*" did: it offered GIF, BMP, SVG
+// and HEIC in the picker, all of which failed only after uploading.
+const ACCEPT_MIME = ['image/jpeg', 'image/png'];
+const ACCEPT_ATTR = '.jpg,.jpeg,.png,image/jpeg,image/png';
+const MAX_MB = 8;
+const FORMAT_HINT = 'JPEG or PNG · up to 8MB';
+
 /**
  * Render the chosen crop at full output resolution.
  *
@@ -154,7 +163,7 @@ export function PhotoCropper({ open, file, onCancel, onDone, busy = false, title
  * to initials taken from the name WITHOUT its title, so every doctor does not
  * share a leading "D".
  */
-export function PhotoField({ value, name, onUpload, onRemove, busy, label = 'Profile photo', hint }) {
+export function PhotoField({ value, name, onUpload, onRemove, onReject, busy, label = 'Profile photo', hint }) {
   const inputRef = useRef(null);
   const [picked, setPicked] = useState(null);
 
@@ -162,7 +171,22 @@ export function PhotoField({ value, name, onUpload, onRemove, busy, label = 'Pro
     const f = e.target.files?.[0];
     // Reset so picking the SAME file twice still fires a change event.
     e.target.value = '';
-    if (f) setPicked(f);
+    if (!f) return;
+
+    // Check here rather than after upload. A picker can still surface an
+    // unsupported file — dragged in, or chosen on a platform that ignores the
+    // accept attribute — and failing at this point costs no round trip and
+    // never opens a cropper on something that cannot be saved.
+    if (!ACCEPT_MIME.includes(f.type)) {
+      const got = f.type ? f.type.replace('image/', '').toUpperCase() : 'That file type';
+      onReject?.(`${got} is not supported. Please choose a JPEG or PNG.`);
+      return;
+    }
+    if (f.size > MAX_MB * 1024 * 1024) {
+      onReject?.(`That image is ${(f.size / (1024 * 1024)).toFixed(1)}MB. Please choose one under ${MAX_MB}MB.`);
+      return;
+    }
+    setPicked(f);
   };
 
   return (
@@ -184,12 +208,12 @@ export function PhotoField({ value, name, onUpload, onRemove, busy, label = 'Pro
             {value && <Button variant="ghost" onClick={onRemove} disabled={busy}>Remove</Button>}
           </div>
           <p className="text-[10px] text-slate-400">
-            {hint ?? 'JPEG, PNG or WebP · up to 8MB · cropped to a square. Initials are shown if you skip it.'}
+            {hint ?? `${FORMAT_HINT} · cropped to a square. Initials are shown if you skip it.`}
           </p>
         </div>
       </div>
 
-      <input ref={inputRef} type="file" accept="image/*" hidden onChange={choose} />
+      <input ref={inputRef} type="file" accept={ACCEPT_ATTR} hidden onChange={choose} />
 
       <PhotoCropper
         open={Boolean(picked)}

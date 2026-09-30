@@ -246,11 +246,22 @@ export default function SpecialtiesView() {
                       <label className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer" title="Upload artwork">
                         <i className={clsx('fa-solid text-xs', photoBusy === row.id ? 'fa-spinner fa-spin' : 'fa-image')} />
                         <input
-                          type="file" accept="image/*" hidden disabled={photoBusy === row.id}
+                          type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden disabled={photoBusy === row.id}
                           onChange={(e) => {
                             const f = e.target.files?.[0];
                             e.target.value = '';
-                            if (f) uploadPhoto(row, f);
+                            if (!f) return;
+                            // Same contract as PhotoField: fail here rather
+                            // than after a pointless round trip.
+                            if (!['image/jpeg', 'image/png'].includes(f.type)) {
+                              toast.error(`${f.type ? f.type.replace('image/', '').toUpperCase() : 'That file type'} is not supported. Please choose a JPEG or PNG.`);
+                              return;
+                            }
+                            if (f.size > 8 * 1024 * 1024) {
+                              toast.error(`That image is ${(f.size / (1024 * 1024)).toFixed(1)}MB. Please choose one under 8MB.`);
+                              return;
+                            }
+                            uploadPhoto(row, f);
                           }}
                         />
                       </label>
@@ -308,6 +319,7 @@ export default function SpecialtiesView() {
               busy={photoBusy === editing.id}
               onUpload={(f) => uploadPhoto(editing, f)}
               onRemove={() => removePhoto(editing)}
+          onReject={(m) => toast.error(m)}
               label="Tile artwork"
               hint="Square. Shown on the Explore browse grid."
             />

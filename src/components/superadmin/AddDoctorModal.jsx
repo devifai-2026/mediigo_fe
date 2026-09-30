@@ -178,6 +178,7 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
           name={form.name || 'New doctor'}
           onUpload={async (f) => setPhoto(f)}
           onRemove={() => setPhoto(null)}
+          onReject={(m) => toast.error(m)}
           hint="Optional. Initials are shown if you skip it."
         />
 

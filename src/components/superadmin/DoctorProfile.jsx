@@ -58,6 +58,7 @@ export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
           busy={photoBusy}
           onUpload={uploadPhoto}
           onRemove={removePhoto}
+          onReject={(m) => toast.error(m)}
           hint="Shown to patients on the doctor's card. Square, up to 8MB."
         />
 

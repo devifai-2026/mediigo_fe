@@ -101,6 +101,7 @@ export default function DoctorProfileView() {
           busy={photoBusy}
           onUpload={uploadPhoto}
           onRemove={removePhoto}
+          onReject={(m) => toast.error(m)}
           hint="Shown to patients on your card. JPEG, PNG or WebP · up to 8MB."
         />
 
