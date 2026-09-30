@@ -50,3 +50,23 @@ export const ageOf = (dob) => {
   if (Number.isNaN(d.getTime())) return null;
   return Math.floor((Date.now() - d.getTime()) / (365.2425 * 24 * 60 * 60 * 1000));
 };
+
+// Honorifics a doctor's name may carry. Stripped before deriving initials so
+// "Dr. Aditi Deshmukh" reads as AD, not DA — every doctor would otherwise share
+// a leading D and the initials would stop distinguishing anyone.
+const HONORIFICS = /^(dr|doctor|prof|professor|mr|mrs|ms|miss|shri|smt)\.?\s+/i;
+
+export const stripHonorific = (name) => String(name || '').replace(HONORIFICS, '').trim();
+
+/** Initials for an avatar fallback, ignoring any leading title. */
+export const initialsOf = (name) => {
+  const bare = stripHonorific(name);
+  if (!bare) return '?';
+  return bare
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+};

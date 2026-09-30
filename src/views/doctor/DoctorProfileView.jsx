@@ -9,6 +9,7 @@ import { MoneyInput } from '../../components/ui/MoneyInput.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { ScheduleEditor } from '../../components/doctor/ScheduleEditor.jsx';
 import { AvailabilityManager } from '../../components/doctor/AvailabilityManager.jsx';
+import { PhotoField } from '../../components/ui/PhotoCropper.jsx';
 
 export default function DoctorProfileView() {
   const { user } = useAuth();
@@ -19,6 +20,37 @@ export default function DoctorProfileView() {
   const [fees, setFees] = useState({ fresh: '', followup: '', emergency: '' });
   const [chamber, setChamber] = useState('');
   const [busy, setBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+
+  const uploadPhoto = async (file) => {
+    setPhotoBusy(true);
+    try {
+      const body = new FormData();
+      body.append('photo', file);
+      // Let the browser set the multipart boundary; forcing a Content-Type here
+      // would omit it and the server would reject the body.
+      await api.put(`/api/doctors/${doctorId}/photo`, body, { headers: { 'Content-Type': undefined } });
+      toast.success('Photo updated');
+      refetch();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    setPhotoBusy(true);
+    try {
+      await api.delete(`/api/doctors/${doctorId}/photo`);
+      toast.success('Photo removed');
+      refetch();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (doctor) {
@@ -62,6 +94,15 @@ export default function DoctorProfileView() {
           <h3 className="text-lg font-bold text-slate-900">{doctor.name}</h3>
           <p className="text-xs text-slate-500">{doctor.specialty} · {doctor.hospital?.name}</p>
         </div>
+
+        <PhotoField
+          value={doctor.photo?.url ?? null}
+          name={doctor.name}
+          busy={photoBusy}
+          onUpload={uploadPhoto}
+          onRemove={removePhoto}
+          hint="Shown to patients on your card. JPEG, PNG or WebP · up to 8MB."
+        />
 
         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200">
           <div>

@@ -49,9 +49,22 @@ export default function ExploreView() {
   const [radius, setRadius] = useState(15);
   const [booking, setBooking] = useState(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Specialties come from the network, not a constant: the hardcoded list held
+  // eight while only four had doctors, so half the dropdown returned nothing
+  // and read as a broken filter. Falls back to the constant if the call fails,
+  // so the filter is never empty.
+  const [specialties, setSpecialties] = useState(SPECIALTIES);
   const listRef = useRef(null);
   const filtersRef = useRef(null);
   const specialtyRef = useRef(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.get('/api/doctors/specialties')
+      .then((res) => { if (alive && res.data?.data?.length) setSpecialties(res.data.data); })
+      .catch(() => { /* keep the fallback list */ });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     if (!filtersOpen) return undefined;
@@ -67,8 +80,20 @@ export default function ExploreView() {
       if (specialty) params.set('specialty', specialty);
       if (search.trim()) params.set('search', search.trim());
       const res = await api.get(`/api/doctors/nearby?${params}`);
-      setRows(res.data.data || []);
+      const found = res.data.data || [];
+      setRows(found);
       setMeta(res.data.meta);
+
+      // An empty list is the one result that needs explaining: say which filter
+      // to relax rather than leaving a blank page. Only for a deliberate
+      // search or filter — an empty first load is just "nothing nearby", which
+      // the empty state already covers.
+      if (!found.length && (search.trim() || specialty)) {
+        const bits = [];
+        if (search.trim()) bits.push(`"${search.trim()}"`);
+        if (specialty) bits.push(specialty);
+        toast.warn(`No doctors match ${bits.join(' in ')} within ${radius} km — try a wider radius or clear the filters.`);
+      }
     } catch (e) {
       toast.error(e.message);
     } finally {
@@ -193,7 +218,7 @@ export default function ExploreView() {
                 className={clsx('flex-1 min-w-0 py-2 text-[11px] bg-transparent focus:outline-none cursor-pointer', !specialty && 'text-slate-400')}
               >
                 <option value="">Speciality</option>
-                {SPECIALTIES.map((s) => <option key={s} value={s} className="text-slate-900">{s}</option>)}
+                {specialties.map((s) => <option key={s} value={s} className="text-slate-900">{s}</option>)}
               </select>
               <button
                 type="submit"

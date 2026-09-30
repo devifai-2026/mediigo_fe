@@ -1,20 +1,23 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { Icon } from '../ui/Icon.jsx';
-import { inr, token } from '../../lib/format.js';
+import { inr, token, initialsOf } from '../../lib/format.js';
 import { directionsUrl } from '../../lib/maps.js';
 
-// Stand-in portraits until doctors can upload their own. Picked by a stable
-// hash of the id so a doctor keeps the same face across reloads.
-const PORTRAITS = ['Aditi', 'Tushar', 'Kartik', 'Prakash', 'Amol', 'Vishal']
-  .map((n) => `/dummydoctors/doctor${n}.png`);
+// A doctor with no uploaded photo shows their initials, not a stand-in face.
+// Stock portraits made every card look populated, but they put a stranger's
+// face against a named, bookable doctor — which is worse than an honest blank.
+// Tinted by a stable hash of the id so the same doctor keeps the same colour.
+const TINTS = [
+  'bg-teal-50 text-teal-700', 'bg-indigo-50 text-indigo-700', 'bg-amber-50 text-amber-700',
+  'bg-rose-50 text-rose-700', 'bg-purple-50 text-purple-700', 'bg-sky-50 text-sky-700',
+];
 
-function portraitFor(doctor) {
-  if (doctor.photoUrl) return doctor.photoUrl;
+function tintFor(doctor) {
   const key = String(doctor.doctorId ?? doctor.name ?? '');
   let h = 0;
   for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return PORTRAITS[h % PORTRAITS.length];
+  return TINTS[h % TINTS.length];
 }
 
 const km = (d) => (d == null ? '' : `${Number(d) < 10 ? Number(d).toFixed(1).replace(/\.0$/, '') : Math.round(d)} km away`);
@@ -43,12 +46,21 @@ export function DoctorCard({ doctor, onBook }) {
       )}
 
       <div className="flex items-center gap-3 px-1 pt-1">
-        <img
-          src={portraitFor(doctor)}
-          alt=""
-          loading="lazy"
-          className="w-16 h-16 rounded-full object-cover shrink-0 bg-slate-50"
-        />
+        {doctor.photoUrl ? (
+          <img
+            src={doctor.photoUrl}
+            alt=""
+            loading="lazy"
+            className="w-16 h-16 rounded-full object-cover shrink-0 bg-slate-50"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className={clsx('w-16 h-16 rounded-full shrink-0 grid place-items-center font-bold text-lg', tintFor(doctor))}
+          >
+            {initialsOf(doctor.name)}
+          </div>
+        )}
         <div className="min-w-0 flex-1 pt-3">
           <h4 className="text-[15px] font-medium text-slate-900 leading-tight truncate pr-12">{doctor.name}</h4>
           <p className="text-[11px] text-mg-teal mt-0.5 truncate">{doctor.specialty}</p>
