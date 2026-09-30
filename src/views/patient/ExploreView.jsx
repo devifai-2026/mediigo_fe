@@ -215,11 +215,27 @@ export default function ExploreView() {
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
                 aria-label="Speciality"
-                className={clsx('flex-1 min-w-0 py-2 text-[11px] bg-transparent focus:outline-none cursor-pointer', !specialty && 'text-slate-400')}
+                /* appearance-none matters on macOS: without it Safari and Chrome
+                   render their own dark native menu, which ignores these styles
+                   and visibly breaks out of the search bar. The chevron beside
+                   this select is the replacement affordance. */
+                className={clsx(
+                  'flex-1 min-w-0 py-2 pr-1 text-[11px] bg-transparent focus:outline-none cursor-pointer',
+                  'appearance-none bg-none',
+                  !specialty && 'text-slate-400',
+                )}
               >
                 <option value="">Speciality</option>
                 {specialties.map((s) => <option key={s} value={s} className="text-slate-900">{s}</option>)}
               </select>
+              {/* Replaces the native arrow that appearance-none removes, so the
+                  control still reads as a dropdown. */}
+              <svg
+                aria-hidden="true" viewBox="0 0 20 20" fill="none"
+                className="w-3.5 h-3.5 shrink-0 text-slate-400 pointer-events-none -ml-1 mr-1"
+              >
+                <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
               <button
                 type="submit"
                 aria-label="Search"

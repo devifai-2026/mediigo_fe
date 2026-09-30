@@ -7,6 +7,7 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input } from '../../components/ui/Field.jsx';
 import { OtpInput } from '../../components/ui/OtpInput.jsx';
+import { LivePill } from '../../components/layout/DarkHero.jsx';
 import { ROLE_HOME, ROLES } from '../../lib/constants.js';
 import { ACTIVE_PORTAL } from '../../lib/portals.js';
 import { DemoAccounts } from '../../components/ui/DemoAccounts.jsx';
@@ -111,10 +112,7 @@ export default function LoginView() {
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 sm:py-12 grid lg:grid-cols-2 gap-8 items-stretch">
         {/* The homepage hero, so signing in feels like the same product. */}
         <section className="mg-hero hidden lg:flex flex-col p-8 min-h-[560px]">
-          <p className="flex items-center gap-2 text-sm">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            Real time queue telemetry
-          </p>
+          <LivePill />
           <h2 className="mt-8 text-4xl font-semibold tracking-tight leading-tight">
             Find &amp; Book<br />Doctors Nearby
           </h2>

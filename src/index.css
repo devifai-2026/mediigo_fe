@@ -33,3 +33,28 @@
   .no-print { display: none !important; }
   @page { size: 80mm auto; margin: 4mm; }
 }
+
+/* A live-status dot: a solid core with a ring expanding out of it, rather than
+   Tailwind's animate-pulse which only fades the whole dot in and out. The ring
+   reads as a signal being emitted, which is what "real time" should look like.
+   Honours prefers-reduced-motion — a steady pulse in the corner of the eye is
+   exactly the kind of motion that triggers vestibular discomfort. */
+@keyframes mg-ping {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  70%  { transform: scale(2.6); opacity: 0; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+.mg-live-dot { position: relative; display: inline-flex; }
+.mg-live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: mg-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-live-dot::after { animation: none; }
+}
