@@ -12,6 +12,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton.jsx';
 import { SPECIALTIES } from '../../lib/constants.js';
 import { initialsOf } from '../../lib/format.js';
 import { LivePill } from '../../components/layout/DarkHero.jsx';
+import { AnchoredMenu } from '../../components/ui/AnchoredMenu.jsx';
 import clsx from 'clsx';
 
 // Tiles for the "Browse by Specialities" grid. `value` is what the API
@@ -81,13 +82,6 @@ export default function ExploreView() {
       .catch(() => { /* the GPS option still works without this */ });
     return () => { alive = false; };
   }, []);
-
-  useEffect(() => {
-    if (!locOpen) return undefined;
-    const away = (e) => { if (locRef.current && !locRef.current.contains(e.target)) setLocOpen(false); };
-    document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
-  }, [locOpen]);
 
   useEffect(() => {
     let alive = true;
@@ -191,14 +185,6 @@ export default function ExploreView() {
     }, 180);
     return () => { alive = false; clearTimeout(id); };
   }, [search]);
-
-  // Close the list on an outside click, the same way the filters panel does.
-  useEffect(() => {
-    if (!suggestOpen) return undefined;
-    const away = (e) => { if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) setSuggestOpen(false); };
-    document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
-  }, [suggestOpen]);
 
   const pickSuggestion = (row) => {
     picked.current = true;
@@ -311,8 +297,8 @@ export default function ExploreView() {
                 )}
               </button>
 
-              {locOpen && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto min-w-[200px]">
+              <AnchoredMenu anchorRef={locRef} open={locOpen} onClose={() => setLocOpen(false)} minWidth={240}>
+                <div>
                   <button
                     type="button"
                     onClick={useMyLocation}
@@ -352,7 +338,7 @@ export default function ExploreView() {
                     </>
                   )}
                 </div>
-              )}
+              </AnchoredMenu>
             </div>
             <div ref={searchBoxRef} className="relative sm:w-[35%] flex items-center px-2 min-w-0 border-b sm:border-b-0 sm:border-r border-slate-100">
               <input
@@ -374,12 +360,13 @@ export default function ExploreView() {
                 </button>
               )}
 
-              {suggestOpen && suggestions.length > 0 && (
-                <ul
-                  id="explore-suggestions"
-                  role="listbox"
-                  className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto"
-                >
+              <AnchoredMenu
+                anchorRef={searchBoxRef}
+                open={suggestOpen && suggestions.length > 0}
+                onClose={() => setSuggestOpen(false)}
+                minWidth={260}
+              >
+                <ul id="explore-suggestions" role="listbox">
                   {suggestions.map((row) => (
                     <li key={`${row.kind}-${row.doctorId ?? row.hospitalId}`} role="option" aria-selected="false">
                       <button
@@ -410,7 +397,7 @@ export default function ExploreView() {
                     </li>
                   ))}
                 </ul>
-              )}
+              </AnchoredMenu>
             </div>
             <div className="flex-1 flex items-center gap-1 pl-2 min-w-0">
               <select
