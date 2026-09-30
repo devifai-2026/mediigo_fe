@@ -10,6 +10,8 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { SkeletonCard } from '../../components/ui/Skeleton.jsx';
 import { SPECIALTIES } from '../../lib/constants.js';
+import { initialsOf } from '../../lib/format.js';
+import { LivePill } from '../../components/layout/DarkHero.jsx';
 import clsx from 'clsx';
 
 // Tiles for the "Browse by Specialities" grid. `value` is what the API
@@ -54,6 +56,14 @@ export default function ExploreView() {
   // and read as a broken filter. Falls back to the constant if the call fails,
   // so the filter is never empty.
   const [specialties, setSpecialties] = useState(SPECIALTIES);
+  // Type-ahead. `picked` suppresses the fetch that the setSearch in onPick
+  // would otherwise trigger, so choosing a row does not reopen the list.
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const picked = useRef(false);
+  // The query we last warned about, so one dead end produces one toast.
+  const warnedFor = useRef(null);
+  const searchBoxRef = useRef(null);
   const listRef = useRef(null);
   const filtersRef = useRef(null);
   const specialtyRef = useRef(null);
@@ -84,15 +94,29 @@ export default function ExploreView() {
       setRows(found);
       setMeta(res.data.meta);
 
-      // An empty list is the one result that needs explaining: say which filter
-      // to relax rather than leaving a blank page. Only for a deliberate
-      // search or filter — an empty first load is just "nothing nearby", which
-      // the empty state already covers.
+      // An empty list needs explaining, but only ONCE per settled query: the
+      // debounce fires a request per keystroke, and warning on each produced a
+      // stack of identical toasts while the user was still typing. Keyed on the
+      // exact query so retyping the same thing stays quiet too.
+      const key = `${search.trim()}|${specialty}|${radius}`;
       if (!found.length && (search.trim() || specialty)) {
-        const bits = [];
-        if (search.trim()) bits.push(`"${search.trim()}"`);
-        if (specialty) bits.push(specialty);
-        toast.warn(`No doctors match ${bits.join(' in ')} within ${radius} km — try a wider radius or clear the filters.`);
+        if (warnedFor.current !== key) {
+          warnedFor.current = key;
+          const away = res.data.meta?.elsewhere;
+          if (away) {
+            // Far more useful than "widen your radius" when the doctor is in
+            // another city and no radius would ever reach them.
+            toast.warn(`${away.name} practises at ${away.clinicName}${away.city ? `, ${away.city}` : ''} — not within ${radius} km of you.`);
+          } else {
+            const bits = [];
+            if (search.trim()) bits.push(`"${search.trim()}"`);
+            if (specialty) bits.push(specialty);
+            toast.warn(`No doctors match ${bits.join(' in ')} within ${radius} km — try a wider radius or clear the filters.`);
+          }
+        }
+      } else if (found.length) {
+        // A successful search re-arms the warning for the next dead end.
+        warnedFor.current = null;
       }
     } catch (e) {
       toast.error(e.message);
@@ -113,6 +137,49 @@ export default function ExploreView() {
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  // Type-ahead, on its own shorter debounce: a suggestion list that lags the
+  // keystrokes is worse than none, and /suggest is far cheaper than /nearby.
+  useEffect(() => {
+    // Picking a row sets `search`, which would otherwise immediately refetch
+    // and reopen the list under the user's cursor.
+    if (picked.current) { picked.current = false; return undefined; }
+    const term = search.trim();
+    if (term.length < 2) { setSuggestions([]); setSuggestOpen(false); return undefined; }
+
+    let alive = true;
+    const id = setTimeout(async () => {
+      try {
+        const res = await api.get(`/api/doctors/suggest?q=${encodeURIComponent(term)}`);
+        if (!alive) return;
+        setSuggestions(res.data.data || []);
+        setSuggestOpen(true);
+      } catch {
+        // A failed suggestion is not worth a toast — the search itself still
+        // works, and the user is mid-keystroke.
+        if (alive) { setSuggestions([]); setSuggestOpen(false); }
+      }
+    }, 180);
+    return () => { alive = false; clearTimeout(id); };
+  }, [search]);
+
+  // Close the list on an outside click, the same way the filters panel does.
+  useEffect(() => {
+    if (!suggestOpen) return undefined;
+    const away = (e) => { if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) setSuggestOpen(false); };
+    document.addEventListener('mousedown', away);
+    return () => document.removeEventListener('mousedown', away);
+  }, [suggestOpen]);
+
+  const pickSuggestion = (row) => {
+    picked.current = true;
+    setSearch(row.value);
+    setSuggestOpen(false);
+    setSuggestions([]);
+    // Search immediately on the chosen value rather than waiting for a debounce
+    // the picked-guard has just suppressed.
+    setTimeout(() => load(), 0);
+  };
 
   /** Remember where they are, so the next visit does not start from scratch. */
   const persist = useCallback(async (c) => {
@@ -168,10 +235,7 @@ export default function ExploreView() {
           className="hidden md:block absolute right-0 bottom-0 w-[44%] max-w-[460px] pointer-events-none select-none"
         />
         <div className="relative px-6 py-8 sm:px-7 sm:py-10 md:w-[62%]">
-          <p className="flex items-center gap-2 text-xs sm:text-sm">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            Real time queue telemetry
-          </p>
+          <LivePill />
           <h2 className="mt-10 text-3xl sm:text-4xl font-semibold tracking-tight">Find &amp; Book Doctors Nearby</h2>
           <p className="mt-3 text-xs sm:text-sm text-white/90 max-w-lg leading-relaxed">
             Skip the crowded waiting room. Get a digital token, real-time wait estimates and a alert when your turn is close.
@@ -195,18 +259,62 @@ export default function ExploreView() {
               </span>
               <Icon name="location" className="w-3.5 h-3.5 text-mg-teal shrink-0" />
             </button>
-            <div className="sm:w-[35%] flex items-center px-2 min-w-0 border-b sm:border-b-0 sm:border-r border-slate-100">
+            <div ref={searchBoxRef} className="relative sm:w-[35%] flex items-center px-2 min-w-0 border-b sm:border-b-0 sm:border-r border-slate-100">
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => { if (suggestions.length) setSuggestOpen(true); }}
+                onKeyDown={(e) => { if (e.key === 'Escape') setSuggestOpen(false); }}
                 placeholder="Dr. Name or Clinic"
                 aria-label="Doctor name or clinic"
+                autoComplete="off"
+                role="combobox"
+                aria-expanded={suggestOpen}
+                aria-controls="explore-suggestions"
                 className="w-full py-2 text-[11px] bg-transparent focus:outline-none placeholder:text-slate-400"
               />
               {search && (
-                <button type="button" onClick={() => setSearch('')} className="text-slate-400 hover:text-slate-600" aria-label="Clear search">
+                <button type="button" onClick={() => { setSearch(''); setSuggestOpen(false); }} className="text-slate-400 hover:text-slate-600" aria-label="Clear search">
                   <Icon name="cross" className="w-3 h-3" />
                 </button>
+              )}
+
+              {suggestOpen && suggestions.length > 0 && (
+                <ul
+                  id="explore-suggestions"
+                  role="listbox"
+                  className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto"
+                >
+                  {suggestions.map((row) => (
+                    <li key={`${row.kind}-${row.doctorId ?? row.hospitalId}`} role="option" aria-selected="false">
+                      <button
+                        type="button"
+                        // onMouseDown, not onClick: the input's blur would close
+                        // the list before a click ever landed.
+                        onMouseDown={(e) => { e.preventDefault(); pickSuggestion(row); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-50 transition"
+                      >
+                        <span className={clsx(
+                          'w-7 h-7 rounded-full shrink-0 grid place-items-center text-[10px] font-bold',
+                          row.kind === 'doctor' ? 'bg-teal-50 text-teal-700' : 'bg-indigo-50 text-indigo-700',
+                        )}>
+                          {row.kind === 'doctor'
+                            ? (row.photoUrl
+                              ? <img src={row.photoUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                              : initialsOf(row.label))
+                            : <Icon name="building" className="w-3.5 h-3.5" />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[11px] font-semibold text-slate-800 truncate">{row.label}</span>
+                          <span className="block text-[10px] text-slate-400 truncate">{row.sublabel}</span>
+                        </span>
+                        <span className="text-[9px] font-bold uppercase tracking-wide text-slate-300 shrink-0">
+                          {row.kind}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
             <div className="flex-1 flex items-center gap-1 pl-2 min-w-0">
