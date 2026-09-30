@@ -11,9 +11,15 @@ export function ToastProvider({ children }) {
 
   const dismiss = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), []);
 
-  const push = useCallback((message, { type = 'info', duration = 4000 } = {}) => {
+  /**
+   * `key` makes a toast REPLACE the previous one carrying that key instead of
+   * stacking beside it. Repeated feedback about the same thing — a search that
+   * keeps finding nothing as the user types — should read as one message being
+   * updated, not a pile of near-identical warnings.
+   */
+  const push = useCallback((message, { type = 'info', duration = 4000, key } = {}) => {
     const id = ++idRef.current;
-    setToasts((t) => [...t, { id, message, type }]);
+    setToasts((t) => [...(key ? t.filter((x) => x.key !== key) : t), { id, message, type, key }]);
     if (duration) setTimeout(() => dismiss(id), duration);
     return id;
   }, [dismiss]);

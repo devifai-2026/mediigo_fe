@@ -61,12 +61,33 @@ export default function ExploreView() {
   const [suggestions, setSuggestions] = useState([]);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const picked = useRef(false);
+  // Location picker: GPS or a city. A city keeps the search usable for anyone
+  // who declines the permission prompt, which is otherwise a dead end.
+  const [cities, setCities] = useState([]);
+  const [cityName, setCityName] = useState(null);
+  const [locOpen, setLocOpen] = useState(false);
+  const locRef = useRef(null);
   // The query we last warned about, so one dead end produces one toast.
   const warnedFor = useRef(null);
   const searchBoxRef = useRef(null);
   const listRef = useRef(null);
   const filtersRef = useRef(null);
   const specialtyRef = useRef(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.get('/api/doctors/cities')
+      .then((res) => { if (alive) setCities(res.data?.data ?? []); })
+      .catch(() => { /* the GPS option still works without this */ });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!locOpen) return undefined;
+    const away = (e) => { if (locRef.current && !locRef.current.contains(e.target)) setLocOpen(false); };
+    document.addEventListener('mousedown', away);
+    return () => document.removeEventListener('mousedown', away);
+  }, [locOpen]);
 
   useEffect(() => {
     let alive = true;
@@ -98,20 +119,28 @@ export default function ExploreView() {
       // debounce fires a request per keystroke, and warning on each produced a
       // stack of identical toasts while the user was still typing. Keyed on the
       // exact query so retyping the same thing stays quiet too.
-      const key = `${search.trim()}|${specialty}|${radius}`;
-      if (!found.length && (search.trim() || specialty)) {
+      const term = search.trim();
+      const key = `${term}|${specialty}|${radius}`;
+      // Warning on every keystroke meant "ca" and "care" each produced their
+      // own toast seconds apart. A single toast keyed to the search REPLACES
+      // the previous one, so the user sees the current state rather than a
+      // pile of stale near-identical warnings. Short fragments are skipped
+      // entirely: "ca" on the way to "care" is not a dead end worth reporting.
+      const worthWarning = term.length >= 3 || Boolean(specialty);
+      if (!found.length && worthWarning) {
         if (warnedFor.current !== key) {
           warnedFor.current = key;
           const away = res.data.meta?.elsewhere;
+          const opts = { key: 'explore-empty' };
           if (away) {
             // Far more useful than "widen your radius" when the doctor is in
             // another city and no radius would ever reach them.
-            toast.warn(`${away.name} practises at ${away.clinicName}${away.city ? `, ${away.city}` : ''} — not within ${radius} km of you.`);
+            toast.warn(`${away.name} practises at ${away.clinicName}${away.city ? `, ${away.city}` : ''} — not within ${radius} km of you.`, opts);
           } else {
             const bits = [];
-            if (search.trim()) bits.push(`"${search.trim()}"`);
+            if (term) bits.push(`"${term}"`);
             if (specialty) bits.push(specialty);
-            toast.warn(`No doctors match ${bits.join(' in ')} within ${radius} km — try a wider radius or clear the filters.`);
+            toast.warn(`No doctors match ${bits.join(' in ')} within ${radius} km — try a wider radius or clear the filters.`, opts);
           }
         }
       } else if (found.length) {
@@ -206,11 +235,24 @@ export default function ExploreView() {
   }, []);
 
   const useMyLocation = async () => {
+    setLocOpen(false);
+    setCityName(null);
     const c = await locate();
-    if (geoStatus === 'denied') toast.warn('Location permission denied — showing Kolkata city centre');
+    if (geoStatus === 'denied') toast.warn('Location permission denied — pick a city instead', { key: 'explore-location' });
     else persist(c);
     load(c);
   };
+
+  /** Search from a city centre — no permission prompt, no dead end. */
+  const useCity = (c) => {
+    setLocOpen(false);
+    setCityName(c.city);
+    load({ lat: c.lat, lng: c.lng, label: c.city });
+  };
+
+  // The browser's permission prompt can sit open for seconds; everything that
+  // needs to show progress reads this one flag.
+  const locating = geoStatus === 'locating';
 
   const onBook = (doctor) => {
     if (!isAuthed) {
@@ -248,17 +290,70 @@ export default function ExploreView() {
           >
             {/* The city is wherever we are measuring from; tapping it asks
                 the browser for the patient's real position. */}
-            <button
-              type="button"
-              onClick={useMyLocation}
-              title="Use my location"
-              className="sm:w-[30%] flex items-center gap-1.5 px-2 py-2 text-left text-[11px] min-w-0 border-b sm:border-b-0 sm:border-r border-slate-100"
-            >
-              <span className={clsx('truncate flex-1', isFallback ? 'text-slate-400' : 'text-slate-700')}>
-                {geoStatus === 'locating' ? 'Locating…' : isFallback ? 'City' : (coords?.label || 'Your location')}
-              </span>
-              <Icon name="location" className="w-3.5 h-3.5 text-mg-teal shrink-0" />
-            </button>
+            <div ref={locRef} className="relative sm:w-[30%] min-w-0 border-b sm:border-b-0 sm:border-r border-slate-100">
+              <button
+                type="button"
+                onClick={() => setLocOpen((v) => !v)}
+                title="Choose where to search from"
+                aria-expanded={locOpen}
+                className="w-full flex items-center gap-1.5 px-2 py-2 text-left text-[11px] min-w-0"
+              >
+                <span className={clsx('truncate flex-1', cityName || !isFallback ? 'text-slate-700' : 'text-slate-400')}>
+                  {locating ? 'Finding you…' : cityName || (isFallback ? 'Your location' : (coords?.label || 'Your location'))}
+                </span>
+                {/* A spinner while the browser's permission prompt is open:
+                    tapping and seeing nothing change reads as a dead button,
+                    which is exactly how this felt before. */}
+                {locating ? (
+                  <span className="w-3.5 h-3.5 shrink-0 rounded-full border-2 border-mg-teal border-t-transparent animate-spin" />
+                ) : (
+                  <Icon name="location" className="w-3.5 h-3.5 text-mg-teal shrink-0" />
+                )}
+              </button>
+
+              {locOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto min-w-[200px]">
+                  <button
+                    type="button"
+                    onClick={useMyLocation}
+                    disabled={locating}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-slate-50 transition disabled:opacity-60"
+                  >
+                    <Icon name="location" className="w-3.5 h-3.5 text-mg-teal shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block text-[11px] font-semibold text-slate-800">
+                        {locating ? 'Finding you…' : 'Use my location'}
+                      </span>
+                      <span className="block text-[10px] text-slate-400">Nearest clinics first</span>
+                    </span>
+                  </button>
+
+                  {cities.length > 0 && (
+                    <>
+                      <p className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-400 border-t border-slate-100">
+                        Or browse a city
+                      </p>
+                      {cities.map((c) => (
+                        <button
+                          key={c.city}
+                          type="button"
+                          onClick={() => useCity(c)}
+                          className={clsx(
+                            'w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-slate-50 transition',
+                            cityName === c.city && 'bg-mg-teal/5',
+                          )}
+                        >
+                          <span className="text-[11px] font-semibold text-slate-800 truncate">{c.city}</span>
+                          <span className="text-[10px] text-slate-400 shrink-0">
+                            {c.clinics} {c.clinics === 1 ? 'clinic' : 'clinics'}
+                          </span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
             <div ref={searchBoxRef} className="relative sm:w-[35%] flex items-center px-2 min-w-0 border-b sm:border-b-0 sm:border-r border-slate-100">
               <input
                 value={search}
