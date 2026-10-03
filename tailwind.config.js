@@ -52,10 +52,26 @@ export default {
       keyframes: {
         'slide-up': { from: { transform: 'translateY(100%)', opacity: 0 }, to: { transform: 'translateY(0)', opacity: 1 } },
         'fade-in': { from: { opacity: 0 }, to: { opacity: 1 } },
+        // One settling beat on the token a patient would be given, not a loop:
+        // these cards appear many to a screen, and a permanent pulse on each
+        // would turn a helpful nudge into noise.
+        'first-up': {
+          '0%': { transform: 'scale(.88)', opacity: 0 },
+          '60%': { transform: 'scale(1.06)', opacity: 1 },
+          '100%': { transform: 'scale(1)', opacity: 1 },
+        },
+        // The label and sparkle slide in from the left behind the token, so the
+        // cell reads as one arriving message rather than two separate twitches.
+        'slide-in': {
+          from: { transform: 'translateX(-6px)', opacity: 0 },
+          to: { transform: 'translateX(0)', opacity: 1 },
+        },
       },
       animation: {
         'slide-up': 'slide-up .28s cubic-bezier(.16,1,.3,1)',
         'fade-in': 'fade-in .2s ease-out',
+        'first-up': 'first-up .45s cubic-bezier(.16,1,.3,1)',
+        'slide-in': 'slide-in .4s cubic-bezier(.16,1,.3,1) both',
       },
     },
   },

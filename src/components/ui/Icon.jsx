@@ -33,6 +33,10 @@ const PATHS = {
   wallet: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
   filter: 'M3 4h18l-7 8.5V19l-4 2v-8.5L3 4z',
   heart: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  // A four-point star with two smaller companions: marks the token a patient
+  // would be given when nobody is ahead of them. Drawn in the same single-path
+  // stroke idiom as the rest of the sprite so it inherits colour and weight.
+  sparkle: 'M12 4.5l1.6 4.4 4.4 1.6-4.4 1.6L12 16.5l-1.6-4.4L6 10.5l4.4-1.6L12 4.5zM18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8zM5.5 3.5l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3L3.7 5.3l1.3-.5.5-1.3z',
 };
 
 export function Icon({ name, className = 'w-5 h-5', strokeWidth = 2 }) {

@@ -26,6 +26,21 @@ export function DoctorCard({ doctor, onBook }) {
   const { session, queue, hospital } = doctor;
   const bookable = session.isBookingOpen;
   const [details, setDetails] = useState(false);
+  // A photoUrl only promises a URL exists, not that it loads. Storage drivers
+  // get switched, buckets get rotated, CDNs go down — and a doctor who looked
+  // fine yesterday renders as a torn-image glyph against their own name. Fall
+  // back to the same initials a photoless doctor gets, so the card degrades to
+  // the designed state instead of a broken one.
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto = Boolean(doctor.photoUrl) && !photoFailed;
+
+  // Two different emptinesses, and conflating them is what produced "#00".
+  // notStarted: nobody has been CALLED yet, so there is no current token to
+  // name — true even when people are already queued behind the first slot.
+  // firstUp: nobody called and nobody waiting, so the next token really is
+  // this patient's — but only while the session can actually take them.
+  const notStarted = !queue.currentToken;
+  const firstUp = notStarted && !queue.waiting && bookable && !session.isOnBreak;
 
   // Links to the exact pin when we have one, so the patient is not relying on
   // Google matching a clinic name it may not know.
@@ -46,11 +61,12 @@ export function DoctorCard({ doctor, onBook }) {
       )}
 
       <div className="flex items-center gap-3 px-1 pt-1">
-        {doctor.photoUrl ? (
+        {showPhoto ? (
           <img
             src={doctor.photoUrl}
             alt=""
             loading="lazy"
+            onError={() => setPhotoFailed(true)}
             className="w-16 h-16 rounded-full object-cover shrink-0 bg-slate-50"
           />
         ) : (
@@ -92,14 +108,44 @@ export function DoctorCard({ doctor, onBook }) {
         </a>
       </div>
 
+      {/* An empty queue used to render as "#00" — a token number that can never
+          exist, so the best case for a patient looked like a broken field.
+          Nobody called and nobody waiting means the next token is theirs, and
+          the cells say so. Only when booking is open: on a closed session the
+          same emptiness means "come back later", not "walk in". */}
       <div className="mt-2 bg-mg-surface rounded grid grid-cols-2 text-center py-2.5">
         <div>
-          <span className="block text-[10px] font-medium text-slate-700">Current OPD Token</span>
-          <span className="block text-lg font-bold text-mg-navy mt-1.5">{token(queue.currentToken)}</span>
+          <span className="block text-[10px] font-medium text-slate-700">
+            {notStarted ? 'In chamber' : 'Current OPD Token'}
+          </span>
+          {notStarted ? (
+            <span className="block text-[13px] font-medium text-slate-500 mt-[7px] leading-tight animate-slide-in">
+              Nobody yet
+            </span>
+          ) : (
+            <span className="block text-lg font-bold text-mg-navy mt-1.5">{token(queue.currentToken)}</span>
+          )}
         </div>
-        <div>
-          <span className="block text-[10px] font-medium text-slate-700">Next Available</span>
-          <span className="block text-lg font-bold text-mg-teal mt-1">{token(queue.nextToken)}</span>
+        <div className="relative">
+          <span
+            className={clsx(
+              'text-[10px] font-medium',
+              firstUp
+                ? 'text-mg-teal flex items-center justify-center gap-1 animate-slide-in'
+                : 'block text-slate-700',
+            )}
+          >
+            {firstUp && <Icon name="sparkle" className="w-3 h-3 shrink-0" strokeWidth={1.75} />}
+            {firstUp ? "You'd be first" : 'Next Available'}
+          </span>
+          <span
+            className={clsx(
+              'block text-lg font-bold text-mg-teal mt-1',
+              firstUp && 'animate-first-up',
+            )}
+          >
+            {token(queue.nextToken)}
+          </span>
         </div>
       </div>
 

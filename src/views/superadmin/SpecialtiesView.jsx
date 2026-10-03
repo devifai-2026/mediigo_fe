@@ -11,6 +11,7 @@ import { Field, Input } from '../../components/ui/Field.jsx';
 import { PhotoField } from '../../components/ui/PhotoCropper.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
+import { PhotoOrFallback } from '../../components/ui/PhotoOrFallback.jsx';
 
 /**
  * Specialties Master.
@@ -200,13 +201,15 @@ export default function SpecialtiesView() {
 
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      {row.photoUrl ? (
-                        <img src={row.photoUrl} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0 bg-slate-50" />
-                      ) : (
-                        <span className="w-11 h-11 rounded-lg shrink-0 bg-amber-50 text-amber-500 grid place-items-center">
-                          <Icon name="heart" className="w-4 h-4" />
-                        </span>
-                      )}
+                      <PhotoOrFallback
+                        src={row.photoUrl}
+                        className="w-11 h-11 rounded-lg object-cover shrink-0 bg-slate-50"
+                        fallback={(
+                          <span className="w-11 h-11 rounded-lg shrink-0 bg-amber-50 text-amber-500 grid place-items-center">
+                            <Icon name="heart" className="w-4 h-4" />
+                          </span>
+                        )}
+                      />
                       <div className="min-w-0">
                         <p className="font-bold text-slate-900">{row.name}</p>
                         <p className="text-[10px] text-slate-400 font-mono">{row.slug}</p>

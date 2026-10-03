@@ -7,6 +7,7 @@ import { useSocket } from '../../context/SocketContext.jsx';
 import { ROLE_LABEL, ROLE_HOME } from '../../lib/constants.js';
 import { initials } from '../../lib/format.js';
 import { RaiseTicketModal } from '../superadmin/RaiseTicketModal.jsx';
+import { TrialPill } from './TrialPill.jsx';
 
 const ROLE_CHIP = {
   PATIENT: 'bg-teal-50 text-teal-700 border-teal-200',
@@ -26,7 +27,7 @@ export function GlassHeader({ subtitle, right }) {
   return (
     <header className="sticky top-0 z-40 glass-header shadow-sm">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-        <Link to={role ? ROLE_HOME[role] : '/explore'} className="flex items-center gap-3 min-w-0">
+        <Link to={role ? ROLE_HOME[role] : '/p/explore'} className="flex items-center gap-3 min-w-0">
           <Logo className="w-10 h-10" rounded="rounded-2xl" />
           <div className="min-w-0">
             <h1 className="text-lg font-black tracking-tight text-slate-900 leading-none">
@@ -39,6 +40,7 @@ export function GlassHeader({ subtitle, right }) {
         </Link>
 
         <div className="flex items-center gap-2 shrink-0">
+          <TrialPill />
           {right}
 
           {user && (

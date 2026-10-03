@@ -57,4 +57,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mg-live-dot::after { animation: none; }
+  /* The "you'd be first" cell still has to render — these animations start from
+     opacity 0, so suppressing them has to restore the end state, not just stop
+     the motion. */
+  .animate-first-up,
+  .animate-slide-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

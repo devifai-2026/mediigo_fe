@@ -81,7 +81,7 @@ export default function BookingsView() {
           title={`No ${tab} bookings`}
           hint={tab === 'upcoming' ? 'Book a consultation and it will appear here.' : `You have no ${tab} consultations yet.`}
           action={tab === 'upcoming' ? 'Find a doctor' : undefined}
-          onAction={() => { window.location.href = '/explore'; }}
+          onAction={() => { window.location.href = '/p/explore'; }}
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

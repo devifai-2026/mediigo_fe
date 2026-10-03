@@ -123,7 +123,7 @@ export function BookingSheet({ doctor, onClose }) {
               <Button variant="secondary" className="flex-1" onClick={() => { setTicket(null); onClose(); }}>
                 Close
               </Button>
-              <Button className="flex-1" onClick={() => navigate('/tracker')}>
+              <Button className="flex-1" onClick={() => navigate('/p/tracker')}>
                 Track live queue
               </Button>
             </div>
@@ -162,7 +162,7 @@ export function BookingSheet({ doctor, onClose }) {
                   sheet, going to Profile, and starting again. */}
               <button
                 type="button"
-                onClick={() => { onClose(); navigate('/profile'); }}
+                onClick={() => { onClose(); navigate('/p/profile'); }}
                 className="p-2.5 rounded-md text-xs text-left border border-dashed border-slate-300 text-slate-500 hover:border-mg-teal hover:text-mg-teal transition"
               >
                 <span className="block font-bold">+ Add someone</span>

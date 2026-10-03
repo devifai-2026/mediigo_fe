@@ -8,7 +8,7 @@ export const ROLES = {
 };
 
 export const ROLE_HOME = {
-  [ROLES.PATIENT]: '/explore',
+  [ROLES.PATIENT]: '/p/explore',
   [ROLES.DOCTOR]: '/d/chamber',
   [ROLES.RECEPTIONIST]: '/r/queue',
   [ROLES.FIELD_AGENT]: '/a/onboard',

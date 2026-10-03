@@ -45,7 +45,7 @@ export default function TrackerView() {
         title="No active token right now"
         hint="Book a consultation and your live queue position will show up here."
         action="Find a doctor"
-        onAction={() => { window.location.href = '/explore'; }}
+        onAction={() => { window.location.href = '/p/explore'; }}
       />
     );
   }

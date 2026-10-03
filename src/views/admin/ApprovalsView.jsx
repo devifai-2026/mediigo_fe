@@ -12,6 +12,9 @@ import { Icon } from '../../components/ui/Icon.jsx';
 
 export default function ApprovalsView() {
   const { data, loading, refetch } = useApi('/api/admin/approvals');
+  // The trial ceiling is the platform's, not this screen's — read it rather
+  // than hardcode a number a Super Admin can change.
+  const { data: limits } = useApi('/api/admin/trial-limits');
   const toast = useToast();
   const confirm = useConfirm();
   const [rejecting, setRejecting] = useState(null);
@@ -26,11 +29,28 @@ export default function ApprovalsView() {
       confirmLabel: 'Approve & publish',
     });
     if (!okToApprove) return;
+
+    // Free trial length, bounded by the platform maximum. The ceiling is read
+    // from the server rather than hardcoded: only Super Admin can move it, and
+    // a district admin must not be able to out-type it.
+    const maxDays = limits?.maxTrialDays ?? 90;
+    const input = window.prompt(
+      `Free trial for ${s.payload?.name} — days (0 for none, max ${maxDays}):`,
+      String(limits?.defaultTrialDays ?? 30),
+    );
+    if (input === null) return;
+    const trialDays = Number(input);
+    if (!Number.isInteger(trialDays) || trialDays < 0 || trialDays > maxDays) {
+      toast.error(`Trial must be a whole number between 0 and ${maxDays} days`);
+      return;
+    }
+
     setBusy(true);
     try {
-      const r = await api.post(`/api/admin/submissions/${s._id}/approve`);
+      const r = await api.post(`/api/admin/submissions/${s._id}/approve`, { trialDays });
       const temp = r.data?.data?.tempPassword;
-      toast.success(temp ? `Approved — front desk temp password: ${temp}` : 'Approved and published');
+      const trialNote = trialDays > 0 ? ` · ${trialDays}-day free trial` : ' · no trial';
+      toast.success((temp ? `Approved — front desk temp password: ${temp}` : 'Approved and published') + trialNote);
       refetch();
     } catch (e) {
       toast.error(e.message);

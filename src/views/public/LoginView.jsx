@@ -33,7 +33,17 @@ export default function LoginView() {
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState(null);
 
-  const goHome = (role) => navigate(location.state?.from || ROLE_HOME[role] || '/explore', { replace: true });
+  // "Where you were headed" is only honoured when the role that actually
+  // signed in owns that area. A guest stopped at /p/vault who then signs in as
+  // a doctor was not headed to the patient vault — sending them there is the
+  // same wrong-portal landing the /p namespace exists to prevent.
+  const goHome = (role) => {
+    const home = ROLE_HOME[role] || '/p/explore';
+    const from = location.state?.from;
+    const prefix = home.startsWith('/p/') ? '/p/' : `/${home.split('/')[1]}/`;
+    const target = from && (from.startsWith(prefix) || from === home) ? from : home;
+    navigate(target, { replace: true });
+  };
 
   const sendOtp = async (e) => {
     e?.preventDefault();
@@ -93,7 +103,7 @@ export default function LoginView() {
     <div className="min-h-screen flex flex-col bg-white font-display">
       <header className="bg-white border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
-          <Link to="/explore" className="flex items-center gap-2 min-w-0">
+          <Link to="/p/explore" className="flex items-center gap-2 min-w-0">
             <img src="/logo-mark.png" alt="" className="w-9 h-auto" />
             <div className="min-w-0 leading-none">
               <span className="block text-lg font-bold text-mg-navy tracking-tight">Mediigo</span>
@@ -101,7 +111,7 @@ export default function LoginView() {
             </div>
           </Link>
           {servesPatient && (
-            <Link to="/explore" className="text-xs text-mg-teal hover:text-mg-tealDark font-medium">
+            <Link to="/p/explore" className="text-xs text-mg-teal hover:text-mg-tealDark font-medium">
               Browse clinics →
             </Link>
           )}
@@ -175,7 +185,7 @@ export default function LoginView() {
                 <Button type="submit" loading={busy} className="w-full" size="lg">
                   Send OTP on WhatsApp
                 </Button>
-                <Link to="/explore" className="block text-center text-xs font-medium text-mg-teal hover:text-mg-tealDark pt-1">
+                <Link to="/p/explore" className="block text-center text-xs font-medium text-mg-teal hover:text-mg-tealDark pt-1">
                   Browse clinics without signing in →
                 </Link>
 

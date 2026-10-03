@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
-import { RequireAuth, RequireRole, RedirectHome } from './components/guards/Guards.jsx';
+import { RequireAuth, RequireRole, RedirectHome, PublicOrRoleHome } from './components/guards/Guards.jsx';
 import { PortalShell } from './components/layout/PortalShell.jsx';
 import { ROLES } from './lib/constants.js';
 
@@ -11,7 +11,6 @@ import ForbiddenView from './views/public/ForbiddenView.jsx';
 import ExploreView from './views/patient/ExploreView.jsx';
 import TrackerView from './views/patient/TrackerView.jsx';
 import BookingsView from './views/patient/BookingsView.jsx';
-import VaultView from './views/patient/VaultView.jsx';
 import ProfileView from './views/patient/ProfileView.jsx';
 
 import DoctorChamberView from './views/doctor/DoctorChamberView.jsx';
@@ -37,6 +36,7 @@ import PatientsMasterView from './views/superadmin/PatientsMasterView.jsx';
 import PatientProfileView from './views/superadmin/PatientProfileView.jsx';
 import ClinicsMasterView from './views/superadmin/ClinicsMasterView.jsx';
 import SpecialtiesView from './views/superadmin/SpecialtiesView.jsx';
+import BillingView from './views/superadmin/BillingView.jsx';
 import AgentsView from './views/superadmin/AgentsView.jsx';
 import ExecutivesView from './views/superadmin/ExecutivesView.jsx';
 import StaffView from './views/superadmin/StaffView.jsx';
@@ -49,12 +49,16 @@ import SecurityPolicyView from './views/superadmin/SecurityPolicyView.jsx';
 import DisplayView from './views/public/DisplayView.jsx';
 
 const PATIENT_NAV = [
-  { to: '/explore', label: 'Explore', icon: 'compass' },
-  { to: '/tracker', label: 'Tracker', icon: 'clock' },
-  { to: '/bookings', label: 'Bookings', icon: 'ticket' },
-  { to: '/vault', label: 'Vault', icon: 'shieldCheck' },
-  { to: '/profile', label: 'Profile', icon: 'user' },
+  { to: '/p/explore', label: 'Explore', icon: 'compass' },
+  { to: '/p/tracker', label: 'Tracker', icon: 'clock' },
+  { to: '/p/bookings', label: 'Bookings', icon: 'ticket' },
+  { to: '/p/profile', label: 'Profile', icon: 'user' },
 ];
+
+// The patient portal used to live at the bare root while every other role was
+// already namespaced (/d, /r, /a). These keep old links, bookmarks and anything
+// already shared working after the move to /p.
+const PATIENT_LEGACY = ['explore', 'tracker', 'bookings', 'profile'];
 
 const DOCTOR_NAV = [
   { to: '/d/chamber', label: 'Chamber', icon: 'megaphone' },
@@ -105,14 +109,27 @@ export default function App() {
           session, so it authenticates with a signed standee credential. */}
       <Route path="/display/:serialId" element={<DisplayView />} />
 
-      {/* Patient — /explore is browsable as a guest */}
-      <Route element={<PortalShell items={PATIENT_NAV} subtitle="Patient OPD Portal" variant="patient" />}>
-        <Route path="/explore" element={<ExploreView />} />
-        <Route path="/tracker" element={<RequireAuth><TrackerView /></RequireAuth>} />
-        <Route path="/bookings" element={<RequireAuth><BookingsView /></RequireAuth>} />
-        <Route path="/vault" element={<RequireAuth><VaultView /></RequireAuth>} />
-        <Route path="/profile" element={<RequireAuth><ProfileView /></RequireAuth>} />
+      {/* Patient — /p/explore is browsable as a guest.
+          PublicOrRoleHome is what stops a doctor who signed in while sitting on
+          /p/explore from being served the patient shell: the route is public,
+          so nothing else would move them off it. */}
+      <Route
+        element={(
+          <PublicOrRoleHome roles={[ROLES.PATIENT]}>
+            <PortalShell items={PATIENT_NAV} subtitle="Patient OPD Portal" variant="patient" />
+          </PublicOrRoleHome>
+        )}
+      >
+        <Route path="/p/explore" element={<ExploreView />} />
+        <Route path="/p/tracker" element={<RequireAuth><TrackerView /></RequireAuth>} />
+        <Route path="/p/bookings" element={<RequireAuth><BookingsView /></RequireAuth>} />
+        <Route path="/p/profile" element={<RequireAuth><ProfileView /></RequireAuth>} />
       </Route>
+
+      {/* Old bare-root patient urls, preserved as redirects. */}
+      {PATIENT_LEGACY.map((seg) => (
+        <Route key={seg} path={`/${seg}`} element={<Navigate to={`/p/${seg}`} replace />} />
+      ))}
 
       <Route
         element={
@@ -179,6 +196,7 @@ export default function App() {
         <Route path="/super/patients/:key" element={<PatientProfileView />} />
         <Route path="/super/clinics" element={<ClinicsMasterView />} />
         <Route path="/super/specialties" element={<SpecialtiesView />} />
+        <Route path="/super/billing" element={<BillingView />} />
         <Route path="/super/agents" element={<AgentsView />} />
         <Route path="/super/executives" element={<ExecutivesView />} />
         <Route path="/super/staff" element={<StaffView />} />

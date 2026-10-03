@@ -7,7 +7,6 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input } from '../../components/ui/Field.jsx';
 import { MoneyInput } from '../../components/ui/MoneyInput.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
-import { ScheduleEditor } from '../../components/doctor/ScheduleEditor.jsx';
 import { AvailabilityManager } from '../../components/doctor/AvailabilityManager.jsx';
 import { PhotoField } from '../../components/ui/PhotoCropper.jsx';
 
@@ -125,10 +124,6 @@ export default function DoctorProfileView() {
             <Button onClick={saveProfile} loading={busy}>Save</Button>
           </div>
         </Field>
-      </div>
-
-      <div className="glass-card rounded-3xl p-6">
-        <ScheduleEditor doctorId={doctorId} schedule={doctor.schedule} onSaved={refetch} />
       </div>
 
       <div className="glass-card rounded-3xl p-6">

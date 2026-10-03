@@ -5,6 +5,7 @@ import { Icon } from '../ui/Icon.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { initials } from '../../lib/format.js';
 import { RaiseTicketModal } from '../superadmin/RaiseTicketModal.jsx';
+import { PhotoOrFallback } from '../ui/PhotoOrFallback.jsx';
 
 /**
  * Patient chrome from the Mediigo homepage design: a white brand bar over a
@@ -31,7 +32,7 @@ export function PatientHeader({ items, primaryCount = 3 }) {
     <header className="sticky top-0 z-40 font-display">
       <div className="bg-white border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
-          <Link to="/explore" className="flex items-center gap-2 min-w-0">
+          <Link to="/p/explore" className="flex items-center gap-2 min-w-0">
             <img src="/logo-mark.png" alt="" className="w-9 h-auto" />
             <div className="min-w-0 leading-none">
               <span className="block text-lg font-bold text-mg-navy tracking-tight">Mediigo</span>
@@ -48,9 +49,11 @@ export function PatientHeader({ items, primaryCount = 3 }) {
                 aria-expanded={menuOpen}
                 className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow bg-mg-teal text-white grid place-items-center text-xs font-bold"
               >
-                {user.photoUrl
-                  ? <img src={user.photoUrl} alt="" className="w-full h-full object-cover" />
-                  : initials(user.name)}
+                <PhotoOrFallback
+                  src={user.photoUrl}
+                  className="w-full h-full object-cover"
+                  fallback={initials(user.name)}
+                />
               </button>
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-slate-200 shadow-lg py-1.5 text-sm animate-fade-in">

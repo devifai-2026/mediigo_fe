@@ -39,10 +39,32 @@ export function RequireRole({ roles, children }) {
   return children;
 }
 
+/**
+ * A route that a guest may browse, but that belongs to one role once signed in.
+ *
+ * /explore is the only patient route open to guests, and that is what made a
+ * role switch look like a caching bug: signing out left you on /explore (still
+ * valid, you were now a guest), and signing in as a doctor remounted the tree
+ * onto the SAME url — which the patient shell still legitimately serves. The
+ * doctor got the patient UI until a manual reload, because only a fresh boot
+ * re-ran RedirectHome. Nothing was cached; the url simply never moved.
+ *
+ * A guest still browses freely. A signed-in user whose role does not own this
+ * route is sent to their own home instead.
+ */
+export function PublicOrRoleHome({ roles, children }) {
+  const { status, role } = useAuth();
+  if (status === 'loading') return <AuthSplash />;
+  if (status === 'authed' && !roles.includes(role)) {
+    return <Navigate to={ROLE_HOME[role] || '/login'} replace />;
+  }
+  return children;
+}
+
 export function RedirectHome() {
   const { status, role } = useAuth();
   if (status === 'loading') return <AuthSplash />;
   if (status !== 'authed') return <Navigate to="/login" replace />;
   if (!portalAllows(role)) return <WrongPortal role={role} />;
-  return <Navigate to={ROLE_HOME[role] || '/explore'} replace />;
+  return <Navigate to={ROLE_HOME[role] || '/p/explore'} replace />;
 }

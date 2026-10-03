@@ -14,6 +14,7 @@ import { initialsOf } from '../../lib/format.js';
 import { LivePill } from '../../components/layout/DarkHero.jsx';
 import { AnchoredMenu } from '../../components/ui/AnchoredMenu.jsx';
 import clsx from 'clsx';
+import { PhotoOrFallback } from '../../components/ui/PhotoOrFallback.jsx';
 
 // "All Clinics" is not a specialty — it is the absence of a filter — so it
 // stays in code rather than the admin-managed list, where it could be hidden
@@ -117,6 +118,11 @@ export default function ExploreView() {
     return () => document.removeEventListener('mousedown', onClickAway);
   }, [filtersOpen]);
 
+  // load() is declared before persist(), and naming persist in its dependency
+  // list would rebuild load whenever accuracy changed — which re-fires the
+  // search effects keyed on it. A ref keeps the call current without that.
+  const persistRef = useRef(null);
+
   const load = useCallback(async (c = coords) => {
     setLoading(true);
     try {
@@ -125,6 +131,10 @@ export default function ExploreView() {
       if (search.trim()) params.set('search', search.trim());
       const res = await api.get(`/api/doctors/nearby?${params}`);
       const found = res.data.data || [];
+      // Searching from here means this is where they are now. persist()
+      // ignores a point that has not meaningfully moved, so the debounce does
+      // not turn this into one write per keystroke.
+      persistRef.current?.(c);
       setRows(found);
       setMeta(res.data.meta);
 
@@ -215,15 +225,34 @@ export default function ExploreView() {
     setTimeout(() => load(), 0);
   };
 
-  /** Remember where they are, so the next visit does not start from scratch. */
+  /**
+   * Remember where they are, so the next visit does not start from scratch.
+   *
+   * De-duplicated against the last saved point: a search runs on every
+   * keystroke, and the stored address must not be rewritten once per letter.
+   * ~50m is below consumer GPS accuracy, so anything closer is jitter, not
+   * movement. The server reverse-geocodes, which is what refreshes the saved
+   * address itself rather than only its coordinates.
+   */
+  const lastSaved = useRef(null);
   const persist = useCallback(async (c) => {
     if (!isAuthed || !c?.lat) return;
+    const prev = lastSaved.current;
+    if (prev) {
+      const dLat = Math.abs(prev.lat - c.lat);
+      const dLng = Math.abs(prev.lng - c.lng);
+      if (dLat < 0.0005 && dLng < 0.0005) return;
+    }
+    lastSaved.current = { lat: c.lat, lng: c.lng };
     try {
       await api.patch('/api/patients/me/location', { lat: c.lat, lng: c.lng, accuracy });
     } catch {
       // Not worth interrupting a search over — the location still works today.
+      lastSaved.current = prev;
     }
   }, [isAuthed, accuracy]);
+
+  useEffect(() => { persistRef.current = persist; }, [persist]);
 
   // Ask once, on the first Explore visit. Until they answer, every distance on
   // screen is measured from the city centre rather than from them.
@@ -275,7 +304,7 @@ export default function ExploreView() {
   const onBook = (doctor) => {
     if (!isAuthed) {
       toast.push('Sign in to book a token');
-      navigate('/login', { state: { from: '/explore' } });
+      navigate('/login', { state: { from: '/p/explore' } });
       return;
     }
     setBooking(doctor);
@@ -431,9 +460,13 @@ export default function ExploreView() {
                           row.kind === 'doctor' ? 'bg-teal-50 text-teal-700' : 'bg-indigo-50 text-indigo-700',
                         )}>
                           {row.kind === 'doctor'
-                            ? (row.photoUrl
-                              ? <img src={row.photoUrl} alt="" className="w-full h-full rounded-full object-cover" />
-                              : initialsOf(row.label))
+                            ? (
+                              <PhotoOrFallback
+                                src={row.photoUrl}
+                                className="w-full h-full rounded-full object-cover"
+                                fallback={initialsOf(row.label)}
+                              />
+                            )
                             : <Icon name="building" className="w-3.5 h-3.5" />}
                         </span>
                         <span className="min-w-0 flex-1">
