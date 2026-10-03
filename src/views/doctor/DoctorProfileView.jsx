@@ -8,6 +8,7 @@ import { Field, Input } from '../../components/ui/Field.jsx';
 import { MoneyInput } from '../../components/ui/MoneyInput.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { AvailabilityManager } from '../../components/doctor/AvailabilityManager.jsx';
+import { StandeePanel } from '../../components/doctor/StandeePanel.jsx';
 import { PhotoField } from '../../components/ui/PhotoCropper.jsx';
 
 export default function DoctorProfileView() {
@@ -128,6 +129,10 @@ export default function DoctorProfileView() {
 
       <div className="glass-card rounded-3xl p-6">
         <AvailabilityManager doctorId={doctorId} />
+      </div>
+
+      <div className="glass-card rounded-3xl p-6">
+        <StandeePanel doctorId={doctorId} />
       </div>
 
       <div className="glass-card rounded-3xl p-6 space-y-4">

@@ -37,6 +37,7 @@ import PatientProfileView from './views/superadmin/PatientProfileView.jsx';
 import ClinicsMasterView from './views/superadmin/ClinicsMasterView.jsx';
 import SpecialtiesView from './views/superadmin/SpecialtiesView.jsx';
 import BillingView from './views/superadmin/BillingView.jsx';
+import ReviewsView from './views/superadmin/ReviewsView.jsx';
 import AgentsView from './views/superadmin/AgentsView.jsx';
 import ExecutivesView from './views/superadmin/ExecutivesView.jsx';
 import StaffView from './views/superadmin/StaffView.jsx';
@@ -47,6 +48,7 @@ import ComplaintsView from './views/superadmin/ComplaintsView.jsx';
 import SecurityPolicyView from './views/superadmin/SecurityPolicyView.jsx';
 
 import DisplayView from './views/public/DisplayView.jsx';
+import TrackTokenView from './views/public/TrackTokenView.jsx';
 
 const PATIENT_NAV = [
   { to: '/p/explore', label: 'Explore', icon: 'compass' },
@@ -108,6 +110,9 @@ export default function App() {
       {/* Unauthed by design: a waiting-room screen cannot hold an expiring
           session, so it authenticates with a signed standee credential. */}
       <Route path="/display/:serialId" element={<DisplayView />} />
+      {/* A walk-in's paper slip carries this link: no app, no login, just
+          their own token's live position. */}
+      <Route path="/t/:tokenId" element={<TrackTokenView />} />
 
       {/* Patient — /p/explore is browsable as a guest.
           PublicOrRoleHome is what stops a doctor who signed in while sitting on
@@ -197,6 +202,7 @@ export default function App() {
         <Route path="/super/clinics" element={<ClinicsMasterView />} />
         <Route path="/super/specialties" element={<SpecialtiesView />} />
         <Route path="/super/billing" element={<BillingView />} />
+        <Route path="/super/reviews" element={<ReviewsView />} />
         <Route path="/super/agents" element={<AgentsView />} />
         <Route path="/super/executives" element={<ExecutivesView />} />
         <Route path="/super/staff" element={<StaffView />} />

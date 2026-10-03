@@ -35,7 +35,9 @@ export function BookingPass({ token: t, onDone }) {
   const hospital = t.hospitalId ?? {};
   const age = t.patientSnapshot?.age ?? ageOf(t.patientSnapshot?.dob);
   // Each booking carries its own QR so the desk can pull it up by scan.
-  const qrPayload = JSON.stringify({ t: t._id, n: t.tokenNumber, d: t.date });
+  // A URL, not a JSON blob: the point of the QR on a paper slip is that any
+  // phone camera opens the live queue. Raw JSON scans to meaningless text.
+  const qrPayload = `${window.location.origin}/t/${t._id}`;
 
   return createPortal(
     <div className="p-4 font-mono text-[11px] text-black leading-relaxed" style={{ width: '72mm' }}>

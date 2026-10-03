@@ -7,6 +7,7 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { inr } from '../../lib/format.js';
 import clsx from 'clsx';
+import { AnalyticsPanel, PERIODS } from '../../components/reception/AnalyticsPanel.jsx';
 
 /**
  * Day close.
@@ -18,6 +19,8 @@ import clsx from 'clsx';
 export default function RevenueView() {
   const { data, loading } = useApi('/api/pos/day-close');
   const [actual, setActual] = useState({ cash: '', upi: '', card: '' });
+  const [tab, setTab] = useState('accounts');
+  const [period, setPeriod] = useState('week');
 
   if (loading) return <SkeletonRows rows={4} />;
   if (!data) return null;
@@ -32,7 +35,39 @@ export default function RevenueView() {
 
   return (
     <div className="space-y-5">
-      <div>
+      {/* Accounts and Patients are the same window seen two ways; the period
+          belongs to both, so it sits outside the tabs rather than resetting
+          each time one is picked. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex rounded-xl bg-slate-100 p-1 mr-auto">
+          {[['accounts', 'Accounts'], ['patients', 'Patients']].map(([k, label]) => (
+            <button
+              key={k} type="button" onClick={() => setTab(k)}
+              className={clsx(
+                'text-xs font-bold px-4 py-1.5 rounded-lg transition',
+                tab === k ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {PERIODS.map(([k, label]) => (
+          <button
+            key={k} type="button" onClick={() => setPeriod(k)}
+            className={clsx(
+              'text-[11px] font-bold px-3 py-1.5 rounded-full border transition',
+              period === k ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <AnalyticsPanel tab={tab} period={period} />
+
+      <div className="pt-2 border-t border-slate-200">
         <h2 className="text-xl font-bold text-slate-900">Day close &amp; reconciliation</h2>
         <p className="text-xs text-slate-500">
           {data.hospitalName} · {data.date} · counting completed consultations only

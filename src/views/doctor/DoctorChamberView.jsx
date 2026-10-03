@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { StatCard } from '../../components/ui/StatCard.jsx';
 import { BreakStateManager } from '../../components/doctor/BreakStateManager.jsx';
 import { QueueRoster, SkippedDrawer } from '../../components/queue/QueueRoster.jsx';
+import { OutcomeDialog } from '../../components/doctor/OutcomeDialog.jsx';
 import { token } from '../../lib/format.js';
 
 export default function DoctorChamberView() {
@@ -41,11 +42,25 @@ export default function DoctorChamberView() {
     }
   };
 
-  const callNext = () => act(async () => {
-    const r = await api.post(`/api/queue/${doctorId}/call-next`);
+  /**
+   * Finishing a patient and calling the next is one step for the doctor, so
+   * the outcome is asked here rather than as a separate action they would
+   * have to remember. With nobody in the chamber there is nothing to record
+   * an outcome for, so the dialog is skipped entirely.
+   */
+  const callNext = (payload) => act(async () => {
+    const r = await api.post(`/api/queue/${doctorId}/call-next`, payload || {});
     const called = r.data?.data?.called;
     if (called) toast.success(`Called ${token(called.tokenNumber)}`);
+    setOutcomeOpen(false);
   });
+
+  const onCallNext = () => {
+    if (current) setOutcomeOpen(true);
+    else callNext();
+  };
+
+  const [outcomeOpen, setOutcomeOpen] = useState(false);
 
   const recall = () => act(() => api.post(`/api/queue/${doctorId}/recall`), 'Re-announced');
 
@@ -114,7 +129,7 @@ export default function DoctorChamberView() {
           </div>
 
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/15 space-y-3 max-w-md w-full">
-            <Button onClick={callNext} loading={busy} disabled={s?.session?.isOnBreak} size="lg" className="w-full">
+            <Button onClick={onCallNext} loading={busy} disabled={s?.session?.isOnBreak} size="lg" className="w-full">
               <Icon name="megaphone" className="w-4 h-4" /> Call next (voice announcement)
             </Button>
             <div className="grid grid-cols-2 gap-2">
@@ -156,6 +171,14 @@ export default function DoctorChamberView() {
         </div>
         <QueueRoster tokens={s?.tokens ?? []} onAction={onRowAction} />
       </div>
+      <OutcomeDialog
+        open={outcomeOpen}
+        patientName={current?.name}
+        tokenNumber={current ? token(current.tokenNumber) : ''}
+        busy={busy}
+        onClose={() => setOutcomeOpen(false)}
+        onConfirm={(payload) => callNext(payload)}
+      />
     </div>
   );
 }

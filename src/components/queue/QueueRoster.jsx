@@ -67,6 +67,18 @@ export function QueueRoster({ tokens = [], onAction, readOnly = false, filter = 
                   {t.isEmergency && <EmergencyBadge done={t.status === TOKEN_STATUS.COMPLETED} />}
                 </div>
                 {t.skipReason && <p className="text-[10px] text-rose-500">{t.skipReason}</p>}
+                {/* Declared at booking. On the roster rather than behind a
+                    click, because knowing someone is diabetic before you call
+                    them in is the entire point of collecting it. */}
+                {t.conditions?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {t.conditions.map((c) => (
+                      <span key={c} className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </td>
               <td className="py-3.5 px-4 text-center">
                 <StatusBadge status={t.status} pulse={t.status === TOKEN_STATUS.IN_CHAMBER} className="mx-auto" />

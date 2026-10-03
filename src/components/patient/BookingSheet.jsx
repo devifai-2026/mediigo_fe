@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
 import { QrCode } from '../ui/QrCode.jsx';
+import { ConditionsField } from './ConditionsField.jsx';
 import { inr, token } from '../../lib/format.js';
 import { VISIT_LABEL } from '../../lib/constants.js';
 
@@ -30,6 +31,7 @@ export function BookingSheet({ doctor, onClose }) {
   const [days, setDays] = useState([]);
   const [slot, setSlot] = useState(null); // { date, shift }
   const [complaint, setComplaint] = useState('');
+  const [conditions, setConditions] = useState([]);
 
   // Reset every time the sheet opens for a different doctor.
   useEffect(() => {
@@ -77,6 +79,7 @@ export function BookingSheet({ doctor, onClose }) {
         // Omitted when the doctor keeps no schedule: the server then books today.
         ...(slot ? { date: slot.date, shift: slot.shift } : {}),
         ...(complaint.trim() ? { complaint: complaint.trim() } : {}),
+        ...(conditions.length ? { conditions } : {}),
       }));
       setTicket({ ...created, doctor });
       toast.success(`Token ${token(created.tokenNumber)} confirmed`);
@@ -281,6 +284,16 @@ export function BookingSheet({ doctor, onClose }) {
           />
           <p className="text-[10px] text-slate-400 mt-1">Only the clinic and your doctor can see this.</p>
         </div>
+
+        {/* Declared per booking, not pulled silently from the profile: these
+            travel to the doctor with THIS visit, and the patient should see
+            what they are sending. Pre-filled from the chosen family member so
+            a returning patient does not retype their history every time. */}
+        <ConditionsField
+          value={conditions}
+          onChange={setConditions}
+          hint="Shown to the doctor before your consultation."
+        />
 
         <div className="mg-panel p-4 space-y-2 text-xs">
           <div className="flex justify-between"><span className="text-slate-500">Consultation</span><span className="font-bold">{inr(fee)}</span></div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApi } from '../../hooks/useApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { api, unwrap } from '../../lib/api.js';
@@ -23,7 +23,21 @@ export default function WalkInView() {
   const [receipt, setReceipt] = useState(null);
 
   const doctor = (doctors || []).find((d) => d._id === doctorId);
-  const fee = doctor?.fees?.[visitType] ?? 0;
+  const listedFee = doctor?.fees?.[visitType] ?? 0;
+  const [overrideOn, setOverrideOn] = useState(false);
+  const [customFee, setCustomFee] = useState('');
+  // An empty or negative override falls back to the listed fee rather than
+  // billing zero by typo.
+  const parsed = Number(customFee);
+  const fee = overrideOn && Number.isFinite(parsed) && parsed >= 0 ? parsed : listedFee;
+
+  // Switching doctor or visit type changes which fee applies, so an override
+  // typed against the previous one must not silently carry over and bill the
+  // next patient at a rate nobody chose for them.
+  useEffect(() => {
+    setOverrideOn(false);
+    setCustomFee('');
+  }, [doctorId, visitType]);
   const ready = form.name.trim() && doctorId;
 
   const collect = async (payment) => {
@@ -125,9 +139,49 @@ export default function WalkInView() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-slate-900 text-white rounded-2xl">
-          <span className="text-xs font-semibold text-slate-300">Total payable</span>
-          <span className="text-2xl font-black">{inr(fee)}</span>
+        {/* The doctor's listed fee is the starting point, not the last word:
+            the desk routinely adjusts at the counter — a concession, a camp
+            rate, a round-off. Overriding is explicit so the listed fee is
+            never changed by accident, and the original stays on screen so
+            anyone can see what was altered and by how much. */}
+        <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-300">Total payable</span>
+            <span className="text-2xl font-black">{inr(fee)}</span>
+          </div>
+
+          {overrideOn ? (
+            <div className="flex items-center gap-2 animate-fade-in">
+              <span className="text-[11px] text-slate-400 shrink-0">₹</span>
+              <input
+                type="number" min="0" step="1" value={customFee}
+                onChange={(e) => setCustomFee(e.target.value)}
+                aria-label="Consultation charge"
+                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-white outline-none focus:border-teal-500"
+              />
+              <button
+                type="button"
+                onClick={() => { setOverrideOn(false); setCustomFee(''); }}
+                className="text-[11px] font-bold text-slate-400 hover:text-white shrink-0"
+              >
+                Reset
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { setOverrideOn(true); setCustomFee(String(listedFee)); }}
+              className="text-[11px] font-bold text-teal-400 hover:text-teal-300"
+            >
+              Change consultation charge
+            </button>
+          )}
+
+          {overrideOn && Number(customFee) !== listedFee && (
+            <p className="text-[10px] text-amber-300">
+              Listed fee is {inr(listedFee)} — this visit is being charged {inr(fee)}.
+            </p>
+          )}
         </div>
 
         <Button onClick={() => setPayOpen(true)} disabled={!ready} className="w-full" size="lg">

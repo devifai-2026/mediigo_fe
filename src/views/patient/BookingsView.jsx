@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApi } from '../../hooks/useApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useConfirm } from '../../context/ConfirmContext.jsx';
@@ -13,6 +13,7 @@ import { TOKEN_STATUS } from '../../lib/constants.js';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { RescheduleBanner } from '../../components/patient/RescheduleBanner.jsx';
 import { BookingPass } from '../../components/patient/BookingPass.jsx';
+import { RatingDialog } from '../../components/patient/RatingDialog.jsx';
 
 /**
  * The bookings list the prototype declared but never implemented — its
@@ -23,6 +24,16 @@ export default function BookingsView() {
   const { data: tokens, loading, refetch } = useApi('/api/patients/me/tokens');
   const [tab, setTab] = useState('upcoming');
   const [pass, setPass] = useState(null);
+  const [rating, setRating] = useState(null);
+  const { data: myReviews, refetch: refetchReviews } = useApi('/api/reviews/mine');
+  const reviewByToken = useMemo(
+    () => new Map((myReviews || []).map((r) => [r.tokenId, r])),
+    [myReviews],
+  );
+  // Ask once per consultation, and only for the most recent unrated one:
+  // opening a stack of dialogs for a patient with six old visits would be
+  // nagging, not prompting. Dismissing it is remembered for the session.
+  const [dismissed, setDismissed] = useState(() => new Set());
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -40,7 +51,13 @@ export default function BookingsView() {
   const cancel = async (t) => {
     const okToCancel = await confirm({
       title: 'Cancel this token?',
-      message: `Token ${token(t.tokenNumber)} with ${t.doctorId?.name} will be released. You will need to book again.`,
+      message: `Token ${token(t.tokenNumber)} with ${t.doctorId?.name} will be released, and you would need to book again.`,
+      // Said before they confirm, not after. A paid token can still be
+      // cancelled — it simply is not refunded, and burying that until the
+      // money is gone is how a cancellation becomes a complaint.
+      detail: t.isPaid
+        ? 'This token is already paid for. Cancelling does NOT refund the consultation fee.'
+        : 'Cancelled bookings are not refunded.',
       confirmLabel: 'Cancel token',
       danger: true,
     });
@@ -50,9 +67,27 @@ export default function BookingsView() {
       toast.success('Token cancelled');
       refetch();
     } catch (e) {
-      toast.error(e.message);
+      toast.error(e?.response?.data?.error?.message || e.message);
     }
   };
+
+  /**
+   * Prompt for a rating when a consultation has just finished.
+   *
+   * Only the newest unrated visit, and only once: a patient returning after
+   * six unrated visits should be asked about the last one, not ambushed with
+   * a queue of dialogs. Waits for the reviews list so an already-rated visit
+   * never prompts.
+   */
+  useEffect(() => {
+    if (!tokens || !myReviews || rating) return;
+    const candidate = (tokens || [])
+      .filter((t) => t.status === TOKEN_STATUS.COMPLETED)
+      .filter((t) => !reviewByToken.has(t._id) && !dismissed.has(t._id))
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+    if (candidate) setRating(candidate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokens, myReviews]);
 
   if (loading) return <SkeletonRows rows={4} />;
 
@@ -115,8 +150,19 @@ export default function BookingsView() {
                 <Button variant="secondary" size="sm" onClick={() => setPass(t)}>
                   <Icon name="doc" className="w-3.5 h-3.5" /> Pass
                 </Button>
-                {t.status === TOKEN_STATUS.WAITING && !t.isPaid && (
+                {t.status === TOKEN_STATUS.WAITING && (
                   <Button variant="secondary" size="sm" onClick={() => cancel(t)}>Cancel</Button>
+                )}
+                {/* Rating lives on the completed consultation it is about, so
+                    a patient can rate an older visit they skipped at the time. */}
+                {t.status === TOKEN_STATUS.COMPLETED && (
+                  <Button
+                    variant={reviewByToken.get(t._id) ? 'secondary' : 'primary'}
+                    size="sm"
+                    onClick={() => setRating(t)}
+                  >
+                    {reviewByToken.get(t._id) ? 'Your rating' : 'Rate visit'}
+                  </Button>
                 )}
               </div>
               </div>
@@ -126,6 +172,15 @@ export default function BookingsView() {
       )}
 
       <BookingPass token={pass} onDone={() => setPass(null)} />
+      <RatingDialog
+        token={rating}
+        existing={rating ? reviewByToken.get(rating._id) : null}
+        onDone={(saved) => {
+          setDismissed((d) => new Set(d).add(rating?._id));
+          setRating(null);
+          if (saved) refetchReviews();
+        }}
+      />
     </div>
   );
 }
