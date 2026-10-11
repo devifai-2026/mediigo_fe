@@ -22,16 +22,16 @@ export function OnboardingTrendChart({ labels, onboarded, revenueHundreds }) {
           {
             label: 'Clinics Onboarded',
             data: onboarded,
-            borderColor: '#4F46E5',
-            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            borderColor: '#1E3FA0',
+            backgroundColor: 'rgba(30, 63, 160, 0.1)',
             fill: true,
             tension: 0.4,
           },
           {
             label: 'Revenue Generated (₹100s)',
             data: revenueHundreds,
-            borderColor: '#0D9488',
-            backgroundColor: 'rgba(13, 148, 136, 0.1)',
+            borderColor: '#3E9A92',
+            backgroundColor: 'rgba(62, 154, 146, 0.1)',
             fill: true,
             tension: 0.4,
           },
@@ -68,7 +68,7 @@ export function RevenueBreakdownChart({ fresh, followup, emergency }) {
     <Doughnut
       data={{
         labels: ['Fresh Consult', 'Follow-Up', 'Emergency'],
-        datasets: [{ data: [fresh, followup, emergency], backgroundColor: ['#059669', '#2563EB', '#E11D48'] }],
+        datasets: [{ data: [fresh, followup, emergency], backgroundColor: ['#059669', '#2552A8', '#E11D48'] }],
       }}
       options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }}
     />
@@ -83,7 +83,7 @@ export function AgentPerformanceChart({ agents }) {
         datasets: [{
           label: 'Onboarded Clinics Count',
           data: agents.map((a) => a.clinicCount),
-          backgroundColor: '#0D9488',
+          backgroundColor: '#3E9A92',
           borderRadius: 8,
         }],
       }}
@@ -98,7 +98,7 @@ export function SpecialtyDistributionChart({ clinics }) {
   const counts = new Map();
   clinics.forEach((c) => counts.set(c.specialty, (counts.get(c.specialty) || 0) + 1));
   const labels = [...counts.keys()];
-  const palette = ['#4F46E5', '#0D9488', '#D97706', '#E11D48', '#64748B', '#2563EB', '#059669', '#7C3AED'];
+  const palette = ['#1E3FA0', '#3E9A92', '#D97706', '#E11D48', '#64748B', '#2552A8', '#059669', '#7C3AED'];
 
   return (
     <Pie
@@ -134,7 +134,7 @@ export function PatientFlowChart({ labels, fresh, followup, emergency }) {
             backgroundColor: 'rgba(5, 150, 105, 0.12)', fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2,
           },
           {
-            label: 'Follow-up', data: followup, borderColor: '#2563EB',
+            label: 'Follow-up', data: followup, borderColor: '#2552A8',
             backgroundColor: 'rgba(37, 99, 235, 0.12)', fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2,
           },
           {
@@ -158,7 +158,7 @@ export function FreshVsRepeatChart({ fresh, repeat }) {
     <Doughnut
       data={{
         labels: ['Fresh (first visit)', 'Repeat'],
-        datasets: [{ data: [fresh, repeat], backgroundColor: ['#6366F1', '#0D9488'], borderWidth: 0 }],
+        datasets: [{ data: [fresh, repeat], backgroundColor: ['#2552A8', '#3E9A92'], borderWidth: 0 }],
       }}
       options={{ ...BOTTOM_LEGEND, cutout: '62%' }}
     />
@@ -171,7 +171,7 @@ export function VisitMixChart({ fresh, followup, emergency }) {
     <Doughnut
       data={{
         labels: ['Fresh', 'Follow-up', 'Emergency'],
-        datasets: [{ data: [fresh, followup, emergency], backgroundColor: ['#059669', '#2563EB', '#E11D48'], borderWidth: 0 }],
+        datasets: [{ data: [fresh, followup, emergency], backgroundColor: ['#059669', '#2552A8', '#E11D48'], borderWidth: 0 }],
       }}
       options={{ ...BOTTOM_LEGEND, cutout: '62%' }}
     />
@@ -185,7 +185,7 @@ export function TopClinicsChart({ clinics }) {
       data={{
         labels: clinics.map((c) => c.name),
         datasets: [
-          { label: 'Visits', data: clinics.map((c) => c.visits), backgroundColor: '#4F46E5', borderRadius: 6 },
+          { label: 'Visits', data: clinics.map((c) => c.visits), backgroundColor: '#1E3FA0', borderRadius: 6 },
           { label: 'Unique patients', data: clinics.map((c) => c.uniquePatients), backgroundColor: '#A5B4FC', borderRadius: 6 },
         ],
       }}
@@ -205,8 +205,8 @@ export function TopDoctorsChart({ doctors }) {
       data={{
         labels: doctors.map((d) => d.name),
         datasets: [
-          { label: 'Visits', data: doctors.map((d) => d.visits), backgroundColor: '#0D9488', borderRadius: 6 },
-          { label: 'Unique patients', data: doctors.map((d) => d.uniquePatients), backgroundColor: '#5EEAD4', borderRadius: 6 },
+          { label: 'Visits', data: doctors.map((d) => d.visits), backgroundColor: '#3E9A92', borderRadius: 6 },
+          { label: 'Unique patients', data: doctors.map((d) => d.uniquePatients), backgroundColor: '#6CC3AA', borderRadius: 6 },
         ],
       }}
       options={{
@@ -240,7 +240,7 @@ export function AgeBandChart({ bands }) {
 export function BookingSourceChart({ sources }) {
   const LABEL = { APP: 'Patient app', WALKIN: 'Walk-in desk', QR_SCAN: 'QR standee', PHONE: 'Phone', UNKNOWN: 'Unknown' };
   const keys = Object.keys(sources ?? {}).filter((k) => sources[k] > 0);
-  const palette = { APP: '#4F46E5', WALKIN: '#D97706', QR_SCAN: '#0D9488', PHONE: '#64748B', UNKNOWN: '#CBD5E1' };
+  const palette = { APP: '#1E3FA0', WALKIN: '#D97706', QR_SCAN: '#3E9A92', PHONE: '#64748B', UNKNOWN: '#CBD5E1' };
   return (
     <Pie
       data={{

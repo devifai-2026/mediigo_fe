@@ -48,6 +48,9 @@ export default {
       backgroundImage: {
         'hero-dark': 'linear-gradient(to bottom right, #0f172a, #172554, #042f2e)',
         'hero-chamber': 'linear-gradient(to right, #0f172a, #172554, #042f2e)',
+        // OPD Desk chamber banner: the patient portal's blue, deepened so white
+        // text and the teal call button both hold contrast across the panel.
+        'hero-desk': 'linear-gradient(105deg, #1E3A8A 0%, #1E3FA0 45%, #2552A8 75%, #2F7F78 120%)',
       },
       keyframes: {
         'slide-up': { from: { transform: 'translateY(100%)', opacity: 0 }, to: { transform: 'translateY(0)', opacity: 1 } },

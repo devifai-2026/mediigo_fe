@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext.jsx';
+import { useApi } from '../../hooks/useApi.js';
+import { DeskCard, PageHeader, Pill } from '../../components/desk/ui.jsx';
 import { api, unwrap } from '../../lib/api.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input, Select } from '../../components/ui/Field.jsx';
@@ -11,6 +14,13 @@ const STEPS = ['Clinic', 'Address', 'Contact', 'Review'];
 
 export default function AgentOnboardView() {
   const toast = useToast();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const leadId = params.get('lead');
+  // Onboarding a clinic from the follow-up list: start from what the agent
+  // already noted about it.
+  const { data: leads } = useApi(leadId ? '/api/onboarding/leads' : null, { skip: !leadId });
+  const lead = leads?.find((l) => l._id === leadId) ?? null;
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
@@ -19,6 +29,19 @@ export default function AgentOnboardView() {
     lat: null, lng: null, placeId: '', formatted: '',
     contactName: '', contactPhone: '', standeeSerial: '',
   });
+
+  useEffect(() => {
+    if (!lead) return;
+    setForm((f) => ({
+      ...f,
+      name: f.name || lead.clinicName || '',
+      line1: f.line1 || lead.address?.line1 || '',
+      city: f.city || lead.address?.city || '',
+      pincode: f.pincode || lead.address?.pincode || '',
+      contactName: f.contactName || lead.contactName || '',
+      contactPhone: f.contactPhone || lead.contactPhone || '',
+    }));
+  }, [lead?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -34,6 +57,7 @@ export default function AgentOnboardView() {
     try {
       const created = unwrap(await api.post('/api/onboarding/submissions', {
         kind: 'HOSPITAL',
+        ...(lead ? { leadId: lead._id } : {}),
         payload: {
           name: form.name.trim(), code: form.code.trim().toUpperCase(), type: form.type,
           licenseNumber: form.licenseNumber.trim(), subscriptionPlan: form.subscriptionPlan,
@@ -46,7 +70,7 @@ export default function AgentOnboardView() {
       }));
       // Geocoding happens on submit so the reviewing admin sees a real pin.
       await api.post(`/api/onboarding/submissions/${created._id}/submit`);
-      toast.success('Sent to your district admin for verification');
+      toast.success('Sent to your district admin for approval');
       setForm({
         name: '', code: '', licenseNumber: '', type: 'CLINIC', subscriptionPlan: 'BASIC',
         line1: '', line2: '', city: '', state: 'West Bengal', pincode: '',
@@ -54,6 +78,7 @@ export default function AgentOnboardView() {
         contactName: '', contactPhone: '', standeeSerial: '',
       });
       setStep(0);
+      navigate('/a/submissions');
     } catch (e) {
       toast.error(e.message);
     } finally {
@@ -62,24 +87,26 @@ export default function AgentOnboardView() {
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Onboard a clinic</h2>
-        <p className="text-xs text-slate-500">Capture the details on site — your district admin verifies before it goes live</p>
-      </div>
+    <div className="max-w-3xl mx-auto space-y-5">
+      <PageHeader
+        icon="fa-hospital"
+        title="Onboard a Clinic"
+        subtitle="Capture the details on site — your district admin approves it before it goes live"
+        badge={lead && <Pill tone="teal">From follow-up · {lead.clinicName}</Pill>}
+      />
 
       <div className="flex items-center gap-1">
         {STEPS.map((s, i) => (
           <div key={s} className="flex-1 flex items-center gap-1">
-            <div className={clsx('flex-1 h-1.5 rounded-full transition-colors', i <= step ? 'bg-teal-600' : 'bg-slate-200')} />
+            <div className={clsx('flex-1 h-1.5 rounded-full transition-colors', i <= step ? 'bg-mg-teal' : 'bg-slate-200')} />
           </div>
         ))}
       </div>
-      <p className="text-[11px] font-bold text-teal-700 uppercase tracking-wider">
+      <p className="text-[11px] font-medium text-mg-teal uppercase tracking-wider">
         Step {step + 1} of {STEPS.length} · {STEPS[step]}
       </p>
 
-      <div className="glass-card rounded-3xl p-6 space-y-4">
+      <DeskCard className="p-4 sm:p-6 space-y-4">
         {step === 0 && (
           <>
             <Field label="Clinic name" required>
@@ -147,7 +174,7 @@ export default function AgentOnboardView() {
               </Field>
             </div>
             <p className="text-[11px] text-slate-500 flex items-start gap-1.5">
-              <Icon name="location" className="w-3.5 h-3.5 mt-0.5 shrink-0 text-teal-600" />
+              <Icon name="location" className="w-3.5 h-3.5 mt-0.5 shrink-0 text-mg-teal" />
               We geocode this address when you submit, so the clinic appears correctly on the patient map.
             </p>
           </>
@@ -179,7 +206,7 @@ export default function AgentOnboardView() {
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3 py-2 border-b border-slate-100">
                 <span className="text-slate-500">{k}</span>
-                <span className="font-bold text-slate-900 text-right">{v}</span>
+                <span className="font-medium text-slate-900 text-right">{v}</span>
               </div>
             ))}
           </div>
@@ -190,10 +217,10 @@ export default function AgentOnboardView() {
           {step < STEPS.length - 1 ? (
             <Button onClick={() => setStep(step + 1)} disabled={!canAdvance} className="flex-1">Continue</Button>
           ) : (
-            <Button onClick={submit} loading={busy} className="flex-1">Submit for verification</Button>
+            <Button onClick={submit} loading={busy} className="flex-1">Submit for district approval</Button>
           )}
         </div>
-      </div>
+      </DeskCard>
     </div>
   );
 }

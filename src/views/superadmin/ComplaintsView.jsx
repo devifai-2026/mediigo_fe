@@ -26,8 +26,8 @@ const LOG_TONE = {
   HOSPITAL_APPROVED: 'bg-emerald-100 text-emerald-800',
   HOSPITAL_REACTIVATED: 'bg-emerald-100 text-emerald-800',
   USER_CREATED: 'bg-emerald-100 text-emerald-800',
-  TICKET_RAISED: 'bg-indigo-100 text-indigo-800',
-  TICKET_MOVED: 'bg-indigo-100 text-indigo-800',
+  TICKET_RAISED: 'bg-blue-100 text-mg-navy',
+  TICKET_MOVED: 'bg-blue-100 text-mg-navy',
   WALKIN_BOOKED: 'bg-slate-100 text-slate-600',
 };
 
@@ -76,7 +76,7 @@ export default function ComplaintsView() {
         <button
           type="button"
           onClick={() => setRaising(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-plus" /> Raise Ticket
         </button>
@@ -133,9 +133,9 @@ export default function ComplaintsView() {
 
       {tab === 'logs' && (
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Platform activity, last 14 days</h3>
+              <h3 className="font-semibold text-slate-900 text-sm">Platform activity, last 14 days</h3>
               <p className="text-xs text-slate-500">Audited events per day — approvals, suspensions, bookings and ticket moves.</p>
             </div>
             <div className="h-56">
@@ -145,7 +145,7 @@ export default function ComplaintsView() {
                   datasets: [{
                     label: 'Audited events',
                     data: logTrend.map((t) => t.count),
-                    borderColor: '#4F46E5',
+                    borderColor: '#1E3FA0',
                     backgroundColor: 'rgba(79,70,229,0.1)',
                     fill: true,
                     tension: 0.35,
@@ -157,15 +157,15 @@ export default function ComplaintsView() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-900 text-sm">Event log</h3>
+              <h3 className="font-semibold text-slate-900 text-sm">Event log</h3>
             </div>
             {logLoading ? <div className="p-4"><SkeletonRows rows={5} /></div> : (
               <div className="overflow-x-auto max-h-[520px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0">
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                       <th className="py-3 px-4">When</th>
                       <th className="py-3 px-4">Event</th>
                       <th className="py-3 px-4">Actor</th>
@@ -181,7 +181,7 @@ export default function ComplaintsView() {
                           <span className="block text-[10px] text-slate-400">{timeOf(r.createdAt)}</span>
                         </td>
                         <td className="py-2.5 px-4">
-                          <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded', LOG_TONE[r.action] ?? 'bg-slate-100 text-slate-600')}>
+                          <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded', LOG_TONE[r.action] ?? 'bg-slate-100 text-slate-600')}>
                             {r.action.replace(/_/g, ' ')}
                           </span>
                         </td>
@@ -203,9 +203,9 @@ export default function ComplaintsView() {
 
       {tab === 'analytics' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Tickets raised per day</h3>
+              <h3 className="font-semibold text-slate-900 text-sm">Tickets raised per day</h3>
               <p className="text-xs text-slate-500">Escalation volume across every role.</p>
             </div>
             <div className="h-56">
@@ -215,7 +215,7 @@ export default function ComplaintsView() {
                   datasets: [{
                     label: 'Tickets',
                     data: trend.map((t) => t.count),
-                    borderColor: '#0D9488',
+                    borderColor: '#3E9A92',
                     backgroundColor: 'rgba(13,148,136,0.12)',
                     fill: true,
                     tension: 0.35,
@@ -227,9 +227,9 @@ export default function ComplaintsView() {
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Most frequent events</h3>
+              <h3 className="font-semibold text-slate-900 text-sm">Most frequent events</h3>
               <p className="text-xs text-slate-500">What the platform spends its time doing.</p>
             </div>
             <div className="h-56">
@@ -239,7 +239,7 @@ export default function ComplaintsView() {
                   datasets: [{
                     label: 'Events',
                     data: (log?.byAction ?? []).map((a) => a.count),
-                    backgroundColor: '#4F46E5',
+                    backgroundColor: '#1E3FA0',
                     borderRadius: 6,
                   }],
                 }}

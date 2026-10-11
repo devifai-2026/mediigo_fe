@@ -9,20 +9,26 @@ import NotFoundView from './views/public/NotFoundView.jsx';
 import ForbiddenView from './views/public/ForbiddenView.jsx';
 
 import ExploreView from './views/patient/ExploreView.jsx';
+import DoctorDetailView from './views/patient/DoctorDetailView.jsx';
 import TrackerView from './views/patient/TrackerView.jsx';
 import BookingsView from './views/patient/BookingsView.jsx';
 import ProfileView from './views/patient/ProfileView.jsx';
 
 import DoctorChamberView from './views/doctor/DoctorChamberView.jsx';
-import DoctorQueueView from './views/doctor/DoctorQueueView.jsx';
-import DoctorProfileView from './views/doctor/DoctorProfileView.jsx';
+import DoctorFollowUpsView from './views/doctor/DoctorFollowUpsView.jsx';
 
 import ReceptionQueueView from './views/reception/ReceptionQueueView.jsx';
 import WalkInView from './views/reception/WalkInView.jsx';
-import RevenueView from './views/reception/RevenueView.jsx';
+
+import RxView from './views/desk/RxView.jsx';
+import RosterView from './views/desk/RosterView.jsx';
+import AnalyticsView from './views/desk/AnalyticsView.jsx';
+import DeskProfileView from './views/desk/DeskProfileView.jsx';
 
 import AgentOnboardView from './views/agent/AgentOnboardView.jsx';
 import AgentSubmissionsView from './views/agent/AgentSubmissionsView.jsx';
+import AgentFollowUpsView from './views/agent/AgentFollowUpsView.jsx';
+import AgentPerformanceView from './views/agent/AgentPerformanceView.jsx';
 
 import ExecDashboardView from './views/admin/ExecDashboardView.jsx';
 import ClinicsView from './views/admin/ClinicsView.jsx';
@@ -31,6 +37,7 @@ import AuditView from './views/admin/AuditView.jsx';
 
 import { AdminConsoleLayout } from './components/superadmin/AdminConsoleLayout.jsx';
 import SuperDashboardView from './views/superadmin/SuperDashboardView.jsx';
+import LiveMonitorView from './views/superadmin/LiveMonitorView.jsx';
 import PatientsView from './views/superadmin/PatientsView.jsx';
 import PatientsMasterView from './views/superadmin/PatientsMasterView.jsx';
 import PatientProfileView from './views/superadmin/PatientProfileView.jsx';
@@ -62,21 +69,25 @@ const PATIENT_NAV = [
 // already shared working after the move to /p.
 const PATIENT_LEGACY = ['explore', 'tracker', 'bookings', 'profile'];
 
-const DOCTOR_NAV = [
-  { to: '/d/chamber', label: 'Chamber', icon: 'megaphone' },
-  { to: '/d/queue', label: 'Queue', icon: 'list' },
-  { to: '/d/profile', label: 'Settings', icon: 'settings' },
+// The OPD Desk: the same six tabs for doctors and the front desk. What each
+// role may DO on a tab is still decided by the server. `fa` is the
+// FontAwesome glyph the desk navigation uses.
+const deskNav = (base) => [
+  { to: `${base}/${base === '/d' ? 'chamber' : 'queue'}`, label: 'Queue', icon: 'list', fa: 'fa-list-check' },
+  { to: `${base}/rx`, label: 'Rx / EMR', icon: 'doc', fa: 'fa-file-prescription' },
+  { to: `${base}/walkin`, label: 'Walk-In', icon: 'plus', fa: 'fa-user-plus' },
+  { to: `${base}/roster`, label: 'Roster', icon: 'clock', fa: 'fa-calendar-days' },
+  { to: `${base}/analytics`, label: 'Analytics', icon: 'revenue', fa: 'fa-chart-line' },
+  { to: `${base}/profile`, label: 'Profile', icon: 'user', fa: 'fa-user-doctor' },
 ];
-
-const RECEPTION_NAV = [
-  { to: '/r/queue', label: 'Queue', icon: 'list' },
-  { to: '/r/walkin', label: 'Walk-in', icon: 'plus' },
-  { to: '/r/revenue', label: 'Revenue', icon: 'wallet' },
-];
+const DOCTOR_NAV = deskNav('/d');
+const RECEPTION_NAV = deskNav('/r');
 
 const AGENT_NAV = [
-  { to: '/a/onboard', label: 'Onboard', icon: 'plus' },
-  { to: '/a/submissions', label: 'Submissions', icon: 'doc' },
+  { to: '/a/followups', label: 'Follow-ups', icon: 'clock', fa: 'fa-route' },
+  { to: '/a/onboard', label: 'Onboard', icon: 'plus', fa: 'fa-hospital' },
+  { to: '/a/submissions', label: 'Approvals', icon: 'doc', fa: 'fa-clipboard-check' },
+  { to: '/a/performance', label: 'Performance', icon: 'revenue', fa: 'fa-chart-line' },
 ];
 
 const ADMIN_NAV = [
@@ -126,6 +137,8 @@ export default function App() {
         )}
       >
         <Route path="/p/explore" element={<ExploreView />} />
+        {/* Public like Explore: a profile is worth reading before signing in. */}
+        <Route path="/p/doctors/:doctorId" element={<DoctorDetailView />} />
         <Route path="/p/tracker" element={<RequireAuth><TrackerView /></RequireAuth>} />
         <Route path="/p/bookings" element={<RequireAuth><BookingsView /></RequireAuth>} />
         <Route path="/p/profile" element={<RequireAuth><ProfileView /></RequireAuth>} />
@@ -139,35 +152,48 @@ export default function App() {
       <Route
         element={
           <RequireRole roles={[ROLES.DOCTOR]}>
-            <PortalShell items={DOCTOR_NAV} subtitle="Doctor Chamber" maxWidth="max-w-6xl" />
+            <PortalShell items={DOCTOR_NAV} subtitle="OPD Desk" variant="desk" />
           </RequireRole>
         }
       >
         <Route path="/d/chamber" element={<DoctorChamberView />} />
-        <Route path="/d/queue" element={<DoctorQueueView />} />
-        <Route path="/d/profile" element={<DoctorProfileView />} />
+        <Route path="/d/rx" element={<RxView />} />
+        <Route path="/d/walkin" element={<WalkInView />} />
+        <Route path="/d/roster" element={<RosterView />} />
+        <Route path="/d/analytics" element={<AnalyticsView />} />
+        <Route path="/d/profile" element={<DeskProfileView />} />
+        <Route path="/d/followups" element={<DoctorFollowUpsView />} />
+        {/* The old roster page; the queue tab carries the full roster now. */}
+        <Route path="/d/queue" element={<Navigate to="/d/chamber" replace />} />
       </Route>
 
       <Route
         element={
           <RequireRole roles={[ROLES.RECEPTIONIST]}>
-            <PortalShell items={RECEPTION_NAV} subtitle="Front Desk" />
+            <PortalShell items={RECEPTION_NAV} subtitle="Front Desk" variant="desk" />
           </RequireRole>
         }
       >
         <Route path="/r/queue" element={<ReceptionQueueView />} />
+        <Route path="/r/rx" element={<RxView />} />
         <Route path="/r/walkin" element={<WalkInView />} />
-        <Route path="/r/revenue" element={<RevenueView />} />
+        <Route path="/r/roster" element={<RosterView />} />
+        <Route path="/r/analytics" element={<AnalyticsView />} />
+        <Route path="/r/profile" element={<DeskProfileView />} />
+        {/* Revenue was renamed Analytics; keep old links working. */}
+        <Route path="/r/revenue" element={<Navigate to="/r/analytics" replace />} />
       </Route>
 
       <Route
         element={
           <RequireRole roles={[ROLES.FIELD_AGENT]}>
-            <PortalShell items={AGENT_NAV} subtitle="Field Agent" maxWidth="max-w-4xl" />
+            <PortalShell items={AGENT_NAV} subtitle="Field Agent" variant="desk" />
           </RequireRole>
         }
       >
+        <Route path="/a/followups" element={<AgentFollowUpsView />} />
         <Route path="/a/onboard" element={<AgentOnboardView />} />
+        <Route path="/a/performance" element={<AgentPerformanceView />} />
         <Route path="/a/submissions" element={<AgentSubmissionsView />} />
       </Route>
 
@@ -196,6 +222,7 @@ export default function App() {
         }
       >
         <Route path="/super" element={<SuperDashboardView />} />
+        <Route path="/super/live" element={<LiveMonitorView />} />
         <Route path="/super/attendance" element={<PatientsView />} />
         <Route path="/super/patients" element={<PatientsMasterView />} />
         <Route path="/super/patients/:key" element={<PatientProfileView />} />

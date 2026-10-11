@@ -41,10 +41,10 @@ export function ClinicMap({ coordinates, name, height = 'h-56' }) {
 
   if (!coordinates) {
     return (
-      <div className={`${height} rounded-2xl bg-slate-50 border border-dashed border-slate-300 grid place-items-center`}>
+      <div className={`${height} rounded-xl bg-slate-50 border border-dashed border-slate-300 grid place-items-center`}>
         <div className="text-center px-4">
           <i className="fa-solid fa-location-dot text-slate-300 text-2xl" />
-          <p className="text-xs font-bold text-slate-500 mt-2">No coordinates on file</p>
+          <p className="text-xs font-semibold text-slate-500 mt-2">No coordinates on file</p>
           <p className="text-[11px] text-slate-400 mt-0.5">
             This clinic cannot appear in patient search until it is geocoded.
           </p>
@@ -57,10 +57,10 @@ export function ClinicMap({ coordinates, name, height = 'h-56' }) {
 
   if (!mapsConfigured() || error) {
     return (
-      <div className={`${height} rounded-2xl bg-slate-50 border border-slate-200 grid place-items-center`}>
+      <div className={`${height} rounded-xl bg-slate-50 border border-slate-200 grid place-items-center`}>
         <div className="text-center px-4">
-          <i className="fa-solid fa-map-location-dot text-teal-600 text-2xl" />
-          <p className="text-xs font-mono font-bold text-slate-700 mt-2">
+          <i className="fa-solid fa-map-location-dot text-mg-teal text-2xl" />
+          <p className="text-xs font-mono font-semibold text-slate-700 mt-2">
             {coordinates.lat.toFixed(5)}, {coordinates.lng.toFixed(5)}
           </p>
           <p className="text-[11px] text-slate-400 mt-1">
@@ -68,7 +68,7 @@ export function ClinicMap({ coordinates, name, height = 'h-56' }) {
           </p>
           <a
             href={link} target="_blank" rel="noreferrer"
-            className="inline-block mt-3 text-[11px] font-bold text-teal-700 hover:underline"
+            className="inline-block mt-3 text-[11px] font-semibold text-mg-tealDark hover:underline"
           >
             Open in Google Maps →
           </a>
@@ -79,8 +79,8 @@ export function ClinicMap({ coordinates, name, height = 'h-56' }) {
 
   return (
     <div className="space-y-2">
-      <div ref={ref} className={`${height} rounded-2xl border border-slate-200 overflow-hidden`} />
-      <a href={link} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-teal-700 hover:underline">
+      <div ref={ref} className={`${height} rounded-xl border border-slate-200 overflow-hidden`} />
+      <a href={link} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-mg-tealDark hover:underline">
         Open in Google Maps →
       </a>
     </div>

@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
+import clsx from 'clsx';
 import { useApi } from '../../hooks/useApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useConfirm } from '../../context/ConfirmContext.jsx';
 import { useQueueSnapshot } from '../../hooks/useQueueSnapshot.js';
 import { useAudioUnlock } from '../../hooks/useAudioUnlock.js';
 import { useSocketEvent } from '../../hooks/useSocketEvent.js';
+import { useDeskActions } from '../../hooks/useDeskActions.js';
 import { announce } from '../../lib/audio.js';
 import { EVENTS } from '../../lib/socketEvents.js';
 import { api } from '../../lib/api.js';
-import { Select } from '../../components/ui/Field.jsx';
-import { Button } from '../../components/ui/Button.jsx';
-import { StatCard } from '../../components/ui/StatCard.jsx';
-import { QueueRoster, SkippedDrawer } from '../../components/queue/QueueRoster.jsx';
 import { AvailabilityManager } from '../../components/doctor/AvailabilityManager.jsx';
+import { BreakStateManager } from '../../components/doctor/BreakStateManager.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
-import { Icon } from '../../components/ui/Icon.jsx';
-import { token } from '../../lib/format.js';
+import { ChamberHero } from '../../components/desk/ChamberHero.jsx';
+import { DeskStats, SkippedPanel, DeskRoster } from '../../components/desk/DeskPanels.jsx';
+import { AudioUnlockBanner, DeskCard, DoctorPicker, Pill } from '../../components/desk/ui.jsx';
+import { Button } from '../../components/ui/Button.jsx';
+import { CancelTokenModal, CancellationsPanel } from '../../components/desk/Cancellations.jsx';
 
 export default function ReceptionQueueView() {
   const { data: doctors } = useApi('/api/doctors');
@@ -23,8 +25,11 @@ export default function ReceptionQueueView() {
   const confirm = useConfirm();
   const [doctorId, setDoctorId] = useState('');
   const [bookingBusy, setBookingBusy] = useState(false);
-  const { snapshot, refetch } = useQueueSnapshot(doctorId || null);
+  const [filter, setFilter] = useState('ALL');
+  const { snapshot: s, refetch } = useQueueSnapshot(doctorId || null);
   const { ready: audioReady, unlock } = useAudioUnlock();
+  const desk = useDeskActions(doctorId, refetch);
+  const [cancelling, setCancelling] = useState(null);
 
   useEffect(() => {
     if (!doctorId && doctors?.length) setDoctorId(doctors[0]._id);
@@ -68,76 +73,79 @@ export default function ReceptionQueueView() {
     }
   };
 
-  const onAction = async (action, t) => {
-    try {
-      if (action === 'RESTORE') await api.post(`/api/queue/tokens/${t.tokenId}/restore`);
-      else await api.post(`/api/queue/tokens/${t.tokenId}/status`, { status: action });
-      refetch();
-    } catch (e) {
-      toast.error(e.message);
-    }
-  };
-
   if (!doctors?.length) {
     return <EmptyState icon="users" title="No doctors at this clinic yet" hint="Ask your district admin to add doctors." />;
   }
 
-  const s = snapshot;
+  const current = s?.tokens?.find((t) => t.status === 'IN_CHAMBER');
+  const bookingOpen = Boolean(s?.session?.isBookingOpen);
 
   return (
-    <div className="space-y-5">
-      {!audioReady && (
-        <button type="button" onClick={unlock} className="w-full p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-2">
-          <Icon name="megaphone" className="w-4 h-4" /> Tap to enable waiting-room announcements
-        </button>
-      )}
+    <div className="space-y-5 sm:space-y-6">
+      {!audioReady && <AudioUnlockBanner onUnlock={unlock}>Tap to enable waiting-room announcements</AudioUnlockBanner>}
 
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-xl font-bold text-slate-900">Live queue</h2>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Select value={doctorId} onChange={(e) => setDoctorId(e.target.value)} className="w-auto min-w-[220px]">
-            {doctors.map((d) => <option key={d._id} value={d._id}>{d.name} — {d.specialty}</option>)}
-          </Select>
-          {/* Disabled while on a break: a break already halts the queue, and
-              offering a second, differently-named switch for the same outcome
-              is how a desk ends up unsure which one actually did it. */}
+      {/* Which doctor's chamber this desk is driving. A pill per doctor rather
+          than a dropdown: a clinic has a handful, and the desk switches often. */}
+      <DeskCard className="p-3 sm:p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <DoctorPicker doctors={doctors} value={doctorId} onChange={setDoctorId} className="min-w-0" />
+
+        {/* Disabled while on a break: a break already halts the queue, and
+            offering a second, differently-named switch for the same outcome
+            is how a desk ends up unsure which one actually did it. */}
+        <div className="flex items-center gap-3 shrink-0">
+          <Pill dot tone={s?.session?.isOnBreak ? 'amber' : bookingOpen ? 'emerald' : 'slate'}>
+            {s?.session?.isOnBreak ? 'On break' : bookingOpen ? 'Bookings open' : 'Bookings closed'}
+          </Pill>
           <Button
-            variant={s?.session?.isBookingOpen ? 'secondary' : 'primary'}
             size="sm"
+            variant={bookingOpen ? 'secondary' : 'primary'}
             disabled={bookingBusy || !doctorId || s?.session?.isOnBreak}
             title={s?.session?.isOnBreak ? 'Resume the doctor from their break first' : undefined}
-            onClick={() => toggleBooking(!s?.session?.isBookingOpen)}
+            onClick={() => toggleBooking(!bookingOpen)}
           >
-            {s?.session?.isBookingOpen ? 'Close bookings' : 'Open bookings'}
+            <i className={clsx('fa-solid', bookingOpen ? 'fa-ban' : 'fa-lock-open')} aria-hidden="true" />
+            {bookingOpen ? 'Close bookings' : 'Open bookings'}
           </Button>
         </div>
-      </div>
+      </DeskCard>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Now serving" value={token(s?.currentToken ?? 0)} icon="megaphone" tone="teal" />
-        <StatCard label="Waiting" value={s?.counts?.waiting ?? 0} icon="clock" tone="warn" />
-        <StatCard label="Completed" value={s?.counts?.completed ?? 0} icon="check" tone="cash" />
-        <StatCard
-          label="Status"
-          value={s?.session?.isOnBreak ? 'On break' : s?.session?.isBookingOpen ? 'Open' : 'Closed'}
-          icon="info"
-          tone={s?.session?.isOnBreak ? 'warn' : s?.session?.isBookingOpen ? 'cash' : 'slate'}
-          hint={s?.session?.isOnBreak ? s.session.breakReason : undefined}
-        />
-      </div>
+      {/* The desk calls straight through: the outcome of a consultation is the
+          doctor's to record, so it is not asked here. */}
+      <ChamberHero
+        snapshot={s}
+        current={current}
+        hasCalled={s?.chamberState === 'DONE'}
+        busy={desk.busy}
+        onCallNext={() => desk.callNext()}
+        onRecall={desk.recall}
+        onComplete={() => current && desk.complete(current)}
+        onSkip={() => current && desk.skip(current)}
+        onOutcome={(o) => current && desk.complete(current, o)}
+        footer={doctorId && <BreakStateManager doctorId={doctorId} session={s?.session} onChanged={refetch} />}
+      />
 
-      <SkippedDrawer tokens={s?.tokens ?? []} onRestore={(t) => onAction('RESTORE', t)} />
+      <DeskStats counts={s?.counts} />
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <QueueRoster tokens={s?.tokens ?? []} onAction={onAction} />
-      </div>
+      <SkippedPanel tokens={s?.tokens} onRestore={desk.restore} busy={desk.busy} />
+
+      <DeskRoster
+        snapshot={s}
+        filter={filter}
+        onFilter={setFilter}
+        busy={desk.busy}
+        canCancel
+        onAction={(action, t) => (action === 'CANCEL' ? setCancelling(t) : desk.onRowAction(action, t))}
+      />
+
+      <CancellationsPanel cancellations={s?.cancellations} />
+      <CancelTokenModal target={cancelling} onClose={() => setCancelling(null)} onDone={refetch} toast={toast} />
 
       {/* The desk fields the phone call when a doctor cannot come in, so it
           needs to close a sitting without waiting for the doctor to log in. */}
       {doctorId && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <DeskCard className="p-5">
           <AvailabilityManager doctorId={doctorId} />
-        </div>
+        </DeskCard>
       )}
     </div>
   );

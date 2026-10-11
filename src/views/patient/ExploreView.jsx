@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, unwrap } from '../../lib/api.js';
 import { useGeolocation } from '../../hooks/useGeolocation.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
-import { DoctorCard } from '../../components/patient/DoctorCard.jsx';
+import { ClinicCard } from '../../components/patient/ClinicCard.jsx';
+import { ClinicSheet } from '../../components/patient/ClinicSheet.jsx';
+import { groupByClinic } from '../../lib/clinics.js';
 import { BookingSheet } from '../../components/patient/BookingSheet.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
@@ -46,6 +48,9 @@ export default function ExploreView() {
   const [search, setSearch] = useState('');
   const [radius, setRadius] = useState(15);
   const [booking, setBooking] = useState(null);
+  // The clinic sheet: { clinic, choosing } — choosing when opened from
+  // "Book Token", so it leads with picking a doctor.
+  const [sheet, setSheet] = useState(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Specialties come from the network, not a constant: the hardcoded list held
   // eight while only four had doctors, so half the dropdown returned nothing
@@ -301,7 +306,12 @@ export default function ExploreView() {
     ? cities.filter((c) => c.city.toLowerCase().includes(cityQuery.trim().toLowerCase()))
     : cities;
 
+  // Patients browse clinics; each search row is a doctor with its clinic, so
+  // the list is those rows grouped, nearest clinic first.
+  const clinics = useMemo(() => groupByClinic(rows), [rows]);
+
   const onBook = (doctor) => {
+    setSheet(null);
     if (!isAuthed) {
       toast.push('Sign in to book a token');
       navigate('/login', { state: { from: '/p/explore' } });
@@ -582,7 +592,7 @@ export default function ExploreView() {
 
       <section ref={listRef} className="scroll-mt-32">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg sm:text-xl font-semibold text-slate-900">Available OPD Doctors</h3>
+          <h3 className="text-lg sm:text-xl font-semibold text-slate-900">Clinics &amp; Hospitals Near You</h3>
           <div className="relative" ref={filtersRef}>
             <button
               type="button"
@@ -622,7 +632,9 @@ export default function ExploreView() {
           </div>
         </div>
         <p className="mt-1 text-[11px] text-slate-500">
-          {loading ? 'Searching…' : `${rows.length} found within ${radius} km`}
+          {loading
+            ? 'Searching…'
+            : `${clinics.length} ${clinics.length === 1 ? 'clinic' : 'clinics'} · ${rows.length} ${rows.length === 1 ? 'doctor' : 'doctors'} within ${radius} km`}
           {specialty && !loading && ` · ${specialty}`}
           {meta?.distanceSource === 'HAVERSINE' && !loading && (
             <span className="ml-1 text-slate-400" title="Add a Google Maps key for road distance">· straight-line</span>
@@ -634,9 +646,16 @@ export default function ExploreView() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
             </div>
-          ) : rows.length ? (
+          ) : clinics.length ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {rows.map((d) => <DoctorCard key={d.doctorId} doctor={d} onBook={onBook} />)}
+              {clinics.map((c) => (
+                <ClinicCard
+                  key={c.id}
+                  clinic={c}
+                  onOpen={(clinic) => setSheet({ clinic, choosing: false })}
+                  onBook={(clinic) => setSheet({ clinic, choosing: true })}
+                />
+              ))}
             </div>
           ) : (
             <EmptyState
@@ -660,6 +679,15 @@ export default function ExploreView() {
         </div>
       </section>
 
+      {sheet && (
+        <ClinicSheet
+          clinic={sheet.clinic}
+          choosing={sheet.choosing}
+          filtered={Boolean(specialty || search.trim())}
+          onClose={() => setSheet(null)}
+          onBook={onBook}
+        />
+      )}
       <BookingSheet doctor={booking} onClose={() => setBooking(null)} />
     </div>
   );

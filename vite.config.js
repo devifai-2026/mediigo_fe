@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Each role-portal runs on its own port in dev (see src/lib/portals.js), so
@@ -8,6 +8,9 @@ const PORTAL_PORTS = { clinic: 5173, district: 5174, super: 5175 };
 export default defineConfig(({ mode }) => {
   const portal = process.env.VITE_PORTAL;
   const port = Number(process.env.PORT) || PORTAL_PORTS[portal] || 5173;
+  // Where /api and /socket.io go in dev. A local backend by default; set
+  // API_PROXY_TARGET in .env to develop against a deployed one instead.
+  const apiTarget = loadEnv(mode, process.cwd(), '').API_PROXY_TARGET || 'http://localhost:4000';
 
   return {
   plugins: [react()],
@@ -19,8 +22,8 @@ export default defineConfig(({ mode }) => {
     // Proxying keeps everything same-origin in dev, so the httpOnly refresh
     // cookie is first-party and needs no CORS exemption.
     proxy: {
-      '/api': { target: 'http://localhost:4000', changeOrigin: true },
-      '/socket.io': { target: 'http://localhost:4000', ws: true, changeOrigin: true },
+      '/api': { target: apiTarget, changeOrigin: true },
+      '/socket.io': { target: apiTarget, ws: true, changeOrigin: true },
     },
   },
   build: {

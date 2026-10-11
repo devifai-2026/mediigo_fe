@@ -16,6 +16,8 @@
   .mg-panel { @apply bg-mg-surface rounded; }
   .mg-hero { @apply relative overflow-hidden rounded-xl bg-gradient-to-r from-mg-blue via-[#2552A8] to-mg-mint text-white; }
   .mg-title { @apply text-lg sm:text-xl font-semibold text-slate-900; }
+  /* Compact inputs for the prescription pad's medicine rows. */
+  .rx-input { @apply w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }

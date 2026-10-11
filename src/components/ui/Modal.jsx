@@ -14,7 +14,7 @@ const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl'
  * variant="sheet" gives the mobile bottom-sheet treatment the patient booking
  * flow uses, becoming a centred dialog at sm and up.
  */
-export function Modal({ open, onClose, title, subtitle, children, size = 'md', variant = 'center', closeOnBackdrop = true }) {
+export function Modal({ open, onClose, title, subtitle, eyebrow, children, size = 'md', variant = 'center', closeOnBackdrop = true }) {
   const panelRef = useRef(null);
   const brand = useIsBrandTheme();
   useFocusTrap(panelRef, open);
@@ -58,6 +58,12 @@ export function Modal({ open, onClose, title, subtitle, children, size = 'md', v
         {title && (
           <div className="flex items-start justify-between gap-3 p-5 pb-3 border-b border-slate-100 shrink-0">
             <div>
+              {/* A small label above the title, e.g. "Clinic profile". */}
+              {eyebrow && (
+                <span className="inline-block mb-1.5 px-2 py-0.5 rounded-full border border-mg-teal/30 bg-teal-50 text-[10px] font-bold uppercase tracking-wider text-mg-teal">
+                  {eyebrow}
+                </span>
+              )}
               <h3 className={clsx('text-slate-900 leading-tight', brand ? 'font-semibold text-lg' : 'font-bold text-base')}>{title}</h3>
               {subtitle && <p className={clsx('text-[11px] mt-0.5', brand ? 'text-mg-teal' : 'text-slate-500')}>{subtitle}</p>}
             </div>

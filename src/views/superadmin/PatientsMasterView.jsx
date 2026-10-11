@@ -49,10 +49,10 @@ const daysAgo = (n) => {
 };
 
 const Panel = ({ title, hint, children, className, chip }) => (
-  <div className={clsx('bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3', className)}>
+  <div className={clsx('bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3', className)}>
     <div className="flex justify-between items-start gap-2">
       <div>
-        <h3 className="font-bold text-slate-900 text-sm">{title}</h3>
+        <h3 className="font-semibold text-slate-900 text-sm">{title}</h3>
         {hint && <p className="text-[11px] text-slate-500">{hint}</p>}
       </div>
       {chip}
@@ -107,8 +107,8 @@ export default function PatientsMasterView() {
         subtitle="Every patient across the network — fresh, repeat and follow-up histories against the clinics and doctors they were seen by."
       >
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold text-slate-500 bg-white border border-slate-200 px-3 py-2 rounded-xl">
-            <i className="fa-solid fa-users mr-1.5 text-indigo-500" />
+          <span className="text-[11px] font-semibold text-slate-500 bg-white border border-slate-200 px-3 py-2 rounded-xl">
+            <i className="fa-solid fa-users mr-1.5 text-mg-blue" />
             {total.toLocaleString('en-IN')} patients in view
           </span>
         </div>
@@ -129,7 +129,7 @@ export default function PatientsMasterView() {
         <AdminKpi
           label="Repeat Patients" value={(k.repeatPatients ?? 0).toLocaleString('en-IN')}
           icon="fa-repeat" accent="teal"
-          footer={<><span className="font-bold text-teal-600">{k.repeatRate ?? 0}% retention</span> · {k.loyalPatients ?? 0} with 5+ visits</>}
+          footer={<><span className="font-semibold text-mg-teal">{k.repeatRate ?? 0}% retention</span> · {k.loyalPatients ?? 0} with 5+ visits</>}
         />
         <AdminKpi
           label="Attended Today" value={(k.attendedToday ?? 0).toLocaleString('en-IN')}
@@ -144,7 +144,7 @@ export default function PatientsMasterView() {
           className="lg:col-span-2"
           title="Daily Patient Flow — Last 30 Days"
           hint="Footfall split by visit type, so a rise in follow-ups is never mistaken for new demand."
-          chip={<span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full">Live OPD</span>}
+          chip={<span className="text-[10px] font-semibold bg-blue-50 text-mg-navy px-2.5 py-1 rounded-full">Live OPD</span>}
         >
           <div className="h-64">
             <PatientFlowChart
@@ -160,12 +160,12 @@ export default function PatientsMasterView() {
           </div>
           <div className="grid grid-cols-2 gap-2 pt-1">
             <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
-              <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Multi-clinic</span>
-              <span className="text-base font-black text-indigo-600">{k.multiClinicPatients ?? 0}</span>
+              <span className="text-[10px] text-slate-400 block uppercase font-semibold tracking-wider">Multi-clinic</span>
+              <span className="text-base font-semibold text-mg-blue">{k.multiClinicPatients ?? 0}</span>
             </div>
             <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
-              <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Registered</span>
-              <span className="text-base font-black text-teal-600">{(k.registeredPatients ?? 0).toLocaleString('en-IN')}</span>
+              <span className="text-[10px] text-slate-400 block uppercase font-semibold tracking-wider">Registered</span>
+              <span className="text-base font-semibold text-mg-teal">{(k.registeredPatients ?? 0).toLocaleString('en-IN')}</span>
             </div>
           </div>
         </Panel>
@@ -201,7 +201,7 @@ export default function PatientsMasterView() {
       </div>
 
       {/* ---- Filter bar ---- */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <FilterPills
             value={filters.segment}
@@ -213,7 +213,7 @@ export default function PatientsMasterView() {
             <input
               type="text" value={filters.q} onChange={(e) => set({ q: e.target.value })}
               placeholder="Search patient name or phone…"
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-800 outline-none focus:border-indigo-600 focus:bg-white"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-800 outline-none focus:border-mg-blue focus:bg-white"
             />
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function PatientsMasterView() {
           <select
             value={filters.hospitalId}
             onChange={(e) => set({ hospitalId: e.target.value, doctorId: '' })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600"
+            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">All clinics</option>
             {(options?.clinics ?? []).map((c) => (
@@ -232,7 +232,7 @@ export default function PatientsMasterView() {
 
           <select
             value={filters.doctorId} onChange={(e) => set({ doctorId: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600"
+            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">All doctors</option>
             {doctorOptions.map((d) => (
@@ -242,7 +242,7 @@ export default function PatientsMasterView() {
 
           <select
             value={filters.visitType} onChange={(e) => set({ visitType: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600"
+            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">Any visit type</option>
             <option value="fresh">Fresh</option>
@@ -252,7 +252,7 @@ export default function PatientsMasterView() {
 
           <select
             value={filters.source} onChange={(e) => set({ source: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600"
+            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">Any source</option>
             <option value="APP">Patient app</option>
@@ -264,23 +264,23 @@ export default function PatientsMasterView() {
           <input
             type="date" value={filters.from} max={filters.to || undefined}
             onChange={(e) => set({ from: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600"
+            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           />
           <input
             type="date" value={filters.to} min={filters.from || undefined}
             onChange={(e) => set({ to: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600"
+            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-500">Quick range:</span>
+            <span className="text-[11px] font-semibold text-slate-500">Quick range:</span>
             {[['Today', 0], ['7 days', 6], ['30 days', 29], ['90 days', 89]].map(([label, n]) => (
               <button
                 key={label} type="button"
                 onClick={() => set({ from: daysAgo(n), to: daysAgo(0) })}
-                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
               >
                 {label}
               </button>
@@ -289,7 +289,7 @@ export default function PatientsMasterView() {
               <button
                 type="button"
                 onClick={() => set({ hospitalId: '', doctorId: '', visitType: '', source: '', from: '', to: '' })}
-                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 transition"
+                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 transition"
               >
                 <i className="fa-solid fa-xmark mr-1" />Clear {activeFilters}
               </button>
@@ -297,10 +297,10 @@ export default function PatientsMasterView() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-500">Sort:</span>
+            <span className="text-[11px] font-semibold text-slate-500">Sort:</span>
             <select
               value={filters.sort} onChange={(e) => set({ sort: e.target.value })}
-              className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-slate-700 outline-none focus:border-indigo-600"
+              className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 outline-none focus:border-mg-blue"
             >
               <option value="recent">Most recent visit</option>
               <option value="visits">Most visits</option>
@@ -312,14 +312,14 @@ export default function PatientsMasterView() {
       </div>
 
       {/* ---- Roster ---- */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {loading ? (
           <div className="p-4"><SkeletonRows rows={8} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Patient</th>
                   <th className="py-3.5 px-4">Contact</th>
                   <th className="py-3.5 px-4 text-center">Type</th>
@@ -344,15 +344,15 @@ export default function PatientsMasterView() {
                   >
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 font-black text-[11px] grid place-items-center shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-mg-navy font-semibold text-[11px] grid place-items-center shrink-0">
                           {initials(p.name)}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900 truncate">{p.name}</p>
+                          <p className="font-semibold text-slate-900 truncate">{p.name}</p>
                           <p className="text-[10px] text-slate-500">
                             {p.age != null ? `${p.age}y` : 'age n/a'}
                             {p.gender ? ` · ${GENDER_LABEL[p.gender] ?? p.gender}` : ''}
-                            {!p.registered && <span className="ml-1 text-amber-600 font-bold">· walk-in</span>}
+                            {!p.registered && <span className="ml-1 text-amber-600 font-semibold">· walk-in</span>}
                           </p>
                         </div>
                       </div>
@@ -360,38 +360,38 @@ export default function PatientsMasterView() {
                     <td className="py-3 px-4">
                       <p className="font-mono font-semibold text-slate-700">{fmtPhone(p.phone) || '—'}</p>
                       {p.location
-                        ? <p className="text-[10px] text-teal-600 font-semibold truncate max-w-[160px]">
+                        ? <p className="text-[10px] text-mg-teal font-semibold truncate max-w-[160px]">
                             <i className="fa-solid fa-location-dot mr-1" />{p.location.label || 'Location on file'}
                           </p>
                         : <p className="text-[10px] text-slate-400">No location shared</p>}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className={clsx(
-                        'font-bold px-2 py-0.5 rounded text-[10px]',
-                        p.isRepeat ? 'bg-teal-50 text-teal-700' : 'bg-indigo-50 text-indigo-700',
+                        'font-semibold px-2 py-0.5 rounded text-[10px]',
+                        p.isRepeat ? 'bg-teal-50 text-mg-tealDark' : 'bg-blue-50 text-mg-navy',
                       )}>
                         {p.isRepeat ? 'REPEAT' : 'FRESH'}
                       </span>
                       {p.followup > 0 && (
-                        <span className="block mt-1 text-[10px] font-bold text-blue-600">{p.followup} follow-up</span>
+                        <span className="block mt-1 text-[10px] font-semibold text-blue-600">{p.followup} follow-up</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="font-black text-slate-900 text-sm">{p.totalVisits}</span>
+                      <span className="font-semibold text-slate-900 text-sm">{p.totalVisits}</span>
                       <div className="flex items-center justify-center gap-1 mt-1">
-                        {p.fresh > 0 && <span className={clsx('px-1 rounded text-[9px] font-bold', VISIT_CHIP.fresh)}>{p.fresh}F</span>}
-                        {p.followup > 0 && <span className={clsx('px-1 rounded text-[9px] font-bold', VISIT_CHIP.followup)}>{p.followup}U</span>}
-                        {p.emergency > 0 && <span className={clsx('px-1 rounded text-[9px] font-bold', VISIT_CHIP.emergency)}>{p.emergency}E</span>}
+                        {p.fresh > 0 && <span className={clsx('px-1 rounded text-[9px] font-semibold', VISIT_CHIP.fresh)}>{p.fresh}F</span>}
+                        {p.followup > 0 && <span className={clsx('px-1 rounded text-[9px] font-semibold', VISIT_CHIP.followup)}>{p.followup}U</span>}
+                        {p.emergency > 0 && <span className={clsx('px-1 rounded text-[9px] font-semibold', VISIT_CHIP.emergency)}>{p.emergency}E</span>}
                       </div>
                     </td>
                     <td className="py-3 px-4">
                       <p className="font-semibold text-slate-800 truncate max-w-[180px]">{p.lastClinicName}</p>
                       <p className="text-[10px] text-slate-500 truncate max-w-[180px]">
-                        <i className="fa-solid fa-user-doctor text-indigo-400 mr-1" />{p.lastDoctorName}
+                        <i className="fa-solid fa-user-doctor text-blue-400 mr-1" />{p.lastDoctorName}
                         {p.lastSpecialty ? ` · ${p.lastSpecialty}` : ''}
                       </p>
                       {p.clinicCount > 1 && (
-                        <p className="text-[10px] text-amber-600 font-bold">{p.clinicCount} clinics · {p.doctorCount} doctors</p>
+                        <p className="text-[10px] text-amber-600 font-semibold">{p.clinicCount} clinics · {p.doctorCount} doctors</p>
                       )}
                     </td>
                     <td className="py-3 px-4">
@@ -404,8 +404,8 @@ export default function PatientsMasterView() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <p className="font-black text-slate-900">{inr(p.totalSpend)}</p>
-                      {p.cancelled > 0 && <p className="text-[10px] text-rose-500 font-bold">{p.cancelled} cancelled</p>}
+                      <p className="font-semibold text-slate-900">{inr(p.totalSpend)}</p>
+                      {p.cancelled > 0 && <p className="text-[10px] text-rose-500 font-semibold">{p.cancelled} cancelled</p>}
                     </td>
                   </tr>
                 ))}
@@ -423,15 +423,15 @@ export default function PatientsMasterView() {
             <button
               type="button" disabled={filters.page <= 1}
               onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
               <i className="fa-solid fa-chevron-left mr-1" />Previous
             </button>
-            <span className="text-[11px] font-bold text-slate-600">Page {filters.page} / {pages}</span>
+            <span className="text-[11px] font-semibold text-slate-600">Page {filters.page} / {pages}</span>
             <button
               type="button" disabled={filters.page >= pages}
               onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
               Next<i className="fa-solid fa-chevron-right ml-1" />
             </button>

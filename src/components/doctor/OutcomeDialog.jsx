@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
+import { FollowUpPicker } from './FollowUpPicker.jsx';
+import { longDate, SHIFT_LABEL } from '../../lib/followUps.js';
 
 /**
  * How the consultation ended, asked as the doctor finishes a patient.
@@ -19,11 +21,25 @@ const OPTIONS = [
   { value: 'ADMITTED', label: 'Admitted', hint: 'Taken in as an inpatient', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h6M9 13h6M9 17h6' },
 ];
 
-export function OutcomeDialog({ open, patientName, tokenNumber, onConfirm, onClose, busy }) {
+export function OutcomeDialog({ open, doctorId, patientName, tokenNumber, hasFollowUp = false, onConfirm, onClose, busy }) {
   const [outcome, setOutcome] = useState('DONE');
   const [notes, setNotes] = useState('');
+  // Follow-up is opt-in per patient and must never carry over to the next
+  // one, so it resets whenever the dialog opens for a different token.
+  const [followUpOn, setFollowUpOn] = useState(false);
+  const [slot, setSlot] = useState(null);
+  const [followUpNote, setFollowUpNote] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    setFollowUpOn(false);
+    setSlot(null);
+    setFollowUpNote('');
+  }, [open, tokenNumber]);
 
   if (!open) return null;
+
+  const needsSlot = followUpOn && !slot;
 
   return (
     <Modal open onClose={onClose} title="Finish this consultation" subtitle={`${tokenNumber} · ${patientName || 'Patient'}`}>
@@ -72,10 +88,58 @@ export function OutcomeDialog({ open, patientName, tokenNumber, onConfirm, onClo
           </div>
         )}
 
+        {/* Booked now, while the patient is still in the room — the token is
+            held for them and they confirm it from their phone. */}
+        {hasFollowUp ? (
+          <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+            A follow-up is already booked for this patient.
+          </p>
+        ) : (
+          <div className={clsx('rounded-xl border transition', followUpOn ? 'border-mg-teal/40 bg-teal-50/30' : 'border-slate-200')}>
+            <label className="flex items-center justify-between gap-3 p-3 cursor-pointer">
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-900">Book a follow-up</span>
+                <span className="block text-[11px] text-slate-500">The patient gets a token and is asked to confirm</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={followUpOn}
+                onChange={(e) => setFollowUpOn(e.target.checked)}
+                className="w-5 h-5 accent-teal-600 shrink-0"
+              />
+            </label>
+            {followUpOn && (
+              <div className="px-3 pb-3 space-y-3 animate-fade-in">
+                <FollowUpPicker doctorId={doctorId} value={slot} onChange={setSlot} />
+                <input
+                  value={followUpNote}
+                  onChange={(e) => setFollowUpNote(e.target.value.slice(0, 300))}
+                  placeholder="Reason, e.g. Review blood reports (optional)"
+                  aria-label="Follow-up reason"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-mg-teal"
+                />
+                {slot && (
+                  <p className="text-[11px] text-slate-600">
+                    Follow-up on <strong>{longDate(slot.date)}</strong>, {SHIFT_LABEL[slot.shift] || slot.shift}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2 justify-end">
           <Button variant="secondary" onClick={onClose} disabled={busy}>Back</Button>
-          <Button onClick={() => onConfirm({ outcome, outcomeNotes: notes })} disabled={busy}>
-            {busy ? 'Saving…' : 'Finish & call next'}
+          <Button
+            onClick={() => onConfirm({
+              outcome,
+              outcomeNotes: notes,
+              followUp: followUpOn && slot ? { ...slot, note: followUpNote.trim() } : null,
+            })}
+            disabled={busy || needsSlot}
+            title={needsSlot ? 'Pick a follow-up date first' : undefined}
+          >
+            {busy ? 'Saving…' : followUpOn ? 'Book follow-up & call next' : 'Finish & call next'}
           </Button>
         </div>
       </div>

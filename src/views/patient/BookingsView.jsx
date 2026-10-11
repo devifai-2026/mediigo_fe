@@ -14,6 +14,7 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { RescheduleBanner } from '../../components/patient/RescheduleBanner.jsx';
 import { BookingPass } from '../../components/patient/BookingPass.jsx';
 import { RatingDialog } from '../../components/patient/RatingDialog.jsx';
+import { FollowUpPrompt } from '../../components/patient/FollowUpPrompt.jsx';
 
 /**
  * The bookings list the prototype declared but never implemented — its
@@ -42,7 +43,11 @@ export default function BookingsView() {
     return {
       // RESCHEDULE_NEEDED sits in Upcoming: the booking is still alive and
       // needs the patient to act, which they will not do if it is filed away.
-      upcoming: all.filter((t) => [TOKEN_STATUS.WAITING, TOKEN_STATUS.IN_CHAMBER, 'RESCHEDULE_NEEDED'].includes(t.status)),
+      // A follow-up waiting on the patient's answer leads the list: it is the
+      // only booking here that the clinic may take away if they say nothing.
+      upcoming: all
+        .filter((t) => [TOKEN_STATUS.WAITING, TOKEN_STATUS.IN_CHAMBER, 'RESCHEDULE_NEEDED'].includes(t.status))
+        .sort((a, b) => Number(b.followUp?.status === 'PENDING') - Number(a.followUp?.status === 'PENDING')),
       completed: all.filter((t) => t.status === TOKEN_STATUS.COMPLETED),
       cancelled: all.filter((t) => [TOKEN_STATUS.SKIPPED, 'CANCELLED'].includes(t.status)),
     };
@@ -59,6 +64,7 @@ export default function BookingsView() {
         ? 'This token is already paid for. Cancelling does NOT refund the consultation fee.'
         : 'Cancelled bookings are not refunded.',
       confirmLabel: 'Cancel token',
+      cancelLabel: 'Keep token',
       danger: true,
     });
     if (!okToCancel) return;
@@ -92,6 +98,7 @@ export default function BookingsView() {
   if (loading) return <SkeletonRows rows={4} />;
 
   const rows = groups[tab];
+  const pendingFollowUps = groups.upcoming.filter((t) => t.followUp?.status === 'PENDING').length;
 
   return (
     <div className="space-y-6">
@@ -99,6 +106,19 @@ export default function BookingsView() {
         <h2 className="mg-title">My Bookings</h2>
         <p className="text-xs text-slate-500 mt-1">Current and past OPD consultations</p>
       </div>
+
+      {pendingFollowUps > 0 && tab !== 'upcoming' && (
+        <button
+          type="button"
+          onClick={() => setTab('upcoming')}
+          className="w-full text-left rounded-lg border border-mg-teal/40 bg-teal-50/60 px-3 py-2.5 text-xs text-slate-800 flex items-center justify-between gap-2"
+        >
+          <span>
+            <strong>{pendingFollowUps} follow-up{pendingFollowUps === 1 ? '' : 's'}</strong> booked by your doctor need{pendingFollowUps === 1 ? 's' : ''} your reply
+          </span>
+          <Icon name="chevronRight" className="w-4 h-4 text-mg-teal shrink-0" />
+        </button>
+      )}
 
       <FilterPills
         value={tab}
@@ -125,6 +145,7 @@ export default function BookingsView() {
               {t.status === 'RESCHEDULE_NEEDED' && (
                 <RescheduleBanner token={{ ...t, tokenId: t._id }} onDone={refetch} />
               )}
+              <FollowUpPrompt token={t} onDone={refetch} />
               <div className="flex items-center gap-4">
               <div className="w-16 h-16 mg-panel grid place-items-center shrink-0 text-center">
                 <span className="block text-[9px] font-medium text-slate-600 leading-none">Token</span>
@@ -137,8 +158,17 @@ export default function BookingsView() {
                 </div>
                 <p className="text-[11px] truncate">
                   <span className="text-mg-teal">{t.doctorId?.specialty}</span>
+                  {t.doctorId?.chamberNumber && <span className="text-slate-500"> · Chamber {t.doctorId.chamberNumber}</span>}
                   <span className="text-slate-500"> · {t.hospitalId?.name}</span>
                 </p>
+                {t.status === 'CANCELLED' && (
+                  <p className={`text-[11px] mt-1 ${t.cancelledByRole && t.cancelledByRole !== 'PATIENT' ? 'text-rose-600' : 'text-slate-500'}`}>
+                    {t.cancelledByRole && t.cancelledByRole !== 'PATIENT'
+                      ? `Cancelled by the clinic${t.cancelReason ? ` — ${t.cancelReason}` : ''}`
+                      : 'You cancelled this booking'}
+                    {t.isPaid && ' · fee not refunded'}
+                  </p>
+                )}
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   {relativeDay(t.date)} · {t.patientSnapshot?.name}
                   {t.isPaid ? <span className="text-mg-teal font-medium"> · Paid</span> : <span className="text-amber-600 font-medium"> · Pay at desk</span>}

@@ -74,20 +74,20 @@ export function AddClinicModal({ open, onClose, onDone }) {
     }
   };
 
-  const INPUT = 'w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-600';
-  const LABEL = 'block font-bold text-slate-700 mb-1';
+  const INPUT = 'w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-mg-blue';
+  const LABEL = 'block font-semibold text-slate-700 mb-1';
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 my-8 border border-slate-100">
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 my-8 border border-slate-100">
         <div className="flex justify-between items-center border-b pb-3 mb-4">
           <div>
-            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <i className="fa-solid fa-hospital text-indigo-600" /> Super Admin Clinic Onboarding
+            <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <i className="fa-solid fa-hospital text-mg-blue" /> Super Admin Clinic Onboarding
             </h3>
             <p className="text-xs text-slate-500">Directly add and approve a new clinic into the active network.</p>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg font-bold">
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg font-semibold">
             <i className="fa-solid fa-xmark" />
           </button>
         </div>
@@ -167,8 +167,8 @@ export function AddClinicModal({ open, onClose, onDone }) {
             <input required value={form.city} onChange={set('city')} placeholder="Kolkata" className={INPUT} />
           </div>
 
-          <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-3">
-            <h4 className="font-bold text-indigo-900 text-xs uppercase tracking-wider">Default Consultation Fees</h4>
+          <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-xl space-y-3">
+            <h4 className="font-semibold text-mg-navy text-xs uppercase tracking-wider">Default Consultation Fees</h4>
             <div className="grid grid-cols-3 gap-3">
               {[['feeFresh', 'Fresh Consult (₹)'], ['feeFollowup', 'Follow-Up (₹)'], ['feeEmergency', 'Emergency (₹)']].map(([k, label]) => (
                 <div key={k}>
@@ -176,12 +176,12 @@ export function AddClinicModal({ open, onClose, onDone }) {
                   <input
                     type="number" min="0" value={form[k]}
                     onChange={(e) => setForm({ ...form, [k]: Number(e.target.value) })}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2 font-bold text-slate-800"
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2 font-semibold text-slate-800"
                   />
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-indigo-800">
+            <p className="text-[10px] text-mg-navy">
               A front-desk login is created on approval and its temporary password is shown once.
             </p>
           </div>
@@ -192,7 +192,7 @@ export function AddClinicModal({ open, onClose, onDone }) {
             </button>
             <button
               type="submit" disabled={busy}
-              className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 disabled:opacity-50"
+              className="px-5 py-2.5 bg-mg-blue text-white font-semibold rounded-xl shadow-lg hover:bg-mg-navy disabled:opacity-50"
             >
               {busy ? 'Onboarding…' : 'Add & Authorize Clinic'}
             </button>

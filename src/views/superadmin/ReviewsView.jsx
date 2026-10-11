@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
+import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 
 /**
  * Review moderation.
@@ -78,20 +79,19 @@ export default function ReviewsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 flex-wrap">
-        <h2 className="text-lg font-black text-slate-900 mr-auto">Patient reviews</h2>
+      <AdminPageHeader icon="fa-star" title="Patient Reviews" subtitle="Moderate what patients say before it appears on a doctor’s public profile">
         {TABS.map(([k, label]) => (
           <button
             key={k || 'all'} type="button" onClick={() => setTab(k)}
             className={clsx(
-              'text-[11px] font-bold px-3 py-1.5 rounded-full border transition',
-              tab === k ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400',
+              'text-[11px] font-semibold px-3 py-1.5 rounded-full border transition',
+              tab === k ? 'bg-mg-blue text-white border-mg-blue' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400',
             )}
           >
             {label}
           </button>
         ))}
-      </div>
+      </AdminPageHeader>
 
       {loading ? <SkeletonRows rows={4} /> : rows.length === 0 ? (
         <EmptyState
@@ -107,20 +107,20 @@ export default function ReviewsView() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Stars n={r.rating} />
-                    <span className="text-sm font-bold text-slate-900">{r.doctorName}</span>
+                    <span className="text-sm font-semibold text-slate-900">{r.doctorName}</span>
                     {r.rating <= 2 && (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
                         Low rating
                       </span>
                     )}
                     {r.edited && (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-mg-navy border border-blue-200">
                         Edited
                       </span>
                     )}
                     <span className={clsx(
-                      'text-[9px] font-bold px-2 py-0.5 rounded-full border',
-                      r.status === 'APPROVED' ? 'bg-teal-50 text-teal-700 border-teal-200'
+                      'text-[9px] font-semibold px-2 py-0.5 rounded-full border',
+                      r.status === 'APPROVED' ? 'bg-teal-50 text-mg-tealDark border-teal-200'
                         : r.status === 'REJECTED' ? 'bg-slate-100 text-slate-500 border-slate-200'
                           : 'bg-amber-50 text-amber-700 border-amber-200',
                     )}>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi.js';
 
 const AdminConsoleContext = createContext(null);
@@ -13,6 +13,14 @@ export function AdminConsoleProvider({ children }) {
   const { data, loading, error, refetch } = useApi('/api/superadmin/console');
   // Unread tickets drive the sidebar badge on Issue Tracker.
   const { data: tickets, refetch: refetchTickets } = useApi('/api/tickets/summary');
+  // Who is consulting and how many are waiting, network-wide. Polled, because
+  // HQ watches it rather than acting on it, and a socket room per clinic for
+  // the whole network would be a lot of traffic for a glance.
+  const { data: live, loading: liveLoading, refetch: refetchLive } = useApi('/api/superadmin/live');
+  useEffect(() => {
+    const id = setInterval(() => refetchLive(), 30000);
+    return () => clearInterval(id);
+  }, [refetchLive]);
 
   const value = useMemo(() => {
     const clinics = data?.clinics ?? [];
@@ -66,11 +74,15 @@ export function AdminConsoleProvider({ children }) {
         agents: agents.length,
         pending: pendingApprovals,
         unreadTickets: tickets?.unread ?? 0,
+        liveWaiting: live?.totals?.patientsWaiting ?? 0,
       },
       refetchTickets,
+      live,
+      liveLoading,
+      refetchLive,
       headerStats: { totalRevenue: grandTotal, online: online.length, approved: approved.length },
     };
-  }, [data, loading, error, refetch, tickets]);
+  }, [data, loading, error, refetch, tickets, live, liveLoading, refetchLive]);
 
   return <AdminConsoleContext.Provider value={value}>{children}</AdminConsoleContext.Provider>;
 }

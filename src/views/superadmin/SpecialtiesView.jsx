@@ -146,7 +146,7 @@ export default function SpecialtiesView() {
         <button
           type="button"
           onClick={openNew}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-plus" /> Add specialty
         </button>
@@ -159,19 +159,19 @@ export default function SpecialtiesView() {
           { label: 'No artwork', value: withoutArt, hint: 'Showing a placeholder', tone: withoutArt ? 'text-amber-600' : 'text-slate-500' },
           { label: 'No doctors yet', value: orphaned, hint: 'Tile leads nowhere', tone: orphaned ? 'text-amber-600' : 'text-slate-500' },
         ].map((k) => (
-          <div key={k.label} className="bg-white p-4 rounded-2xl border border-slate-200">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{k.label}</p>
-            <p className={clsx('text-2xl font-black mt-0.5', k.tone)}>{k.value}</p>
+          <div key={k.label} className="bg-white p-4 rounded-xl border border-slate-200">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{k.label}</p>
+            <p className={clsx('text-2xl font-semibold mt-0.5', k.tone)}>{k.value}</p>
             <p className="text-[10px] text-slate-400 mt-0.5">{k.hint}</p>
           </div>
         ))}
       </div>
 
       {loading ? <SkeletonRows rows={6} /> : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 <th className="py-3.5 px-4 w-20">Order</th>
                 <th className="py-3.5 px-4">Specialty</th>
                 <th className="py-3.5 px-4 text-center">Doctors</th>
@@ -188,12 +188,12 @@ export default function SpecialtiesView() {
                     <div className="flex items-center gap-0.5">
                       <button type="button" onClick={() => move(i, -1)} disabled={i === 0}
                         aria-label="Move up"
-                        className="p-1 text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-400">
+                        className="p-1 text-slate-400 hover:text-mg-blue disabled:opacity-30 disabled:hover:text-slate-400">
                         <Icon name="chevronDown" className="w-3 h-3 rotate-180" />
                       </button>
                       <button type="button" onClick={() => move(i, 1)} disabled={i === rows.length - 1}
                         aria-label="Move down"
-                        className="p-1 text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-400">
+                        className="p-1 text-slate-400 hover:text-mg-blue disabled:opacity-30 disabled:hover:text-slate-400">
                         <Icon name="chevronDown" className="w-3 h-3" />
                       </button>
                     </div>
@@ -211,7 +211,7 @@ export default function SpecialtiesView() {
                         )}
                       />
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-900">{row.name}</p>
+                        <p className="font-semibold text-slate-900">{row.name}</p>
                         <p className="text-[10px] text-slate-400 font-mono">{row.slug}</p>
                         {row.tileLabel !== row.name && (
                           <p className="text-[10px] text-slate-400">tile: {row.tileLabel.replace(/\n/g, ' / ')}</p>
@@ -221,7 +221,7 @@ export default function SpecialtiesView() {
                   </td>
 
                   <td className="py-3 px-4 text-center">
-                    <span className={clsx('font-black text-sm', row.doctorCount ? 'text-slate-900' : 'text-amber-600')}>
+                    <span className={clsx('font-semibold text-sm', row.doctorCount ? 'text-slate-900' : 'text-amber-600')}>
                       {row.doctorCount}
                     </span>
                   </td>
@@ -246,7 +246,7 @@ export default function SpecialtiesView() {
 
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-end gap-1">
-                      <label className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer" title="Upload artwork">
+                      <label className="p-1.5 text-slate-400 hover:text-mg-blue hover:bg-blue-50 rounded-lg cursor-pointer" title="Upload artwork">
                         <i className={clsx('fa-solid text-xs', photoBusy === row.id ? 'fa-spinner fa-spin' : 'fa-image')} />
                         <input
                           type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden disabled={photoBusy === row.id}
@@ -275,7 +275,7 @@ export default function SpecialtiesView() {
                         </button>
                       )}
                       <button type="button" onClick={() => openEdit(row)} title="Edit"
-                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
+                        className="p-1.5 text-slate-400 hover:text-mg-blue hover:bg-blue-50 rounded-lg">
                         <i className="fa-solid fa-pen text-xs" />
                       </button>
                       <button type="button" onClick={() => remove(row)} title="Delete"

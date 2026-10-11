@@ -1,6 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi.js';
+import { useConfirm } from '../../context/ConfirmContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
+import { api } from '../../lib/api.js';
 import { useQueueSnapshot } from '../../hooks/useQueueSnapshot.js';
 import { DarkHero, LivePill } from '../../components/layout/DarkHero.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
@@ -12,7 +15,10 @@ import { patientsAhead, progressPct } from '../../lib/queue.js';
 import { TOKEN_STATUS } from '../../lib/constants.js';
 
 export default function TrackerView() {
-  const { data: tokens, loading } = useApi('/api/patients/me/tokens?status=WAITING');
+  const { data: tokens, loading, refetch } = useApi('/api/patients/me/tokens?status=WAITING');
+  const confirm = useConfirm();
+  const toast = useToast();
+  const [cancelling, setCancelling] = useState(false);
   const active = tokens?.[0] ?? null;
   const doctorId = active?.doctorId?._id ?? active?.doctorId;
 
@@ -36,7 +42,33 @@ export default function TrackerView() {
     };
   }, [active, snapshot]);
 
-  if (loading) return <SkeletonRows rows={3} />;
+  // Same rule and wording as Bookings: the fee is not refunded, and the
+  // patient is told before they confirm, not after.
+  const cancel = async () => {
+    const ok = await confirm({
+      title: 'Cancel this token?',
+      message: `Token ${token(active.tokenNumber)} with ${active.doctorId?.name} will be released, and you would need to book again.`,
+      detail: active.isPaid
+        ? 'This token is already paid for. Cancelling does NOT refund the consultation fee.'
+        : 'Cancelled bookings are not refunded.',
+      confirmLabel: 'Cancel token',
+      cancelLabel: 'Keep token',
+      danger: true,
+    });
+    if (!ok) return;
+    setCancelling(true);
+    try {
+      await api.delete(`/api/queue/tokens/${active._id}`);
+      toast.success('Token cancelled');
+      refetch();
+    } catch (e) {
+      toast.error(e?.response?.data?.error?.message || e.message);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  if (loading && !tokens) return <SkeletonRows rows={3} />;
 
   if (!active) {
     return (
@@ -65,11 +97,16 @@ export default function TrackerView() {
           <div>
             <LivePill>Live queue telemetry</LivePill>
             <h3 className="text-2xl sm:text-3xl font-semibold mt-4">{active.patientSnapshot?.name}</h3>
-            <p className="text-xs sm:text-sm text-white/85 mt-1">{doc?.name} · {hosp?.name}</p>
+            <p className="text-xs sm:text-sm text-white/85 mt-1">
+              {doc?.name}{doc?.chamberNumber && ` · Chamber ${doc.chamberNumber}`} · {hosp?.name}
+            </p>
           </div>
+          {/* The room this doctor sits in — where the patient goes when their
+              number is called. Read from the doctor, so it follows them if
+              they move rooms. */}
           <div className="bg-white/15 px-4 py-2 rounded-md text-right">
-            <span className="text-[10px] text-white/80 block">Chamber</span>
-            <span className="text-sm font-semibold">{doc?.chamberNumber || '—'}</span>
+            <span className="text-[10px] text-white/80 block">{doc?.name ? `${doc.name.replace(/^Dr\.?\s*/i, 'Dr. ').split(' ').slice(0, 2).join(' ')}’s chamber` : 'Chamber'}</span>
+            <span className="text-sm font-semibold">{doc?.chamberNumber ? `Chamber ${doc.chamberNumber}` : 'To be announced'}</span>
           </div>
         </div>
 
@@ -110,8 +147,7 @@ export default function TrackerView() {
           </div>
         </div>
 
-        {(hosp?.contactPhone || hosp?.location?.coordinates) && (
-          <div className="mt-6 flex flex-wrap gap-2 justify-end">
+        <div className="mt-6 flex flex-wrap gap-2 justify-end">
             {hosp?.contactPhone && (
               <a href={`tel:${hosp.contactPhone}`} className="px-4 py-2 bg-white hover:bg-white/90 text-mg-teal rounded-md text-xs font-medium inline-flex items-center gap-1.5">
                 <Icon name="phone" className="w-3.5 h-3.5" /> Call reception
@@ -127,8 +163,15 @@ export default function TrackerView() {
                 <Icon name="location" className="w-3.5 h-3.5" /> Get Direction
               </a>
             )}
+            <button
+              type="button"
+              onClick={cancel}
+              disabled={cancelling}
+              className="px-4 py-2 bg-white hover:bg-rose-50 text-rose-600 rounded-md text-xs font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
+            >
+              <Icon name="cross" className="w-3.5 h-3.5" /> {cancelling ? 'Cancelling…' : 'Cancel token'}
+            </button>
           </div>
-        )}
       </DarkHero>
 
       <Link to="/bookings" className="block text-center text-xs font-medium text-mg-teal hover:text-mg-tealDark">

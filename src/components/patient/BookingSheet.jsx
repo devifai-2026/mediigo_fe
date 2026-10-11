@@ -19,7 +19,7 @@ const SHIFT_LABEL = { MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Even
  * across bookings — the prototype leaked the previously chosen patient and date
  * into the next booking because those lived in module scope.
  */
-export function BookingSheet({ doctor, onClose }) {
+export function BookingSheet({ doctor, initialSlot = null, onClose }) {
   const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
@@ -54,7 +54,11 @@ export function BookingSheet({ doctor, onClose }) {
         const d = unwrap(await api.get(`/api/doctors/${doctor.doctorId}/availability`));
         if (!alive) return;
         setDays(d.days ?? []);
-        // Preselect the first sitting a patient could actually take.
+        // Keep a sitting already chosen on the doctor's profile page, if it is
+        // still bookable; otherwise preselect the first one a patient could take.
+        const kept = initialSlot && (d.days ?? []).some((x) => x.date === initialSlot.date
+          && x.shifts.some((sh) => sh.shift === initialSlot.shift && sh.isBookable));
+        if (kept) { setSlot(initialSlot); return; }
         const firstOpen = (d.days ?? []).find((x) => x.shifts.some((sh) => sh.isBookable));
         const firstShift = firstOpen?.shifts.find((sh) => sh.isBookable);
         if (firstOpen && firstShift) setSlot({ date: firstOpen.date, shift: firstShift.shift });
@@ -63,6 +67,7 @@ export function BookingSheet({ doctor, onClose }) {
       }
     })();
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doctor]);
 
   if (!doctor && !ticket) return null;
@@ -298,10 +303,14 @@ export function BookingSheet({ doctor, onClose }) {
         <div className="mg-panel p-4 space-y-2 text-xs">
           <div className="flex justify-between"><span className="text-slate-500">Consultation</span><span className="font-bold">{inr(fee)}</span></div>
           <div className="flex justify-between text-slate-400"><span>Pay at desk</span><span>on arrival</span></div>
-          <div className="flex justify-between pt-2 border-t border-slate-200">
-            <span className="font-bold text-slate-700">Next available token</span>
-            <span className="font-bold text-mg-teal text-lg">{token(doctor.queue.nextToken)}</span>
-          </div>
+          {/* The profile page opens this without a live queue, and "#00" is a
+              token that can never exist. */}
+          {doctor.queue?.nextToken != null && (
+            <div className="flex justify-between pt-2 border-t border-slate-200">
+              <span className="font-bold text-slate-700">Next available token</span>
+              <span className="font-bold text-mg-teal text-lg">{token(doctor.queue.nextToken)}</span>
+            </div>
+          )}
         </div>
 
         <Button onClick={confirm} loading={busy} className="w-full" size="lg">

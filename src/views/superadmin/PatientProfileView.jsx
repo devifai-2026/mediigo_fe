@@ -22,7 +22,7 @@ const GENDER_LABEL = { M: 'Male', F: 'Female', O: 'Other' };
 const STATUS_CHIP = {
   COMPLETED: 'bg-emerald-100 text-emerald-800',
   WAITING: 'bg-amber-100 text-amber-800',
-  IN_CHAMBER: 'bg-indigo-100 text-indigo-800',
+  IN_CHAMBER: 'bg-blue-100 text-mg-navy',
   SKIPPED: 'bg-orange-100 text-orange-800',
   CANCELLED: 'bg-rose-100 text-rose-800',
   RESCHEDULE_NEEDED: 'bg-purple-100 text-purple-800',
@@ -38,15 +38,15 @@ const SOURCE_LABEL = { APP: 'Patient app', WALKIN: 'Walk-in desk', QR_SCAN: 'QR 
 
 const Stat = ({ label, value, tone = 'text-slate-900' }) => (
   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-    <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-bold">{label}</span>
-    <span className={clsx('text-base font-black', tone)}>{value}</span>
+    <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-semibold">{label}</span>
+    <span className={clsx('text-base font-semibold', tone)}>{value}</span>
   </div>
 );
 
 const Section = ({ title, hint, children, className }) => (
-  <div className={clsx('bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3', className)}>
+  <div className={clsx('bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3', className)}>
     <div>
-      <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{title}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{title}</p>
       {hint && <p className="text-[11px] text-slate-500 mt-0.5">{hint}</p>}
     </div>
     {children}
@@ -66,12 +66,12 @@ export default function PatientProfileView() {
   if (error || !p) {
     return (
       <section className="space-y-4">
-        <Link to="/super/patients" className="text-xs font-bold text-indigo-600 hover:text-indigo-700">
+        <Link to="/super/patients" className="text-xs font-semibold text-mg-blue hover:text-mg-navy">
           <i className="fa-solid fa-arrow-left mr-1" />Back to Patients Master
         </Link>
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
           <i className="fa-solid fa-user-slash text-slate-300 text-3xl" />
-          <p className="text-sm font-bold text-slate-700 mt-3">{error?.message ?? 'Patient not found'}</p>
+          <p className="text-sm font-semibold text-slate-700 mt-3">{error?.message ?? 'Patient not found'}</p>
         </div>
       </section>
     );
@@ -88,33 +88,33 @@ export default function PatientProfileView() {
 
   return (
     <section className="space-y-6">
-      <Link to="/super/patients" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 inline-block">
+      <Link to="/super/patients" className="text-xs font-semibold text-mg-blue hover:text-mg-navy inline-block">
         <i className="fa-solid fa-arrow-left mr-1" />Back to Patients Master
       </Link>
 
       {/* ---- Identity header ---- */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-teal-400 text-white font-black text-lg grid place-items-center shadow-md shrink-0">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-tr from-mg-blue to-teal-400 text-white font-semibold text-lg grid place-items-center shadow-md shrink-0">
               {initials(p.name)}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">{p.name}</h1>
+                <h1 className="text-xl font-semibold text-slate-900 tracking-tight">{p.name}</h1>
                 <span className={clsx(
-                  'text-[10px] font-bold px-2 py-0.5 rounded-full',
-                  s.isRepeat ? 'bg-teal-100 text-teal-800' : 'bg-indigo-100 text-indigo-800',
+                  'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                  s.isRepeat ? 'bg-teal-100 text-teal-800' : 'bg-blue-100 text-mg-navy',
                 )}>
                   {s.isRepeat ? 'REPEAT PATIENT' : 'FRESH PATIENT'}
                 </span>
                 {!p.registered && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
                     WALK-IN · NO ACCOUNT
                   </span>
                 )}
                 {p.aadhaarLinked && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
                     <i className="fa-solid fa-id-card mr-1" />AADHAAR LINKED
                   </span>
                 )}
@@ -125,11 +125,11 @@ export default function PatientProfileView() {
                 {p.registeredAt ? ` · Registered ${shortDate(p.registeredAt)}` : ''}
               </p>
               <div className="flex items-center gap-4 mt-1.5 text-xs">
-                <a href={`tel:${p.phone}`} className="font-mono font-bold text-slate-800 hover:text-indigo-600">
+                <a href={`tel:${p.phone}`} className="font-mono font-semibold text-slate-800 hover:text-mg-blue">
                   <i className="fa-solid fa-phone text-slate-400 mr-1.5" />{fmtPhone(p.phone) || '—'}
                 </a>
                 {p.email && (
-                  <a href={`mailto:${p.email}`} className="text-slate-600 hover:text-indigo-600 truncate">
+                  <a href={`mailto:${p.email}`} className="text-slate-600 hover:text-mg-blue truncate">
                     <i className="fa-solid fa-envelope text-slate-400 mr-1.5" />{p.email}
                   </a>
                 )}
@@ -142,7 +142,7 @@ export default function PatientProfileView() {
             <Stat label="Fresh" value={s.fresh} tone="text-emerald-600" />
             <Stat label="Follow-up" value={s.followup} tone="text-blue-600" />
             <Stat label="Emergency" value={s.emergency} tone="text-rose-600" />
-            <Stat label="Spend" value={inr(s.totalSpend)} tone="text-teal-700" />
+            <Stat label="Spend" value={inr(s.totalSpend)} tone="text-mg-tealDark" />
           </div>
         </div>
       </div>
@@ -164,8 +164,8 @@ export default function PatientProfileView() {
             {p.location && (
               <button
                 type="button" onClick={() => setMapClinic(null)}
-                className={clsx('px-2.5 py-1 rounded-lg text-[11px] font-bold transition',
-                  !mapClinic ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200')}
+                className={clsx('px-2.5 py-1 rounded-lg text-[11px] font-semibold transition',
+                  !mapClinic ? 'bg-mg-teal text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200')}
               >
                 <i className="fa-solid fa-house-user mr-1" />Patient location
               </button>
@@ -173,8 +173,8 @@ export default function PatientProfileView() {
             {p.clinics.filter((c) => c.coordinates).map((c) => (
               <button
                 key={c.id} type="button" onClick={() => setMapClinic(c)}
-                className={clsx('px-2.5 py-1 rounded-lg text-[11px] font-bold transition',
-                  mapClinic?.id === c.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200')}
+                className={clsx('px-2.5 py-1 rounded-lg text-[11px] font-semibold transition',
+                  mapClinic?.id === c.id ? 'bg-mg-blue text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200')}
               >
                 <i className="fa-solid fa-hospital mr-1" />{c.name}
               </button>
@@ -185,7 +185,7 @@ export default function PatientProfileView() {
 
           {(p.location?.formatted || p.location?.label) && !mapClinic && (
             <p className="text-[11px] text-slate-600">
-              <i className="fa-solid fa-location-dot text-teal-600 mr-1" />
+              <i className="fa-solid fa-location-dot text-mg-teal mr-1" />
               {p.location.formatted || p.location.label}
               {p.location.accuracy != null && (
                 <span className="text-slate-400"> · ±{Math.round(p.location.accuracy)}m</span>
@@ -194,7 +194,7 @@ export default function PatientProfileView() {
           )}
           {mapClinic && (
             <p className="text-[11px] text-slate-600">
-              <i className="fa-solid fa-location-dot text-indigo-600 mr-1" />
+              <i className="fa-solid fa-location-dot text-mg-blue mr-1" />
               {[mapClinic.address?.line1, mapClinic.address?.city, mapClinic.address?.pincode].filter(Boolean).join(', ')}
               {mapClinic.contactPhone && <span className="text-slate-400"> · {fmtPhone(mapClinic.contactPhone)}</span>}
             </p>
@@ -210,23 +210,23 @@ export default function PatientProfileView() {
 
           <Section title="Attendance Pattern">
             <div className="grid grid-cols-2 gap-2">
-              <Stat label="Clinics" value={s.clinicCount} tone="text-indigo-600" />
-              <Stat label="Doctors" value={s.doctorCount} tone="text-indigo-600" />
+              <Stat label="Clinics" value={s.clinicCount} tone="text-mg-blue" />
+              <Stat label="Doctors" value={s.doctorCount} tone="text-mg-blue" />
               <Stat label="Cancelled" value={s.cancelled} tone={s.cancelled ? 'text-rose-600' : 'text-slate-900'} />
               <Stat label="Skipped" value={s.skipped} tone={s.skipped ? 'text-amber-600' : 'text-slate-900'} />
             </div>
             <div className="space-y-2 pt-1">
               <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100">
                 <span className="text-[11px] font-semibold text-slate-600">First visit</span>
-                <span className="text-[11px] font-black text-slate-900">{shortDate(s.firstVisit) || '—'}</span>
+                <span className="text-[11px] font-semibold text-slate-900">{shortDate(s.firstVisit) || '—'}</span>
               </div>
               <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100">
                 <span className="text-[11px] font-semibold text-slate-600">Last visit</span>
-                <span className="text-[11px] font-black text-slate-900">{shortDate(s.lastVisit) || '—'}</span>
+                <span className="text-[11px] font-semibold text-slate-900">{shortDate(s.lastVisit) || '—'}</span>
               </div>
               <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100">
                 <span className="text-[11px] font-semibold text-slate-600">Average gap</span>
-                <span className="text-[11px] font-black text-teal-700">
+                <span className="text-[11px] font-semibold text-mg-tealDark">
                   {s.avgGapDays != null ? `${s.avgGapDays} days` : 'Single visit'}
                 </span>
               </div>
@@ -236,7 +236,7 @@ export default function PatientProfileView() {
       </div>
 
       {/* ---- Tabs ---- */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <FilterPills
             value={tab} onChange={setTab}
@@ -258,7 +258,7 @@ export default function PatientProfileView() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Date &amp; Token</th>
                   <th className="py-3.5 px-4">Clinic</th>
                   <th className="py-3.5 px-4">Doctor</th>
@@ -274,7 +274,7 @@ export default function PatientProfileView() {
                 ) : history.map((h) => (
                   <tr key={h.id} className="hover:bg-slate-50 transition">
                     <td className="py-3 px-4">
-                      <p className="font-bold text-slate-900">{shortDate(h.date)}</p>
+                      <p className="font-semibold text-slate-900">{shortDate(h.date)}</p>
                       <p className="text-[10px] text-slate-500">
                         Token #{String(h.tokenNumber).padStart(2, '0')} · {h.shift?.toLowerCase()}
                       </p>
@@ -288,10 +288,10 @@ export default function PatientProfileView() {
                     </td>
                     <td className="py-3 px-4">
                       <p className="font-semibold text-slate-800">
-                        <i className="fa-solid fa-user-doctor text-indigo-400 mr-1" />{h.doctorName}
+                        <i className="fa-solid fa-user-doctor text-blue-400 mr-1" />{h.doctorName}
                       </p>
                       {h.specialty && (
-                        <span className="bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded text-[10px]">{h.specialty}</span>
+                        <span className="bg-blue-50 text-mg-navy font-semibold px-1.5 py-0.5 rounded text-[10px]">{h.specialty}</span>
                       )}
                     </td>
                     <td className="py-3 px-4">
@@ -301,19 +301,19 @@ export default function PatientProfileView() {
                       <p className="text-[10px] text-slate-400">{SOURCE_LABEL[h.source] ?? h.source}</p>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={clsx('font-bold px-2 py-0.5 rounded text-[10px]', VISIT_CHIP[h.visitType] ?? 'bg-slate-100 text-slate-700')}>
+                      <span className={clsx('font-semibold px-2 py-0.5 rounded text-[10px]', VISIT_CHIP[h.visitType] ?? 'bg-slate-100 text-slate-700')}>
                         {(VISIT_LABEL[h.visitType] ?? h.visitType ?? '—').toUpperCase()}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded',
+                      <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded',
                         h.isSelf ? 'bg-slate-100 text-slate-700' : 'bg-purple-50 text-purple-700')}>
                         {h.bookedFor}
                       </span>
-                      {h.isPaid && <span className="block mt-1 text-[10px] font-bold text-emerald-600">Paid</span>}
+                      {h.isPaid && <span className="block mt-1 text-[10px] font-semibold text-emerald-600">Paid</span>}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={clsx('px-2.5 py-1 rounded-full text-[10px] font-bold', STATUS_CHIP[h.status] ?? 'bg-slate-100 text-slate-700')}>
+                      <span className={clsx('px-2.5 py-1 rounded-full text-[10px] font-semibold', STATUS_CHIP[h.status] ?? 'bg-slate-100 text-slate-700')}>
                         {h.status.replace(/_/g, ' ')}
                       </span>
                       {(h.skipReason || h.rescheduleReason) && (
@@ -337,25 +337,25 @@ export default function PatientProfileView() {
             ) : p.clinics.map((c) => (
               <button
                 key={c.id} type="button" onClick={() => { setMapClinic(c); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="text-left p-4 bg-slate-50 hover:bg-white hover:border-indigo-300 border border-slate-200 rounded-xl transition"
+                className="text-left p-4 bg-slate-50 hover:bg-white hover:border-blue-300 border border-slate-200 rounded-xl transition"
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900">{c.name}</p>
+                    <p className="text-xs font-semibold text-slate-900">{c.name}</p>
                     <p className="text-[11px] text-slate-500">
                       {[c.city, c.district].filter(Boolean).join(' · ') || '—'}
                     </p>
                   </div>
-                  <span className="text-base font-black text-indigo-600 shrink-0">{c.visits}</span>
+                  <span className="text-base font-semibold text-mg-blue shrink-0">{c.visits}</span>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {c.fresh > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold', VISIT_CHIP.fresh)}>{c.fresh} fresh</span>}
-                  {c.followup > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold', VISIT_CHIP.followup)}>{c.followup} follow-up</span>}
-                  {c.emergency > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold', VISIT_CHIP.emergency)}>{c.emergency} emergency</span>}
+                  {c.fresh > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.fresh)}>{c.fresh} fresh</span>}
+                  {c.followup > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.followup)}>{c.followup} follow-up</span>}
+                  {c.emergency > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.emergency)}>{c.emergency} emergency</span>}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2">
                   {shortDate(c.firstVisit)} → {shortDate(c.lastVisit)}
-                  {c.coordinates && <span className="text-teal-600 font-bold ml-2"><i className="fa-solid fa-map-location-dot mr-1" />Show on map</span>}
+                  {c.coordinates && <span className="text-mg-teal font-semibold ml-2"><i className="fa-solid fa-map-location-dot mr-1" />Show on map</span>}
                 </p>
               </button>
             ))}
@@ -371,20 +371,20 @@ export default function PatientProfileView() {
               <div key={d.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900">
-                      <i className="fa-solid fa-user-doctor text-indigo-500 mr-1.5" />{d.name}
+                    <p className="text-xs font-semibold text-slate-900">
+                      <i className="fa-solid fa-user-doctor text-mg-blue mr-1.5" />{d.name}
                     </p>
                     <p className="text-[11px] text-slate-500">
                       {d.specialty ?? '—'}{d.regNo ? ` · Reg ${d.regNo}` : ''}
                     </p>
                     {d.clinicName && <p className="text-[10px] text-slate-400">{d.clinicName}</p>}
                   </div>
-                  <span className="text-base font-black text-teal-600 shrink-0">{d.visits}</span>
+                  <span className="text-base font-semibold text-mg-teal shrink-0">{d.visits}</span>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {d.fresh > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold', VISIT_CHIP.fresh)}>{d.fresh} fresh</span>}
-                  {d.followup > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold', VISIT_CHIP.followup)}>{d.followup} follow-up</span>}
-                  {d.emergency > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold', VISIT_CHIP.emergency)}>{d.emergency} emergency</span>}
+                  {d.fresh > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.fresh)}>{d.fresh} fresh</span>}
+                  {d.followup > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.followup)}>{d.followup} follow-up</span>}
+                  {d.emergency > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.emergency)}>{d.emergency} emergency</span>}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2">{shortDate(d.firstVisit)} → {shortDate(d.lastVisit)}</p>
               </div>
@@ -397,7 +397,7 @@ export default function PatientProfileView() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Receipt</th>
                   <th className="py-3.5 px-4">Clinic &amp; Doctor</th>
                   <th className="py-3.5 px-4 text-center">Visit Type</th>
@@ -412,7 +412,7 @@ export default function PatientProfileView() {
                 ) : p.transactions.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50 transition">
                     <td className="py-3 px-4">
-                      <p className="font-mono font-bold text-slate-900">{t.receiptNumber}</p>
+                      <p className="font-mono font-semibold text-slate-900">{t.receiptNumber}</p>
                       <p className="text-[10px] text-slate-400">{shortDate(t.date)}</p>
                     </td>
                     <td className="py-3 px-4">
@@ -420,7 +420,7 @@ export default function PatientProfileView() {
                       <p className="text-[10px] text-slate-500">{t.doctorName}</p>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={clsx('font-bold px-2 py-0.5 rounded text-[10px]', VISIT_CHIP[t.visitType] ?? 'bg-slate-100 text-slate-700')}>
+                      <span className={clsx('font-semibold px-2 py-0.5 rounded text-[10px]', VISIT_CHIP[t.visitType] ?? 'bg-slate-100 text-slate-700')}>
                         {(VISIT_LABEL[t.visitType] ?? t.visitType ?? '—').toUpperCase()}
                       </span>
                     </td>
@@ -430,22 +430,22 @@ export default function PatientProfileView() {
                         t.tender?.upi ? `UPI ${inr(t.tender.upi)}` : null,
                         t.tender?.card ? `Card ${inr(t.tender.card)}` : null,
                       ].filter(Boolean).join(' · ') || '—'}
-                      {t.discount > 0 && <p className="text-amber-600 font-bold">Discount {inr(t.discount)}</p>}
+                      {t.discount > 0 && <p className="text-amber-600 font-semibold">Discount {inr(t.discount)}</p>}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={clsx('px-2.5 py-1 rounded-full text-[10px] font-bold',
+                      <span className={clsx('px-2.5 py-1 rounded-full text-[10px] font-semibold',
                         t.status === 'PAID' ? 'bg-emerald-100 text-emerald-800'
                           : t.status === 'REFUNDED' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700')}>
                         {t.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right font-black text-slate-900">{inr(t.totalFee)}</td>
+                    <td className="py-3 px-4 text-right font-semibold text-slate-900">{inr(t.totalFee)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {s.refunded > 0 && (
-              <p className="px-4 py-3 text-[11px] text-rose-600 font-bold border-t border-slate-100">
+              <p className="px-4 py-3 text-[11px] text-rose-600 font-semibold border-t border-slate-100">
                 <i className="fa-solid fa-rotate-left mr-1" />{inr(s.refunded)} refunded across this patient's history.
               </p>
             )}
@@ -463,7 +463,7 @@ export default function PatientProfileView() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {p.familyMembers.map((m) => (
                   <div key={m.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                    <p className="text-xs font-bold text-slate-900">{m.name}</p>
+                    <p className="text-xs font-semibold text-slate-900">{m.name}</p>
                     <p className="text-[11px] text-slate-500">
                       {m.relation}{m.age != null ? ` · ${m.age}y` : ''}{m.gender ? ` · ${GENDER_LABEL[m.gender] ?? m.gender}` : ''}
                     </p>
@@ -475,13 +475,13 @@ export default function PatientProfileView() {
 
             {p.policies.length > 0 && (
               <div className="pt-3 border-t border-slate-100">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">Insurance on file</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Insurance on file</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {p.policies.map((pol) => (
                     <div key={pol.id} className="p-3 bg-teal-50 border border-teal-100 rounded-xl">
-                      <p className="text-xs font-bold text-teal-900">{pol.insurer}</p>
-                      <p className="text-[11px] text-teal-700 font-mono">{pol.policyNumber}</p>
-                      <p className="text-[10px] text-teal-600">
+                      <p className="text-xs font-semibold text-teal-900">{pol.insurer}</p>
+                      <p className="text-[11px] text-mg-tealDark font-mono">{pol.policyNumber}</p>
+                      <p className="text-[10px] text-mg-teal">
                         {pol.planType}{pol.sumInsured ? ` · Sum insured ${inr(pol.sumInsured)}` : ''}
                         {pol.validTill ? ` · valid to ${shortDate(pol.validTill)}` : ''}
                       </p>

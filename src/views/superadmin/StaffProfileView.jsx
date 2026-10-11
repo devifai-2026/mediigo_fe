@@ -13,8 +13,8 @@ import { phone as fmtPhone, shortDate, timeOf, initials } from '../../lib/format
 const ROLE_CHIP = {
   EXEC_ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
   FIELD_AGENT: 'bg-amber-50 text-amber-700 border-amber-200',
-  RECEPTIONIST: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  SUPER_ADMIN: 'bg-slate-900 text-white border-slate-700',
+  RECEPTIONIST: 'bg-blue-50 text-mg-navy border-blue-200',
+  SUPER_ADMIN: 'bg-mg-navy text-white border-slate-700',
 };
 
 // Audit actions are stored as verbs; the profile reads better as plain English.
@@ -39,14 +39,14 @@ const ACTION_LABEL = {
 
 const Stat = ({ label, value, tone = 'text-slate-900' }) => (
   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-    <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-bold">{label}</span>
-    <span className={clsx('text-base font-black', tone)}>{value}</span>
+    <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-semibold">{label}</span>
+    <span className={clsx('text-base font-semibold', tone)}>{value}</span>
   </div>
 );
 
 const Section = ({ title, children, empty }) => (
-  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-3">{title}</p>
+  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-3">{title}</p>
     {empty ? <p className="text-xs text-slate-400 italic">{empty}</p> : children}
   </div>
 );
@@ -87,11 +87,11 @@ export default function StaffProfileView() {
   if (error || !user) {
     return (
       <section className="space-y-4">
-        <Link to="/super/staff" className="text-xs font-bold text-indigo-600 hover:text-indigo-700">
+        <Link to="/super/staff" className="text-xs font-semibold text-mg-blue hover:text-mg-navy">
           <i className="fa-solid fa-arrow-left mr-1.5" /> Back to Staff Administration
         </Link>
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
-          <p className="text-sm font-bold text-slate-800">This staff member could not be loaded</p>
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
+          <p className="text-sm font-semibold text-slate-800">This staff member could not be loaded</p>
           <p className="text-xs text-slate-500 mt-1">{error?.message || 'They may have been deleted.'}</p>
         </div>
       </section>
@@ -103,24 +103,24 @@ export default function StaffProfileView() {
 
   return (
     <section className="space-y-5">
-      <Link to="/super/staff" className="inline-block text-xs font-bold text-indigo-600 hover:text-indigo-700">
+      <Link to="/super/staff" className="inline-block text-xs font-semibold text-mg-blue hover:text-mg-navy">
         <i className="fa-solid fa-arrow-left mr-1.5" /> Back to Staff Administration
       </Link>
 
       {/* ---- Identity ---- */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white grid place-items-center text-lg font-black shrink-0">
+          <div className="w-14 h-14 rounded-xl bg-mg-navy text-white grid place-items-center text-lg font-semibold shrink-0">
             {initials(user.name)}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">{user.name}</h1>
-              <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded border uppercase', ROLE_CHIP[user.role])}>
+              <h1 className="text-xl font-semibold text-slate-900 tracking-tight">{user.name}</h1>
+              <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded border uppercase', ROLE_CHIP[user.role])}>
                 {ROLE_LABEL[user.role]}
               </span>
               <span className={clsx(
-                'px-2.5 py-1 rounded-full text-[10px] font-bold',
+                'px-2.5 py-1 rounded-full text-[10px] font-semibold',
                 user.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600',
               )}>
                 {user.isActive ? 'ACTIVE' : 'DEACTIVATED'}
@@ -154,7 +154,7 @@ export default function StaffProfileView() {
 
         {user.deactivation && (
           <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600">
-            <span className="font-bold">Deactivated</span>
+            <span className="font-semibold">Deactivated</span>
             {user.deactivation.at && <> on {shortDate(user.deactivation.at)}</>}
             {user.deactivation.byName && <> by {user.deactivation.byName}</>}
             {user.deactivation.reason && <> — “{user.deactivation.reason}”</>}
@@ -165,7 +165,7 @@ export default function StaffProfileView() {
       {/* ---- Workload ---- */}
       {isExec && user.load && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-          <Stat label="Clinics" value={user.load.hospitals} tone="text-indigo-600" />
+          <Stat label="Clinics" value={user.load.hospitals} tone="text-mg-blue" />
           <Stat label="Doctors" value={user.load.doctors} />
           <Stat label="Field agents" value={user.load.agents} />
           <Stat label="Pending approvals" value={user.load.pendingSubmissions} tone="text-amber-600" />
@@ -174,7 +174,7 @@ export default function StaffProfileView() {
 
       {isAgent && user.load && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-          <Stat label="Submissions" value={user.load.submissions} tone="text-indigo-600" />
+          <Stat label="Submissions" value={user.load.submissions} tone="text-mg-blue" />
           <Stat label="Pending" value={user.load.pendingSubmissions} tone="text-amber-600" />
           <Stat label="Approved" value={user.load.approved} tone="text-emerald-600" />
           <Stat label="Rejected" value={user.load.rejected} tone="text-rose-600" />
@@ -192,7 +192,7 @@ export default function StaffProfileView() {
               {(user.clinics || []).map((c) => (
                 <div key={c.id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-100 bg-slate-50">
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-800 truncate">{c.name}</p>
+                    <p className="text-xs font-semibold text-slate-800 truncate">{c.name}</p>
                     {c.code && <p className="text-[10px] text-slate-400 font-mono">{c.code}</p>}
                   </div>
                   <StatusBadge status={c.networkState} />
@@ -209,14 +209,14 @@ export default function StaffProfileView() {
                 <Link
                   key={a.id}
                   to={`/super/staff/${a.id}`}
-                  className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-indigo-200 transition"
+                  className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-200 transition"
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-800 truncate">{a.name}</p>
+                    <p className="text-xs font-semibold text-slate-800 truncate">{a.name}</p>
                     <p className="text-[10px] text-slate-400 font-mono">{fmtPhone(a.phone)}</p>
                   </div>
                   <span className={clsx(
-                    'text-[10px] font-bold px-2 py-0.5 rounded-full',
+                    'text-[10px] font-semibold px-2 py-0.5 rounded-full',
                     a.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600',
                   )}>
                     {a.isActive ? 'ACTIVE' : 'OFF'}
@@ -233,7 +233,7 @@ export default function StaffProfileView() {
               {(user.submissions || []).map((s) => (
                 <div key={s.id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-100 bg-slate-50">
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-800 truncate">{s.clinicName}</p>
+                    <p className="text-xs font-semibold text-slate-800 truncate">{s.clinicName}</p>
                     <p className="text-[10px] text-slate-400">{shortDate(s.at)}</p>
                   </div>
                   <StatusBadge status={s.status} />
@@ -272,7 +272,7 @@ export default function StaffProfileView() {
           <div className="space-y-2 max-h-72 overflow-y-auto">
             {(user.activity || []).map((a, i) => (
               <div key={`${a.at}-${i}`} className="flex items-start gap-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-slate-700 font-medium">
                     {ACTION_LABEL[a.action] || a.action.replace(/_/g, ' ').toLowerCase()}

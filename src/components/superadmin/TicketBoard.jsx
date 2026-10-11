@@ -23,11 +23,11 @@ export function TicketBoard({ tickets, onOpen, onMove, canTriage }) {
             key={col.key}
             onDragOver={canTriage ? (e) => e.preventDefault() : undefined}
             onDrop={canTriage ? onDrop(col.key) : undefined}
-            className={clsx('bg-slate-50 rounded-2xl border border-slate-200 border-t-4 p-3 min-h-[240px]', col.accent)}
+            className={clsx('bg-slate-50 rounded-xl border border-slate-200 border-t-4 p-3 min-h-[240px]', col.accent)}
           >
             <div className="flex items-center justify-between px-1 pb-3">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-600">{col.label}</h3>
-              <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', col.chip)}>{items.length}</span>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">{col.label}</h3>
+              <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', col.chip)}>{items.length}</span>
             </div>
 
             <div className="space-y-2">
@@ -44,24 +44,24 @@ export function TicketBoard({ tickets, onOpen, onMove, canTriage }) {
                     onClick={() => onOpen(t)}
                     className={clsx(
                       'w-full text-left bg-white rounded-xl border p-3 shadow-sm hover:shadow-md transition',
-                      t.unread ? 'border-indigo-300 ring-1 ring-indigo-100' : 'border-slate-200',
+                      t.unread ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200',
                       canTriage && 'cursor-grab active:cursor-grabbing',
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-[10px] font-mono font-bold text-slate-400">{t.ref}</span>
+                      <span className="text-[10px] font-mono font-semibold text-slate-400">{t.ref}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {t.unread && <span className="w-2 h-2 rounded-full bg-indigo-500" title="Unread" />}
-                        <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase', p.chip)}>
+                        {t.unread && <span className="w-2 h-2 rounded-full bg-mg-blue" title="Unread" />}
+                        <span className={clsx('text-[9px] font-semibold px-1.5 py-0.5 rounded border uppercase', p.chip)}>
                           {p.label}
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-xs font-bold text-slate-900 mt-1.5 leading-snug">{t.title}</p>
+                    <p className="text-xs font-semibold text-slate-900 mt-1.5 leading-snug">{t.title}</p>
 
                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                      <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded', ROLE_TONE[t.raisedByRole] ?? 'bg-slate-100 text-slate-600')}>
+                      <span className={clsx('text-[9px] font-semibold px-1.5 py-0.5 rounded', ROLE_TONE[t.raisedByRole] ?? 'bg-slate-100 text-slate-600')}>
                         {ROLE_LABEL[t.raisedByRole] ?? t.raisedByRole}
                       </span>
                       <span className="text-[10px] text-slate-400">{t.raisedByName}</span>

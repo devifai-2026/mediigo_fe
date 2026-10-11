@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { api, unwrap } from '../../lib/api.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input, Select } from '../../components/ui/Field.jsx';
 import { SplitPaymentModal } from '../../components/payment/SplitPaymentModal.jsx';
 import { ReceiptPrintable } from '../../components/payment/ReceiptPrintable.jsx';
-import { Icon } from '../../components/ui/Icon.jsx';
 import { inr, token } from '../../lib/format.js';
-import { VISIT_LABEL } from '../../lib/constants.js';
+import { ROLES, VISIT_LABEL } from '../../lib/constants.js';
+import { DeskCard, PageHeader, Pill } from '../../components/desk/ui.jsx';
 import clsx from 'clsx';
+
+const VISIT_HINT = { fresh: 'Standard first visit', followup: 'Returning patient', emergency: 'Priority token' };
 
 export default function WalkInView() {
   const { data: doctors } = useApi('/api/doctors');
   const toast = useToast();
+  const { user, role } = useAuth();
+  const rosterPath = role === ROLES.DOCTOR ? '/d/roster' : '/r/roster';
 
   const [form, setForm] = useState({ name: '', phone: '', age: '', gender: 'M', complaint: '' });
   const [doctorId, setDoctorId] = useState('');
@@ -22,7 +28,16 @@ export default function WalkInView() {
   const [submitting, setSubmitting] = useState(false);
   const [receipt, setReceipt] = useState(null);
 
+  // A doctor registering at their own desk is almost always registering for
+  // themselves, so their name is the starting choice.
+  useEffect(() => {
+    if (!doctorId && role === ROLES.DOCTOR && user?.doctorId && doctors?.some((d) => d._id === user.doctorId)) {
+      setDoctorId(user.doctorId);
+    }
+  }, [doctors, doctorId, role, user?.doctorId]);
+
   const doctor = (doctors || []).find((d) => d._id === doctorId);
+  const closed = doctor && !doctor.session?.isBookingOpen;
   const listedFee = doctor?.fees?.[visitType] ?? 0;
   const [overrideOn, setOverrideOn] = useState(false);
   const [customFee, setCustomFee] = useState('');
@@ -38,7 +53,7 @@ export default function WalkInView() {
     setOverrideOn(false);
     setCustomFee('');
   }, [doctorId, visitType]);
-  const ready = form.name.trim() && doctorId;
+  const ready = form.name.trim() && doctorId && !closed;
 
   const collect = async (payment) => {
     setSubmitting(true);
@@ -75,63 +90,82 @@ export default function WalkInView() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Walk-in registration</h2>
-        <p className="text-xs text-slate-500">Register a patient, take payment and issue a token</p>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-5">
+      <PageHeader
+        icon="fa-user-plus"
+        title="Walk-In Patient Registration"
+        subtitle="Register a patient at the desk, take payment and issue a serial token"
+        badge={doctor && <Pill tone="blue">{doctor.name}</Pill>}
+      />
 
-      <div className="glass-card rounded-3xl p-6 space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Patient name" required>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Rajesh Kumar" />
+      {closed && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <i className="fa-solid fa-ban text-rose-600 text-xl" aria-hidden="true" />
+            <div>
+              <h4 className="text-sm font-semibold text-rose-900">OPD bookings are closed for {doctor.name}</h4>
+              <p className="text-xs text-rose-700">New registrations are paused. Open the slot from the roster to continue.</p>
+            </div>
+          </div>
+          <Link to={rosterPath} className="shrink-0 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-md text-center">
+            Manage availability
+          </Link>
+        </div>
+      )}
+
+      <DeskCard className="p-4 sm:p-6 space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field label="Full patient name" required className="sm:col-span-2">
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Rajesh Khanna" />
           </Field>
           <Field label="Mobile number">
-            <Input inputMode="numeric" maxLength={10} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} placeholder="9876543210" />
+            <Input inputMode="numeric" maxLength={10} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} placeholder="10-digit phone" />
           </Field>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="Age">
-            <Input inputMode="numeric" maxLength={3} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value.replace(/\D/g, '') })} placeholder="34" />
+          <Field label="Age (years)">
+            <Input inputMode="numeric" maxLength={3} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 42" />
           </Field>
           <Field label="Gender">
             <Select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
               <option value="M">Male</option><option value="F">Female</option><option value="O">Other</option>
             </Select>
           </Field>
-          <Field label="Complaint">
-            <Input value={form.complaint} onChange={(e) => setForm({ ...form, complaint: e.target.value })} placeholder="Fever, cough" />
+          <Field label="Assign doctor" required>
+            <Select value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
+              <option value="">Select a doctor…</option>
+              {(doctors || []).map((d) => (
+                <option key={d._id} value={d._id}>
+                  {d.name}{d.specialty ? ` (${d.specialty})` : ''}{d.session?.isBookingOpen ? '' : ' — bookings closed'}
+                </option>
+              ))}
+            </Select>
           </Field>
         </div>
 
-        <Field label="Assign doctor" required>
-          <Select value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
-            <option value="">Select a doctor…</option>
-            {(doctors || []).map((d) => (
-              <option key={d._id} value={d._id} disabled={!d.session?.isBookingOpen}>
-                {d.name} — {d.specialty}{d.session?.isBookingOpen ? '' : ' (bookings closed)'}
-              </option>
-            ))}
-          </Select>
+        <Field label="Disease / symptoms / chief complaint">
+          <Input value={form.complaint} onChange={(e) => setForm({ ...form, complaint: e.target.value })} placeholder="e.g. Viral fever, body ache, joint pain" />
         </Field>
 
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">Visit type</p>
-          <div className="grid grid-cols-3 gap-2">
+          <p className="text-[11px] font-medium text-slate-700 mb-2">Visit type</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {['fresh', 'followup', 'emergency'].map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setVisitType(v)}
                 disabled={!doctor}
-                className={clsx('p-3 rounded-2xl border-2 text-center transition disabled:opacity-50',
-                  visitType === v ? 'border-teal-600 bg-teal-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300')}
+                aria-pressed={visitType === v}
+                className={clsx('p-3.5 rounded-lg border text-left transition disabled:opacity-50',
+                  visitType === v ? 'border-mg-teal bg-teal-50/60 ring-1 ring-mg-teal' : 'border-slate-200 bg-white hover:border-slate-300')}
               >
-                <span className={clsx('block text-[11px] font-extrabold', visitType === v ? 'text-teal-700' : 'text-slate-700')}>
+                <span className={clsx('block text-xs font-semibold', visitType === v ? 'text-mg-teal' : 'text-slate-900')}>
                   {VISIT_LABEL[v]}
                 </span>
-                <span className="block text-sm font-black text-slate-900 mt-1">
+                <span className="block text-[11px] text-slate-500 mt-0.5">{VISIT_HINT[v]}</span>
+                <span className="block text-sm font-semibold text-mg-blue mt-2">
                   {doctor ? inr(doctor.fees[v]) : '—'}
                 </span>
               </button>
@@ -144,50 +178,45 @@ export default function WalkInView() {
             rate, a round-off. Overriding is explicit so the listed fee is
             never changed by accident, and the original stays on screen so
             anyone can see what was altered and by how much. */}
-        <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-300">Total payable</span>
-            <span className="text-2xl font-black">{inr(fee)}</span>
-          </div>
-
-          {overrideOn ? (
-            <div className="flex items-center gap-2 animate-fade-in">
-              <span className="text-[11px] text-slate-400 shrink-0">₹</span>
-              <input
-                type="number" min="0" step="1" value={customFee}
-                onChange={(e) => setCustomFee(e.target.value)}
-                aria-label="Consultation charge"
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-white outline-none focus:border-teal-500"
-              />
+        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="text-xs text-slate-500">Total collection amount</span>
+            <p className="text-2xl font-semibold text-mg-blue">{inr(fee)}</p>
+            {overrideOn ? (
+              <div className="flex items-center gap-2 animate-fade-in">
+                <span className="text-xs text-slate-400">₹</span>
+                <input
+                  type="number" min="0" step="1" value={customFee}
+                  onChange={(e) => setCustomFee(e.target.value)}
+                  aria-label="Consultation charge"
+                  className="w-28 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-sm font-medium outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
+                />
+                <button type="button" onClick={() => { setOverrideOn(false); setCustomFee(''); }} className="text-[11px] font-medium text-slate-500 hover:text-slate-800">
+                  Reset
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={() => { setOverrideOn(false); setCustomFee(''); }}
-                className="text-[11px] font-bold text-slate-400 hover:text-white shrink-0"
+                disabled={!doctor}
+                onClick={() => { setOverrideOn(true); setCustomFee(String(listedFee)); }}
+                className="text-[11px] font-medium text-mg-teal hover:underline disabled:opacity-50"
               >
-                Reset
+                Change consultation charge
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => { setOverrideOn(true); setCustomFee(String(listedFee)); }}
-              className="text-[11px] font-bold text-teal-400 hover:text-teal-300"
-            >
-              Change consultation charge
-            </button>
-          )}
+            )}
+            {overrideOn && Number(customFee) !== listedFee && (
+              <p className="text-[11px] text-amber-600">
+                Listed fee is {inr(listedFee)} — this visit is being charged {inr(fee)}.
+              </p>
+            )}
+          </div>
 
-          {overrideOn && Number(customFee) !== listedFee && (
-            <p className="text-[10px] text-amber-300">
-              Listed fee is {inr(listedFee)} — this visit is being charged {inr(fee)}.
-            </p>
-          )}
+          <Button onClick={() => setPayOpen(true)} disabled={!ready} size="lg">
+            <i className="fa-solid fa-print" aria-hidden="true" /> Collect payment &amp; issue token
+          </Button>
         </div>
-
-        <Button onClick={() => setPayOpen(true)} disabled={!ready} className="w-full" size="lg">
-          <Icon name="wallet" className="w-4 h-4" /> Collect payment &amp; issue token
-        </Button>
-      </div>
+      </DeskCard>
 
       <SplitPaymentModal
         open={payOpen}

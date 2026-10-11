@@ -16,8 +16,8 @@ export function AddAgentModal({ open, onClose, onDone }) {
 
   if (!open) return null;
 
-  const INPUT = 'w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-teal-600';
-  const LABEL = 'block font-bold text-slate-700 mb-1';
+  const INPUT = 'w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-mg-teal';
+  const LABEL = 'block font-semibold text-slate-700 mb-1';
 
   const submit = async (e) => {
     e.preventDefault();
@@ -43,12 +43,12 @@ export function AddAgentModal({ open, onClose, onDone }) {
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border border-slate-100">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-100">
         <div className="flex justify-between items-center border-b pb-3 mb-4">
-          <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-            <i className="fa-solid fa-user-plus text-teal-600" /> Register New Field Agent
+          <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+            <i className="fa-solid fa-user-plus text-mg-teal" /> Register New Field Agent
           </h3>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold">
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 font-semibold">
             <i className="fa-solid fa-xmark" />
           </button>
         </div>
@@ -85,7 +85,7 @@ export function AddAgentModal({ open, onClose, onDone }) {
             <button type="button" onClick={onClose} className="px-4 py-2.5 border rounded-xl text-slate-600 font-semibold hover:bg-slate-50">
               Cancel
             </button>
-            <button type="submit" disabled={busy} className="px-5 py-2.5 bg-teal-600 text-white font-bold rounded-xl shadow-lg hover:bg-teal-700 disabled:opacity-50">
+            <button type="submit" disabled={busy} className="px-5 py-2.5 bg-mg-teal text-white font-semibold rounded-xl shadow-lg hover:bg-mg-tealDark disabled:opacity-50">
               {busy ? 'Registering…' : 'Register Agent'}
             </button>
           </div>

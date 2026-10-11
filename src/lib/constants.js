@@ -11,7 +11,7 @@ export const ROLE_HOME = {
   [ROLES.PATIENT]: '/p/explore',
   [ROLES.DOCTOR]: '/d/chamber',
   [ROLES.RECEPTIONIST]: '/r/queue',
-  [ROLES.FIELD_AGENT]: '/a/onboard',
+  [ROLES.FIELD_AGENT]: '/a/followups',
   [ROLES.EXEC_ADMIN]: '/admin',
   [ROLES.SUPER_ADMIN]: '/super',
 };

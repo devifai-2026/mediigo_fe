@@ -17,8 +17,8 @@ import { phone as fmtPhone, shortDate } from '../../lib/format.js';
 const ROLE_CHIP = {
   EXEC_ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
   FIELD_AGENT: 'bg-amber-50 text-amber-700 border-amber-200',
-  RECEPTIONIST: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  SUPER_ADMIN: 'bg-slate-900 text-white border-slate-700',
+  RECEPTIONIST: 'bg-blue-50 text-mg-navy border-blue-200',
+  SUPER_ADMIN: 'bg-mg-navy text-white border-slate-700',
 };
 
 const loadSummary = (u) => {
@@ -143,7 +143,7 @@ export default function StaffView() {
         <button
           type="button"
           onClick={() => open('create')}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-user-plus" /> Add Staff
         </button>
@@ -160,11 +160,11 @@ export default function StaffView() {
         ]}
       />
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 <th className="py-3.5 px-4">Name &amp; Contact</th>
                 <th className="py-3.5 px-4">Role</th>
                 <th className="py-3.5 px-4">District</th>
@@ -179,14 +179,14 @@ export default function StaffView() {
                   <td className="py-3 px-4">
                     {/* Only the name links: the row also carries action buttons,
                         so making the whole row clickable would swallow them. */}
-                    <Link to={`/super/staff/${u.id}`} className="font-bold text-slate-900 hover:text-indigo-600 hover:underline">
+                    <Link to={`/super/staff/${u.id}`} className="font-semibold text-slate-900 hover:text-mg-blue hover:underline">
                       {u.name}
                     </Link>
                     <p className="text-[11px] text-slate-500 font-mono">{fmtPhone(u.phone)}</p>
                     {u.email && <p className="text-[10px] text-slate-400">{u.email}</p>}
                   </td>
                   <td className="py-3 px-4">
-                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded border uppercase', ROLE_CHIP[u.role])}>
+                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded border uppercase', ROLE_CHIP[u.role])}>
                       {ROLE_LABEL[u.role]}
                     </span>
                   </td>
@@ -197,7 +197,7 @@ export default function StaffView() {
                   <td className="py-3 px-4 text-slate-600">{loadSummary(u) ?? '—'}</td>
                   <td className="py-3 px-4 text-center">
                     <span className={clsx(
-                      'px-2.5 py-1 rounded-full text-[10px] font-bold',
+                      'px-2.5 py-1 rounded-full text-[10px] font-semibold',
                       u.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600',
                     )}>
                       {u.isActive ? 'ACTIVE' : 'DEACTIVATED'}
@@ -210,7 +210,7 @@ export default function StaffView() {
                         <i className="fa-solid fa-id-card text-xs" />
                       </Link>
                       <button type="button" title="Edit details" onClick={() => open('edit', u)}
-                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
+                        className="p-1.5 text-slate-400 hover:text-mg-blue hover:bg-blue-50 rounded-lg">
                         <i className="fa-solid fa-pen text-xs" />
                       </button>
                       <button type="button" title="Reset password" onClick={() => open('password', u)}
@@ -331,8 +331,8 @@ export default function StaffView() {
           </p>
 
           {transfer && (
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 space-y-3">
-              <p className="text-xs font-bold text-amber-900">
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 space-y-3">
+              <p className="text-xs font-semibold text-amber-900">
                 <i className="fa-solid fa-triangle-exclamation mr-1.5" />
                 {transfer.message}
               </p>

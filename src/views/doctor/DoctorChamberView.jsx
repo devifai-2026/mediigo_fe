@@ -1,27 +1,31 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useQueueSnapshot } from '../../hooks/useQueueSnapshot.js';
 import { useSocketEvent } from '../../hooks/useSocketEvent.js';
 import { useAudioUnlock } from '../../hooks/useAudioUnlock.js';
+import { useDeskActions } from '../../hooks/useDeskActions.js';
 import { api } from '../../lib/api.js';
 import { announce } from '../../lib/audio.js';
 import { EVENTS } from '../../lib/socketEvents.js';
-import { Button } from '../../components/ui/Button.jsx';
-import { Icon } from '../../components/ui/Icon.jsx';
-import { StatCard } from '../../components/ui/StatCard.jsx';
-import { BreakStateManager } from '../../components/doctor/BreakStateManager.jsx';
-import { QueueRoster, SkippedDrawer } from '../../components/queue/QueueRoster.jsx';
-import { OutcomeDialog } from '../../components/doctor/OutcomeDialog.jsx';
 import { token } from '../../lib/format.js';
+import { BreakStateManager } from '../../components/doctor/BreakStateManager.jsx';
+import { OutcomeDialog } from '../../components/doctor/OutcomeDialog.jsx';
+import { CancellationsPanel } from '../../components/desk/Cancellations.jsx';
+import { ChamberHero } from '../../components/desk/ChamberHero.jsx';
+import { AudioUnlockBanner, DeskStats, SkippedPanel, DeskRoster } from '../../components/desk/DeskPanels.jsx';
 
 export default function DoctorChamberView() {
   const { user } = useAuth();
   const toast = useToast();
   const doctorId = user?.doctorId;
-  const { snapshot, refetch } = useQueueSnapshot(doctorId);
+  const { snapshot: s, refetch } = useQueueSnapshot(doctorId);
+  const navigate = useNavigate();
   const { ready: audioReady, unlock } = useAudioUnlock();
-  const [busy, setBusy] = useState(false);
+  const desk = useDeskActions(doctorId, refetch);
+  const [outcomeOpen, setOutcomeOpen] = useState(false);
+  const [filter, setFilter] = useState('ALL');
 
   // The server sends the announcement as a separate command from the state
   // change, so a recall re-announces without moving the queue.
@@ -29,18 +33,18 @@ export default function DoctorChamberView() {
     announce({ announcementId: p.announcementId, text: p.text?.en, lang: p.lang });
   });
 
-  const act = async (fn, successMsg) => {
-    setBusy(true);
-    try {
-      await fn();
-      if (successMsg) toast.success(successMsg);
-      refetch();
-    } catch (e) {
-      toast.error(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  // Someone else took a patient off this doctor's list: say so now, not only
+  // in the panel the doctor may not be looking at.
+  useSocketEvent(EVENTS.TOKEN_CANCELLED, (p) => {
+    if (p.doctorId !== doctorId) return;
+    const who = p.byRole === 'PATIENT' ? 'The patient' : (p.byName || 'The front desk');
+    toast.warn(`${token(p.tokenNumber)} ${p.patientName} cancelled by ${who}${p.reason ? ` — ${p.reason}` : ''}`, { duration: 9000, key: `cancel-${p.tokenId}` });
+  });
+
+  const current = s?.tokens?.find((t) => t.status === 'IN_CHAMBER');
+  // The server states this outright rather than leaving each client to infer
+  // it from an absent IN_CHAMBER row.
+  const hasCalled = s?.chamberState === 'DONE';
 
   /**
    * Finishing a patient and calling the next is one step for the doctor, so
@@ -48,134 +52,65 @@ export default function DoctorChamberView() {
    * have to remember. With nobody in the chamber there is nothing to record
    * an outcome for, so the dialog is skipped entirely.
    */
-  const callNext = (payload) => act(async () => {
-    const r = await api.post(`/api/queue/${doctorId}/call-next`, payload || {});
-    const called = r.data?.data?.called;
-    if (called) toast.success(`Called ${token(called.tokenNumber)}`);
+  const callNext = async ({ followUp, ...payload } = {}) => {
+    // Booked BEFORE finishing: if the follow-up cannot be booked (the sitting
+    // just filled), the doctor is still with the patient and can pick another
+    // date, instead of discovering it after they have left the room.
+    if (followUp && current) {
+      try {
+        await api.post(`/api/queue/tokens/${current.tokenId}/followup`, followUp);
+        toast.success('Follow-up booked — the patient has been asked to confirm');
+      } catch (e) {
+        toast.error(e?.response?.data?.error?.message || e.message);
+        return;
+      }
+    }
+    await desk.callNext(payload);
     setOutcomeOpen(false);
-  });
-
-  const onCallNext = () => {
-    if (current) setOutcomeOpen(true);
-    else callNext();
   };
-
-  const [outcomeOpen, setOutcomeOpen] = useState(false);
-
-  const recall = () => act(() => api.post(`/api/queue/${doctorId}/recall`), 'Re-announced');
-
-  const onRowAction = (action, t) => {
-    if (action === 'RESTORE') return act(() => api.post(`/api/queue/tokens/${t.tokenId}/restore`), 'Recalled to the queue');
-    return act(() => api.post(`/api/queue/tokens/${t.tokenId}/status`, { status: action }));
-  };
-
-  const s = snapshot;
-  const current = s?.tokens?.find((t) => t.status === 'IN_CHAMBER');
-  // The server states this outright rather than leaving each client to infer
-  // it from an absent IN_CHAMBER row.
-  const hasCalled = s?.chamberState === 'DONE';
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 sm:space-y-6">
       {!audioReady && (
-        <button
-          type="button"
-          onClick={unlock}
-          className="w-full p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-2"
-        >
-          <Icon name="megaphone" className="w-4 h-4" />
-          Tap to enable the call chime and voice announcements
-        </button>
+        <AudioUnlockBanner onUnlock={unlock}>Tap to enable the call chime and voice announcements</AudioUnlockBanner>
       )}
 
-      <div className="bg-hero-chamber rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-3 w-3 relative">
-                <span className="animate-ping absolute h-full w-full rounded-full bg-teal-400 opacity-75" />
-                <span className="relative rounded-full h-3 w-3 bg-teal-500" />
-              </span>
-              <span className={`text-xs font-bold tracking-widest uppercase ${s?.session?.isOnBreak ? 'text-amber-300' : 'text-teal-300'}`}>
-                {s?.session?.isOnBreak ? 'Session paused — on break' : s?.session?.isBookingOpen ? 'Live OPD session active' : 'Bookings closed'}
-              </span>
-            </div>
-            <div className="flex items-baseline gap-4 mt-2">
-              {/* "Now consulting #03" stayed on screen after that patient was
-                  marked complete, reading as though they were still in the
-                  room. The number is only "now" while someone is IN_CHAMBER. */}
-              <span className="text-xs text-slate-300">
-                {current ? 'Now consulting' : hasCalled ? 'Last seen' : 'Next up'}
-              </span>
-              <h1 className={`text-5xl sm:text-6xl font-black tracking-tight ${current ? 'text-teal-400' : 'text-slate-400'}`}>
-                {token(s?.currentToken ?? 0)}
-              </h1>
-              {!current && hasCalled && (
-                <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
-                  <Icon name="check" className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Done
-                </span>
-              )}
-            </div>
-            {current
-              ? <p className="text-sm text-slate-300 mt-1">{current.name}</p>
-              : <p className="text-sm text-slate-400 mt-1">
-                  {hasCalled
-                    ? (s?.counts?.waiting ? 'Consultation finished — call the next patient' : 'Consultation finished — no one waiting')
-                    : (s?.counts?.waiting ? 'Nobody in the chamber yet' : 'No patients in the queue')}
-                </p>}
-            <p className="text-xs text-slate-400 mt-2">
-              Chamber {s?.chamberNumber || '—'} · {s?.counts?.waiting ?? 0} waiting
-            </p>
-          </div>
+      <ChamberHero
+        snapshot={s}
+        current={current}
+        hasCalled={hasCalled}
+        busy={desk.busy}
+        onCallNext={() => (current ? setOutcomeOpen(true) : callNext())}
+        onRecall={desk.recall}
+        onComplete={() => current && desk.complete(current)}
+        onSkip={() => current && desk.skip(current)}
+        onOutcome={(o) => current && desk.complete(current, o)}
+        onWriteRx={() => current && navigate(`/d/rx?token=${current.tokenId}`)}
+        footer={<BreakStateManager doctorId={doctorId} session={s?.session} onChanged={refetch} />}
+      />
 
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/15 space-y-3 max-w-md w-full">
-            <Button onClick={onCallNext} loading={busy} disabled={s?.session?.isOnBreak} size="lg" className="w-full">
-              <Icon name="megaphone" className="w-4 h-4" /> Call next (voice announcement)
-            </Button>
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="secondary" onClick={recall} disabled={!current || busy} className="bg-white/15 hover:bg-white/25 text-white border-white/10">
-                Re-announce
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={!current || busy}
-                onClick={() => onRowAction('COMPLETED', { tokenId: current?.tokenId })}
-                className="bg-emerald-600/90 hover:bg-emerald-600 text-white border-none"
-              >
-                Mark complete
-              </Button>
-            </div>
-            <BreakStateManager doctorId={doctorId} session={s?.session} onChanged={refetch} />
-          </div>
-        </div>
-      </div>
+      <DeskStats counts={s?.counts} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Waiting" value={s?.counts?.waiting ?? 0} icon="clock" tone="warn" />
-        <StatCard label="Completed" value={s?.counts?.completed ?? 0} icon="check" tone="cash" />
-        <StatCard label="Skipped" value={s?.counts?.skipped ?? 0} icon="cross" tone="alert" />
-        <StatCard
-          label="Est. wait"
-          value={s?.estimatedWaitMinutes == null ? 'Paused' : `${s.estimatedWaitMinutes} min`}
-          icon="clock"
-          tone="teal"
-          hint={s?.session?.isOnBreak ? 'Queue is paused during a break' : undefined}
-        />
-      </div>
+      <CancellationsPanel cancellations={s?.cancellations} forDoctor onChanged={refetch} toast={toast} />
 
-      <SkippedDrawer tokens={s?.tokens ?? []} onRestore={(t) => onRowAction('RESTORE', t)} />
+      <SkippedPanel tokens={s?.tokens} onRestore={desk.restore} busy={desk.busy} />
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100">
-          <h3 className="text-sm font-bold text-slate-900">Today's roster</h3>
-        </div>
-        <QueueRoster tokens={s?.tokens ?? []} onAction={onRowAction} />
-      </div>
+      <DeskRoster
+        snapshot={s}
+        filter={filter}
+        onFilter={setFilter}
+        busy={desk.busy}
+        canPrescribe
+        onAction={(action, t) => (action === 'RX' ? navigate(`/d/rx?token=${t.tokenId}`) : desk.onRowAction(action, t))}
+      />
+
       <OutcomeDialog
         open={outcomeOpen}
+        doctorId={doctorId}
+        hasFollowUp={Boolean(current?.hasFollowUp)}
         patientName={current?.name}
         tokenNumber={current ? token(current.tokenNumber) : ''}
-        busy={busy}
+        busy={desk.busy}
         onClose={() => setOutcomeOpen(false)}
         onConfirm={(payload) => callNext(payload)}
       />

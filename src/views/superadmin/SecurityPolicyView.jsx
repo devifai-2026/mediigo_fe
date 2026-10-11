@@ -8,6 +8,7 @@ import { Field, Input, Select } from '../../components/ui/Field.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { ROLES, ROLE_LABEL } from '../../lib/constants.js';
+import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 
 const TOGGLEABLE = [ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.FIELD_AGENT, ROLES.EXEC_ADMIN, ROLES.SUPER_ADMIN];
 
@@ -52,20 +53,18 @@ export default function SecurityPolicyView() {
   };
 
   return (
-    <div className="max-w-3xl space-y-5">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Security &amp; messaging</h2>
-        <p className="text-xs text-slate-500">WhatsApp delivery, OTP behaviour and two-factor policy</p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader icon="fa-shield-halved" title="Security & Messaging" subtitle="WhatsApp delivery, OTP behaviour and two-factor policy" />
+      <div className="max-w-3xl space-y-5">
 
-      <div className="glass-card rounded-3xl p-6 space-y-4">
-        <h3 className="text-sm font-bold text-slate-900">OTP behaviour</h3>
+      <div className="glass-card rounded-xl p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-900">OTP behaviour</h3>
 
-        <div className={clsx('flex items-center justify-between p-4 rounded-2xl border',
+        <div className={clsx('flex items-center justify-between p-4 rounded-xl border',
           form.otpDemo ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200')}
         >
           <div className="min-w-0">
-            <p className="text-xs font-bold text-slate-800">Demo mode</p>
+            <p className="text-xs font-semibold text-slate-800">Demo mode</p>
             <p className="text-[11px] text-slate-600 mt-0.5">
               {form.otpDemo
                 ? `Every login accepts the fixed code ${form.otpDemoCode} and nothing is sent. Turn this off before real patients use the app.`
@@ -90,9 +89,9 @@ export default function SecurityPolicyView() {
         </div>
       </div>
 
-      <div className="glass-card rounded-3xl p-6 space-y-4">
+      <div className="glass-card rounded-xl p-6 space-y-4">
         <div>
-          <h3 className="text-sm font-bold text-slate-900">Two-factor authentication</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Two-factor authentication</h3>
           <p className="text-[11px] text-slate-500">Roles that must confirm a WhatsApp code after their password</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -103,12 +102,12 @@ export default function SecurityPolicyView() {
                 key={r}
                 type="button"
                 onClick={() => toggleRole(r)}
-                className={clsx('flex items-center justify-between p-3 rounded-2xl border transition text-left',
+                className={clsx('flex items-center justify-between p-3 rounded-xl border transition text-left',
                   on ? 'bg-teal-50 border-teal-300' : 'bg-slate-50 border-slate-200 hover:border-slate-300')}
               >
-                <span className="text-xs font-bold text-slate-800">{ROLE_LABEL[r]}</span>
-                <span className={clsx('text-[10px] font-extrabold px-2 py-0.5 rounded',
-                  on ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500')}
+                <span className="text-xs font-semibold text-slate-800">{ROLE_LABEL[r]}</span>
+                <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded',
+                  on ? 'bg-mg-teal text-white' : 'bg-slate-200 text-slate-500')}
                 >
                   {on ? '2FA ON' : 'OFF'}
                 </span>
@@ -118,10 +117,10 @@ export default function SecurityPolicyView() {
         </div>
       </div>
 
-      <div className="glass-card rounded-3xl p-6 space-y-4">
+      <div className="glass-card rounded-xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900">WhatsApp delivery (WABridge)</h3>
-          <span className={clsx('text-[10px] font-bold px-2 py-1 rounded border',
+          <h3 className="text-sm font-semibold text-slate-900">WhatsApp delivery (WABridge)</h3>
+          <span className={clsx('text-[10px] font-semibold px-2 py-1 rounded border',
             form.enabled ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200')}
           >
             {form.enabled ? 'Live' : 'Console only'}
@@ -164,6 +163,7 @@ export default function SecurityPolicyView() {
       <Button onClick={save} loading={busy} className="w-full" size="lg">
         <Icon name="check" className="w-4 h-4" /> Save settings
       </Button>
+      </div>
     </div>
   );
 }
