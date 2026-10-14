@@ -67,7 +67,7 @@ export function BreakStateManager({ doctorId, session, onChanged }) {
 
   if (session?.isOnBreak) {
     return (
-      <div className="bg-amber-500/20 border border-amber-400/40 rounded-2xl p-4 space-y-3">
+      <div className="bg-amber-500/20 border border-amber-400/40 rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <Icon name="pause" className="w-5 h-5 text-amber-300 shrink-0" />
@@ -100,7 +100,7 @@ export function BreakStateManager({ doctorId, session, onChanged }) {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
             style={{ position: 'fixed', left: pos.left, top: pos.top, width: pos.width }}
-            className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 z-50 space-y-3">
+            className="bg-white rounded-xl border border-slate-200 shadow-2xl p-4 z-50 space-y-3">
           <div>
             <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">Reason</p>
             <div className="flex gap-1.5">
@@ -109,7 +109,7 @@ export function BreakStateManager({ doctorId, session, onChanged }) {
                   key={r}
                   type="button"
                   onClick={() => setReason(r)}
-                  className={clsx('flex-1 py-2 rounded-xl text-[11px] font-bold border transition',
+                  className={clsx('flex-1 py-2 rounded-lg text-[11px] font-bold border transition',
                     reason === r ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300')}
                 >
                   {r}
@@ -125,7 +125,7 @@ export function BreakStateManager({ doctorId, session, onChanged }) {
                   key={m}
                   type="button"
                   onClick={() => setMinutes(m)}
-                  className={clsx('flex-1 py-2 rounded-xl text-[11px] font-bold border transition',
+                  className={clsx('flex-1 py-2 rounded-lg text-[11px] font-bold border transition',
                     minutes === m ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300')}
                 >
                   {m} min

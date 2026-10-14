@@ -109,17 +109,17 @@ export default function ReviewsView() {
                     <Stars n={r.rating} />
                     <span className="text-sm font-semibold text-slate-900">{r.doctorName}</span>
                     {r.rating <= 2 && (
-                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
                         Low rating
                       </span>
                     )}
                     {r.edited && (
-                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-mg-navy border border-blue-200">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-mg-navy border border-blue-200">
                         Edited
                       </span>
                     )}
                     <span className={clsx(
-                      'text-[9px] font-semibold px-2 py-0.5 rounded-full border',
+                      'text-[10px] font-semibold px-2 py-0.5 rounded-full border',
                       r.status === 'APPROVED' ? 'bg-teal-50 text-mg-tealDark border-teal-200'
                         : r.status === 'REJECTED' ? 'bg-slate-100 text-slate-500 border-slate-200'
                           : 'bg-amber-50 text-amber-700 border-amber-200',

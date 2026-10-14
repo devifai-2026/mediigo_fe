@@ -291,7 +291,7 @@ export default function PatientProfileView() {
                         <i className="fa-solid fa-user-doctor text-blue-400 mr-1" />{h.doctorName}
                       </p>
                       {h.specialty && (
-                        <span className="bg-blue-50 text-mg-navy font-semibold px-1.5 py-0.5 rounded text-[10px]">{h.specialty}</span>
+                        <span className="bg-blue-50 text-mg-navy font-semibold px-1.5 py-0.5 rounded-md text-[10px]">{h.specialty}</span>
                       )}
                     </td>
                     <td className="py-3 px-4">
@@ -301,12 +301,12 @@ export default function PatientProfileView() {
                       <p className="text-[10px] text-slate-400">{SOURCE_LABEL[h.source] ?? h.source}</p>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={clsx('font-semibold px-2 py-0.5 rounded text-[10px]', VISIT_CHIP[h.visitType] ?? 'bg-slate-100 text-slate-700')}>
+                      <span className={clsx('font-semibold px-2 py-0.5 rounded-md text-[10px]', VISIT_CHIP[h.visitType] ?? 'bg-slate-100 text-slate-700')}>
                         {(VISIT_LABEL[h.visitType] ?? h.visitType ?? '—').toUpperCase()}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded',
+                      <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-md',
                         h.isSelf ? 'bg-slate-100 text-slate-700' : 'bg-purple-50 text-purple-700')}>
                         {h.bookedFor}
                       </span>
@@ -337,7 +337,7 @@ export default function PatientProfileView() {
             ) : p.clinics.map((c) => (
               <button
                 key={c.id} type="button" onClick={() => { setMapClinic(c); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="text-left p-4 bg-slate-50 hover:bg-white hover:border-blue-300 border border-slate-200 rounded-xl transition"
+                className="text-left p-4 bg-slate-50 hover:bg-white hover:border-blue-300 border border-slate-200 rounded-lg transition"
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
@@ -349,9 +349,9 @@ export default function PatientProfileView() {
                   <span className="text-base font-semibold text-mg-blue shrink-0">{c.visits}</span>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {c.fresh > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.fresh)}>{c.fresh} fresh</span>}
-                  {c.followup > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.followup)}>{c.followup} follow-up</span>}
-                  {c.emergency > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.emergency)}>{c.emergency} emergency</span>}
+                  {c.fresh > 0 && <span className={clsx('px-1.5 py-0.5 rounded-md text-[10px] font-semibold', VISIT_CHIP.fresh)}>{c.fresh} fresh</span>}
+                  {c.followup > 0 && <span className={clsx('px-1.5 py-0.5 rounded-md text-[10px] font-semibold', VISIT_CHIP.followup)}>{c.followup} follow-up</span>}
+                  {c.emergency > 0 && <span className={clsx('px-1.5 py-0.5 rounded-md text-[10px] font-semibold', VISIT_CHIP.emergency)}>{c.emergency} emergency</span>}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2">
                   {shortDate(c.firstVisit)} → {shortDate(c.lastVisit)}
@@ -382,9 +382,9 @@ export default function PatientProfileView() {
                   <span className="text-base font-semibold text-mg-teal shrink-0">{d.visits}</span>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {d.fresh > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.fresh)}>{d.fresh} fresh</span>}
-                  {d.followup > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.followup)}>{d.followup} follow-up</span>}
-                  {d.emergency > 0 && <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-semibold', VISIT_CHIP.emergency)}>{d.emergency} emergency</span>}
+                  {d.fresh > 0 && <span className={clsx('px-1.5 py-0.5 rounded-md text-[10px] font-semibold', VISIT_CHIP.fresh)}>{d.fresh} fresh</span>}
+                  {d.followup > 0 && <span className={clsx('px-1.5 py-0.5 rounded-md text-[10px] font-semibold', VISIT_CHIP.followup)}>{d.followup} follow-up</span>}
+                  {d.emergency > 0 && <span className={clsx('px-1.5 py-0.5 rounded-md text-[10px] font-semibold', VISIT_CHIP.emergency)}>{d.emergency} emergency</span>}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2">{shortDate(d.firstVisit)} → {shortDate(d.lastVisit)}</p>
               </div>
@@ -420,7 +420,7 @@ export default function PatientProfileView() {
                       <p className="text-[10px] text-slate-500">{t.doctorName}</p>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={clsx('font-semibold px-2 py-0.5 rounded text-[10px]', VISIT_CHIP[t.visitType] ?? 'bg-slate-100 text-slate-700')}>
+                      <span className={clsx('font-semibold px-2 py-0.5 rounded-md text-[10px]', VISIT_CHIP[t.visitType] ?? 'bg-slate-100 text-slate-700')}>
                         {(VISIT_LABEL[t.visitType] ?? t.visitType ?? '—').toUpperCase()}
                       </span>
                     </td>

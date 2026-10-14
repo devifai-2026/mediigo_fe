@@ -70,3 +70,10 @@ export const initialsOf = (name) => {
     .slice(0, 2)
     .toUpperCase();
 };
+
+/** "14:00" → "2:00 PM". Schedules store clinic-local 'HH:mm'. */
+export const time12 = (hhmm) => {
+  const [h, m] = String(hhmm || '').split(':').map(Number);
+  if (Number.isNaN(h)) return hhmm || '';
+  return `${((h + 11) % 12) + 1}:${String(m || 0).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+};

@@ -82,12 +82,12 @@ export default function ApprovalsView() {
       ) : (
         <div className="space-y-4">
           {data.map((s) => (
-            <div key={s._id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div key={s._id} className="p-5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-extrabold text-slate-900 text-sm">{s.payload?.name}</span>
-                  <span className="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded">{s.payload?.code}</span>
-                  <span className="text-[10px] font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">
+                  <span className="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">{s.payload?.code}</span>
+                  <span className="text-[10px] font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md border border-purple-200">
                     Licence {s.payload?.licenseNumber}
                   </span>
                 </div>

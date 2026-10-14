@@ -90,7 +90,7 @@ export default function DisplayView() {
           const b = boards[d._id];
           const onBreak = b?.session?.isOnBreak ?? d.session?.isOnBreak;
           return (
-            <div key={d._id} className="bg-white/5 border border-white/10 rounded-3xl p-6">
+            <div key={d._id} className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <p className="text-sm text-slate-400">{d.specialty}</p>
               <h2 className="text-xl font-bold">{d.name}</h2>
               <p className="text-xs text-slate-500 mt-0.5">Chamber {d.chamberNumber || '—'}</p>

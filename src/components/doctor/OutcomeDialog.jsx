@@ -52,7 +52,7 @@ export function OutcomeDialog({ open, doctorId, patientName, tokenNumber, hasFol
               onClick={() => setOutcome(o.value)}
               aria-pressed={outcome === o.value}
               className={clsx(
-                'w-full flex items-center gap-3 rounded-xl border p-3 text-left transition',
+                'w-full flex items-center gap-3 rounded-lg border p-3 text-left transition',
                 outcome === o.value
                   ? 'border-mg-teal bg-teal-50/60 ring-1 ring-mg-teal'
                   : 'border-slate-200 hover:border-slate-300',

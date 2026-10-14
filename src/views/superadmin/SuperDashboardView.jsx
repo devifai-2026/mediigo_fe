@@ -61,7 +61,7 @@ export default function SuperDashboardView() {
         <button
           type="button"
           onClick={refreshAll}
-          className="w-9 h-9 grid place-items-center bg-white border border-slate-200 rounded-md text-slate-500 hover:text-mg-blue"
+          className="w-9 h-9 grid place-items-center bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-mg-blue"
           title="Refresh live data"
           aria-label="Refresh"
         >

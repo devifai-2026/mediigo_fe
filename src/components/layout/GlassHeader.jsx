@@ -33,7 +33,7 @@ export function GlassHeader({ subtitle, right }) {
             <h1 className="text-lg font-black tracking-tight text-slate-900 leading-none">
               Medi<span className="text-teal-600">igo</span>
             </h1>
-            <span className="text-[9px] uppercase font-bold tracking-widest text-teal-700 block mt-0.5 truncate">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-teal-700 block mt-0.5 truncate">
               {subtitle || (role ? ROLE_LABEL[role] : 'Healthcare Platform')}
             </span>
           </div>
@@ -48,7 +48,7 @@ export function GlassHeader({ subtitle, right }) {
               type="button"
               onClick={() => setRaising(true)}
               title="Report an issue"
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 transition"
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 transition"
             >
               <Icon name="alert" className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Get help</span>
@@ -72,7 +72,7 @@ export function GlassHeader({ subtitle, right }) {
             <div className="flex items-center gap-2">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-bold text-slate-800 leading-tight">{user.name}</p>
-                <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase', ROLE_CHIP[role])}>
+                <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-md border uppercase', ROLE_CHIP[role])}>
                   {ROLE_LABEL[role]}
                 </span>
               </div>
@@ -84,7 +84,7 @@ export function GlassHeader({ subtitle, right }) {
                 onClick={() => logout()}
                 title="Log out"
                 aria-label="Log out"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors"
+                className="p-2 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors"
               >
                 <Icon name="logout" className="w-4 h-4" />
               </button>

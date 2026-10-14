@@ -108,7 +108,7 @@ export default function VaultView() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/70 border border-current/20">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-white/70 border border-current/20">
                       {g.severity}
                     </span>
                     <h4 className="font-bold text-sm">{g.title}</h4>

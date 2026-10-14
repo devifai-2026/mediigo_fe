@@ -30,7 +30,7 @@ export default function PatientsView() {
         <button
           type="button"
           onClick={refetch}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2.5 rounded-lg shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-rotate" /> Sync Attendance Data
         </button>
@@ -111,7 +111,7 @@ export default function PatientsView() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search Clinic or Doctor..."
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-800 outline-none focus:border-mg-blue focus:bg-white"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-4 py-2 text-xs font-medium text-slate-800 outline-none focus:border-mg-blue focus:bg-white"
             />
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function PatientsView() {
                     </p>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="bg-blue-50 text-mg-navy font-semibold px-2 py-0.5 rounded text-[10px]">{c.specialty}</span>
+                    <span className="bg-blue-50 text-mg-navy font-semibold px-2 py-0.5 rounded-md text-[10px]">{c.specialty}</span>
                   </td>
                   <td className="py-3 px-4 text-center">
                     <span className="font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">

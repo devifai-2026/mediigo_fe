@@ -22,7 +22,7 @@ function ExportButton({ onClick, disabled }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-mg-teal hover:text-mg-teal disabled:opacity-50 transition"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-mg-teal hover:text-mg-teal disabled:opacity-50 transition"
     >
       <i className="fa-solid fa-file-csv" aria-hidden="true" /> Export CSV
     </button>
@@ -125,7 +125,7 @@ export default function FinancialAuditView() {
               onChange={(e) => setClinicSearch(e.target.value)}
               placeholder="Search clinic, city…"
               aria-label="Search clinics"
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs w-full sm:w-48 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs w-full sm:w-48 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
             />
             <ExportButton onClick={exportClinics} disabled={!clinics.length} />
           </div>

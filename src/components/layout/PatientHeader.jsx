@@ -36,7 +36,7 @@ export function PatientHeader({ items, primaryCount = 3 }) {
             <img src="/logo-mark.png" alt="" className="w-9 h-auto" />
             <div className="min-w-0 leading-none">
               <span className="block text-lg font-bold text-mg-navy tracking-tight">Mediigo</span>
-              <span className="block text-[9px] text-slate-600 mt-0.5">Book Doctor Easily</span>
+              <span className="block text-[10px] text-slate-600 mt-0.5">Book Doctor Easily</span>
             </div>
           </Link>
 
@@ -50,7 +50,7 @@ export function PatientHeader({ items, primaryCount = 3 }) {
                 className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow bg-mg-teal text-white grid place-items-center text-xs font-bold"
               >
                 <PhotoOrFallback
-                  src={user.photoUrl}
+                  src={user.photo?.url}
                   className="w-full h-full object-cover"
                   fallback={initials(user.name)}
                 />
@@ -88,7 +88,7 @@ export function PatientHeader({ items, primaryCount = 3 }) {
           ) : (
             <Link
               to="/login"
-              className="text-xs font-semibold px-5 py-2 rounded-md bg-mg-teal hover:bg-mg-tealDark text-white transition"
+              className="text-xs font-semibold px-5 py-2 rounded-lg bg-mg-teal hover:bg-mg-tealDark text-white transition"
             >
               Login
             </Link>

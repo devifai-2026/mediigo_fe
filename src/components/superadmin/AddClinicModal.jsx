@@ -176,7 +176,7 @@ export function AddClinicModal({ open, onClose, onDone }) {
                   <input
                     type="number" min="0" value={form[k]}
                     onChange={(e) => setForm({ ...form, [k]: Number(e.target.value) })}
-                    className="w-full bg-white border border-slate-200 rounded-xl p-2 font-semibold text-slate-800"
+                    className="w-full bg-white border border-slate-200 rounded-lg p-2 font-semibold text-slate-800"
                   />
                 </div>
               ))}
@@ -187,12 +187,12 @@ export function AddClinicModal({ open, onClose, onDone }) {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2.5 border rounded-xl text-slate-600 font-semibold hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="px-4 py-2.5 border rounded-lg text-slate-600 font-semibold hover:bg-slate-50">
               Cancel
             </button>
             <button
               type="submit" disabled={busy}
-              className="px-5 py-2.5 bg-mg-blue text-white font-semibold rounded-xl shadow-lg hover:bg-mg-navy disabled:opacity-50"
+              className="px-5 py-2.5 bg-mg-blue text-white font-semibold rounded-lg shadow-lg hover:bg-mg-navy disabled:opacity-50"
             >
               {busy ? 'Onboarding…' : 'Add & Authorize Clinic'}
             </button>

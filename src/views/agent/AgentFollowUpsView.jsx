@@ -89,7 +89,7 @@ function LeadCard({ lead, onLog }) {
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
         {lead.contactPhone && (
-          <a href={`tel:${lead.contactPhone}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-slate-700 hover:border-mg-teal hover:text-mg-teal">
+          <a href={`tel:${lead.contactPhone}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:border-mg-teal hover:text-mg-teal">
             <i className="fa-solid fa-phone" aria-hidden="true" /> Call
           </a>
         )}
@@ -98,13 +98,13 @@ function LeadCard({ lead, onLog }) {
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lead.clinicName}, ${address}`)}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-slate-700 hover:border-mg-teal hover:text-mg-teal"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:border-mg-teal hover:text-mg-teal"
           >
             <i className="fa-solid fa-location-arrow" aria-hidden="true" /> Directions
           </a>
         )}
         {lead.visits.length > 0 && (
-          <button type="button" onClick={() => setOpen((o) => !o)} className="px-2.5 py-1.5 rounded-md text-slate-500 hover:text-slate-800">
+          <button type="button" onClick={() => setOpen((o) => !o)} className="px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800">
             {open ? 'Hide' : 'History'} ({lead.visits.length})
           </button>
         )}
@@ -117,7 +117,7 @@ function LeadCard({ lead, onLog }) {
           {(isOpen || rejected) && (
             <Link
               to={`/a/onboard?lead=${lead._id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-mg-teal hover:bg-mg-tealDark text-white text-[11px] font-medium"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mg-teal hover:bg-mg-tealDark text-white text-[11px] font-medium"
             >
               <i className="fa-solid fa-hospital" aria-hidden="true" /> {rejected ? 'Resubmit' : 'Onboard now'}
             </Link>
@@ -228,7 +228,7 @@ export default function AgentFollowUpsView() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search clinic, doctor, area…"
             aria-label="Search clinics"
-            className="pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-md text-xs w-full lg:w-64 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
+            className="pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs w-full lg:w-64 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
           />
         </div>
       </DeskCard>

@@ -226,7 +226,7 @@ function RxWriter({ patients, patient, onPick, onSaved, toast }) {
             type="button"
             onClick={() => setMeds((m) => [...m, blankMed()])}
             disabled={meds.length >= 30}
-            className="px-2.5 py-1 rounded-md bg-teal-50 hover:bg-teal-100 text-mg-teal text-xs font-medium transition"
+            className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-mg-teal text-xs font-medium transition"
           >
             <i className="fa-solid fa-plus text-[10px] mr-1" aria-hidden="true" />Add medicine
           </button>
@@ -372,7 +372,7 @@ function EmrTimeline({ patient, history, loading, onPrint }) {
                 <button
                   type="button"
                   onClick={() => onPrint(rx)}
-                  className="shrink-0 px-2.5 py-1 rounded-md border border-mg-teal text-mg-teal hover:bg-mg-teal hover:text-white text-[11px] font-medium transition"
+                  className="shrink-0 px-2.5 py-1 rounded-lg border border-mg-teal text-mg-teal hover:bg-mg-teal hover:text-white text-[11px] font-medium transition"
                 >
                   <i className="fa-solid fa-print mr-1" aria-hidden="true" />Print Rx
                 </button>

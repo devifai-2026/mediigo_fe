@@ -99,7 +99,7 @@ export function Segmented({ value, onChange, options, className, size = 'md' }) 
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
           className={clsx(
-            'rounded-md font-medium whitespace-nowrap transition',
+            'rounded-lg font-medium whitespace-nowrap transition',
             size === 'sm' ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs',
             value === o.value ? 'bg-mg-blue text-white shadow-sm' : 'text-slate-600 hover:text-slate-900',
           )}
@@ -192,7 +192,7 @@ export function AudioUnlockBanner({ onUnlock, children }) {
     <button
       type="button"
       onClick={onUnlock}
-      className="w-full p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-center justify-center gap-2"
+      className="w-full p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-center justify-center gap-2"
     >
       <i className="fa-solid fa-volume-high" aria-hidden="true" />
       {children}
@@ -264,7 +264,7 @@ export function LoadError({ error, onRetry, what = 'this section', className }) 
         <button
           type="button"
           onClick={onRetry}
-          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:border-mg-teal hover:text-mg-teal"
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:border-mg-teal hover:text-mg-teal"
         >
           <i className="fa-solid fa-rotate-right" aria-hidden="true" /> Try again
         </button>

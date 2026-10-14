@@ -72,7 +72,7 @@ export function RatingDialog({ token, existing, onDone }) {
                 onMouseEnter={() => setHover(n)}
                 onMouseLeave={() => setHover(0)}
                 onClick={() => setRating(n)}
-                className="p-1 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-mg-teal rounded"
+                className="p-1 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-mg-teal rounded-lg"
               >
                 <svg viewBox="0 0 24 24" className={clsx('w-9 h-9 transition-colors', n <= shown ? 'text-amber-400' : 'text-slate-200')} fill="currentColor" aria-hidden="true">
                   <path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6-5.9-3.2-5.9 3.2 1.2-6.6L2.5 9.5l6.6-.9L12 2.5z" />

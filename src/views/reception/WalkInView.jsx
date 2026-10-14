@@ -107,7 +107,7 @@ export default function WalkInView() {
               <p className="text-xs text-rose-700">New registrations are paused. Open the slot from the roster to continue.</p>
             </div>
           </div>
-          <Link to={rosterPath} className="shrink-0 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-md text-center">
+          <Link to={rosterPath} className="shrink-0 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg text-center">
             Manage availability
           </Link>
         </div>
@@ -189,7 +189,7 @@ export default function WalkInView() {
                   type="number" min="0" step="1" value={customFee}
                   onChange={(e) => setCustomFee(e.target.value)}
                   aria-label="Consultation charge"
-                  className="w-28 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-sm font-medium outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
+                  className="w-28 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm font-medium outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
                 />
                 <button type="button" onClick={() => { setOverrideOn(false); setCustomFee(''); }} className="text-[11px] font-medium text-slate-500 hover:text-slate-800">
                   Reset

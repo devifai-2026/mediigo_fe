@@ -212,7 +212,7 @@ export default function BillingView() {
                     </p>
                   </td>
                   <td className="py-2.5 px-3 text-center">
-                    <span className={clsx('text-[9px] font-semibold px-2 py-0.5 rounded-full border', STATUS_TONE[r.status])}>
+                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full border', STATUS_TONE[r.status])}>
                       {r.status === 'ON_TRIAL' ? `${r.daysLeft}d left` : r.status === 'BILLABLE' ? 'Billing' : 'No trial'}
                     </span>
                   </td>

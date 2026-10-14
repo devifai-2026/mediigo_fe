@@ -72,7 +72,7 @@ export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
           {doctor.isOnBreak && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">ON BREAK</span>
           )}
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-mg-navy">{doctor.specialty}</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-mg-navy">{doctor.specialty}</span>
           <span className="text-[10px] text-slate-400">Reg {doctor.regNo}</span>
         </div>
 

@@ -6,7 +6,8 @@ import { Modal } from '../ui/Modal.jsx';
 import { Icon } from '../ui/Icon.jsx';
 import { PhotoOrFallback } from '../ui/PhotoOrFallback.jsx';
 import { inr, initialsOf, phone, token } from '../../lib/format.js';
-import { clinicAddress, clinicDirections, clinicKind, km } from '../../lib/clinics.js';
+import { clinicAddress, clinicDirections, clinicKind, km, nextAvailableText } from '../../lib/clinics.js';
+import { RatingBadge } from './RatingBadge.jsx';
 
 /**
  * A clinic and every doctor in it. Opened from a clinic card: "Details" to
@@ -17,62 +18,83 @@ import { clinicAddress, clinicDirections, clinicKind, km } from '../../lib/clini
  * filter hid some, this offers the clinic's full list, fetched around the
  * clinic's own pin so distance filters cannot drop anyone.
  */
+function Stat({ label, value, tone = 'text-slate-900' }) {
+  return (
+    <div className="min-w-0 px-2.5 py-2">
+      <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">{label}</dt>
+      <dd className={clsx('mt-0.5 text-[13px] font-semibold leading-snug break-words', tone)}>{value}</dd>
+    </div>
+  );
+}
+
 function DoctorRow({ doctor, onBook, onView }) {
   const { session, queue } = doctor;
   const bookable = session?.isBookingOpen && !session?.isOnBreak;
+  const next = nextAvailableText(doctor.nextAvailable, session);
+  // The live line under the stats: why it is or is not bookable right now.
   const status = session?.isOnBreak
-    ? { text: 'On a break', tone: 'text-amber-600' }
+    ? { text: 'Doctor is on a break — queue paused', tone: 'text-amber-700 bg-amber-50' }
     : !session?.isBookingOpen
-      ? { text: 'Not taking tokens now', tone: 'text-slate-400' }
-      : queue?.currentToken
-        ? { text: `Token ${token(queue.currentToken)} active`, tone: 'text-amber-600' }
-        : { text: 'You’d be first', tone: 'text-mg-teal' };
+      ? { text: 'Not taking tokens right now', tone: 'text-slate-500 bg-slate-50' }
+      : queue?.waiting > 0
+        ? { text: `${queue.waiting} waiting · about ${queue.estimatedWaitMinutes} min`, tone: 'text-mg-tealDark bg-teal-50' }
+        : { text: 'No queue — you’d be next', tone: 'text-emerald-700 bg-emerald-50' };
 
   return (
-    <div className="rounded-xl border border-slate-200 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-      <div className="flex items-start gap-3 min-w-0 flex-1">
+    <div className="rounded-xl border border-slate-200 p-3.5 sm:p-4">
+      <button type="button" onClick={() => onView(doctor)} className="w-full flex items-start gap-3 text-left">
         <PhotoOrFallback
           src={doctor.photoUrl}
-          className="w-14 h-14 rounded-lg object-cover shrink-0 bg-slate-50"
+          className="w-14 h-14 rounded-xl object-cover shrink-0 bg-slate-50"
           fallback={(
-            <span className="w-14 h-14 rounded-lg bg-indigo-900 text-white grid place-items-center text-sm font-bold shrink-0">
+            <span className="w-14 h-14 rounded-xl bg-mg-navy text-white grid place-items-center text-sm font-bold shrink-0">
               {initialsOf(doctor.name)}
             </span>
           )}
         />
-        <div className="min-w-0">
-          <p className="text-[15px] font-semibold text-slate-900 truncate">{doctor.name}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-[15px] font-semibold text-slate-900 leading-snug">{doctor.name}</p>
+            <RatingBadge rating={doctor.rating} className="shrink-0" />
+          </div>
           <p className="text-xs font-semibold text-mg-teal truncate">{doctor.specialty}</p>
           {doctor.qualifications?.length > 0 && (
             <p className="text-[11px] text-slate-500 truncate">{doctor.qualifications.join(', ')}</p>
           )}
-          <p className="mt-1 text-xs flex flex-wrap items-center gap-x-3 gap-y-0.5">
-            <span className="font-semibold text-slate-900">Fee: {inr(doctor.fees?.fresh)}</span>
-            <span className={clsx('font-medium', status.tone)}>{status.text}</span>
-            {bookable && queue?.waiting > 0 && (
-              <span className="text-slate-500">{queue.waiting} waiting · ~{queue.estimatedWaitMinutes} min</span>
-            )}
-          </p>
         </div>
-      </div>
-      <div className="flex gap-2 shrink-0">
+      </button>
+
+      {/* The three things a patient decides on, side by side. */}
+      <dl className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.8fr)] divide-x divide-slate-200 rounded-xl bg-mg-surface">
+        <Stat
+          label="Now serving"
+          value={session?.isOnBreak ? 'Paused' : queue?.currentToken ? token(queue.currentToken) : session?.isBookingOpen ? 'None yet' : '—'}
+          tone={queue?.currentToken && !session?.isOnBreak ? 'text-mg-navy' : 'text-slate-500'}
+        />
+        <Stat label="Next available" value={next ?? 'No sittings'} tone={next === 'Now' ? 'text-emerald-700' : next ? 'text-slate-900' : 'text-slate-400'} />
+        <Stat label="Fee" value={doctor.fees?.fresh != null ? inr(doctor.fees.fresh) : '—'} />
+      </dl>
+
+      <p className={clsx('mt-2 px-2.5 py-1.5 rounded-lg text-xs font-medium', status.tone)}>{status.text}</p>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => onView(doctor)}
-          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-100 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition"
+          className="h-11 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:border-mg-teal hover:text-mg-tealDark transition"
         >
-          <Icon name="user" className="w-3.5 h-3.5 text-mg-teal" /> View Details
+          View profile
         </button>
         <button
           type="button"
           onClick={() => onBook(doctor)}
           disabled={!bookable}
           className={clsx(
-            'flex-1 sm:flex-none inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-xs font-semibold transition',
-            bookable ? 'bg-mg-teal text-white hover:bg-mg-tealDark' : 'bg-slate-200 text-slate-500 cursor-not-allowed',
+            'h-11 inline-flex items-center justify-center gap-1 rounded-lg text-sm font-semibold transition',
+            bookable ? 'bg-mg-teal text-white hover:bg-mg-tealDark shadow-sm shadow-mg-teal/30' : 'bg-slate-100 text-slate-400 cursor-not-allowed',
           )}
         >
-          Book Token <Icon name="chevronRight" className="w-3.5 h-3.5" />
+          Book token <Icon name="chevronRight" className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -123,36 +145,38 @@ export function ClinicSheet({ clinic, choosing = false, filtered = false, onClos
       variant="sheet"
     >
       <div className="space-y-5">
-        <div className="rounded-xl border border-slate-200 bg-mg-surface/60 p-4 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <p className="flex items-start gap-2 text-sm text-slate-700 min-w-0">
-              <Icon name="location" className="w-4 h-4 text-mg-teal shrink-0 mt-0.5" />
-              <span>{clinicAddress(clinic)}</span>
-            </p>
-            {clinic.distanceKm != null && (
-              <span className="shrink-0 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-700">
-                {km(clinic.distanceKm)} away
-              </span>
-            )}
+        <div className="rounded-xl border border-slate-200 bg-mg-surface/60 p-4">
+          <div className="flex items-start gap-3">
+            <span className="w-9 h-9 rounded-xl bg-white border border-slate-200 grid place-items-center shrink-0">
+              <Icon name="location" className="w-4 h-4 text-mg-teal" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-slate-800 leading-snug">{clinicAddress(clinic)}</p>
+              {clinic.distanceKm != null && (
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {km(clinic.distanceKm)} away{clinic.etaMinutes != null ? ` · ${clinic.etaMinutes} min drive` : ''}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-200">
-            {clinic.contactPhone && (
-              <a
-                href={`tel:${clinic.contactPhone}`}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 hover:border-mg-teal"
-              >
-                <Icon name="phone" className="w-3.5 h-3.5 text-mg-teal" /> Call {kind}
-                <span className="font-normal text-slate-500">{phone(clinic.contactPhone)}</span>
-              </a>
-            )}
+          <div className={clsx('mt-4 grid gap-2', clinic.contactPhone ? 'grid-cols-2' : 'grid-cols-1')}>
             <a
               href={clinicDirections(clinic)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 hover:border-mg-teal"
+              className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-mg-teal text-white text-sm font-semibold hover:bg-mg-tealDark transition"
             >
-              <Icon name="location" className="w-3.5 h-3.5 text-mg-teal" /> Get Directions
+              <Icon name="navigate" className="w-4 h-4 rotate-45" /> Get directions
             </a>
+            {clinic.contactPhone && (
+              <a
+                href={`tel:${clinic.contactPhone}`}
+                aria-label={`Call ${kind} on ${phone(clinic.contactPhone)}`}
+                className="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-white border border-slate-200 text-sm font-semibold text-slate-800 hover:border-mg-teal transition"
+              >
+                <Icon name="phone" className="w-4 h-4 text-mg-teal" /> Call {kind.toLowerCase()}
+              </a>
+            )}
           </div>
         </div>
 

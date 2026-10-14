@@ -17,7 +17,7 @@ export default function AgentsView() {
         <button
           type="button"
           onClick={openAddAgent}
-          className="bg-mg-teal hover:bg-mg-tealDark text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-mg-teal hover:bg-mg-tealDark text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-user-plus" /> Register Field Agent
         </button>

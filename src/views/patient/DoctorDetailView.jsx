@@ -12,7 +12,9 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { Skeleton } from '../../components/ui/Skeleton.jsx';
 import { PhotoOrFallback } from '../../components/ui/PhotoOrFallback.jsx';
-import { inr, initialsOf, phone, token } from '../../lib/format.js';
+import { inr, initialsOf, phone, token, time12 as t12, relativeDay } from '../../lib/format.js';
+import { nextAvailableText } from '../../lib/clinics.js';
+import { RatingBadge } from '../../components/patient/RatingBadge.jsx';
 import { directionsUrl } from '../../lib/maps.js';
 import { demoProfilesEnabled, demoProfileFor } from '../../lib/demoProfiles.js';
 
@@ -73,13 +75,6 @@ const yearsOf = (d) => {
   return m ? Number(m[0]) : null;
 };
 
-// "14:00" → "2:00 PM"
-const t12 = (hhmm) => {
-  const [h, m] = String(hhmm || '').split(':').map(Number);
-  if (Number.isNaN(h)) return hhmm || '';
-  return `${((h + 11) % 12) + 1}:${String(m || 0).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
-};
-
 const ago = (iso) => {
   if (!iso) return '';
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -122,9 +117,9 @@ const Stars = ({ n, className = 'w-3.5 h-3.5' }) => (
 
 function Section({ id, icon, title, children }) {
   return (
-    <section id={id} className="scroll-mt-28 py-8 border-t border-slate-200 first:border-t-0 first:pt-2">
-      <h2 className="flex items-center gap-2.5 text-xl sm:text-2xl font-semibold text-slate-900">
-        {icon && <Icon name={icon} className="w-6 h-6 text-slate-700 shrink-0" strokeWidth={1.5} />}
+    <section id={id} className="scroll-mt-28 py-6 sm:py-8 border-t border-slate-200 first:border-t-0 first:pt-2">
+      <h2 className="flex items-center gap-2.5 text-lg sm:text-2xl font-semibold text-slate-900">
+        {icon && <Icon name={icon} className="w-5 h-5 sm:w-6 sm:h-6 text-mg-teal shrink-0" strokeWidth={1.5} />}
         {title}
       </h2>
       <div className="mt-5 sm:pl-9">{children}</div>
@@ -165,8 +160,8 @@ function Pair({ id, cells }) {
       <div className={clsx('grid gap-10', shown.length === 2 && 'md:grid-cols-2')}>
         {shown.map((c) => (
           <div key={c.title}>
-            <h2 className="flex items-center gap-2.5 text-xl sm:text-2xl font-semibold text-slate-900">
-              <Icon name={c.icon} className="w-6 h-6 text-slate-700 shrink-0" strokeWidth={1.5} />
+            <h2 className="flex items-center gap-2.5 text-lg sm:text-2xl font-semibold text-slate-900">
+              <Icon name={c.icon} className="w-5 h-5 sm:w-6 sm:h-6 text-mg-teal shrink-0" strokeWidth={1.5} />
               {c.title}
             </h2>
             <div className="mt-5 sm:pl-9">
@@ -340,6 +335,18 @@ export default function DoctorDetailView() {
   const fees = d.fees || {};
   const queue = row?.queue;
   const selectedDay = days.find((x) => x.date === slot?.date);
+  // The stored rating covers every approved review; the reviews call may be
+  // paged or fail, so it is only preferred when it actually answered.
+  const rating = reviews?.summary?.count
+    ? { average: reviews.summary.average, count: reviews.summary.count }
+    : { average: d.rating?.average ?? 0, count: d.rating?.count ?? 0 };
+  // Next sitting with room: the live row says it directly; otherwise the
+  // 7-day calendar's first bookable shift.
+  const firstOpenDay = days.find((x) => x.shifts.some((sh) => sh.isBookable));
+  const firstOpenShift = firstOpenDay?.shifts.find((sh) => sh.isBookable);
+  const nextText = nextAvailableText(row?.nextAvailable, d.session)
+    ?? (firstOpenShift ? `${relativeDay(firstOpenDay.date)} · ${t12(firstOpenShift.startTime)}` : null);
+  const education0 = education.length ? education.map(line) : qualifications;
   const where = [hospital.locality, hospital.city].filter(Boolean).join(', ');
 
   const directions = hospital.coordinates
@@ -405,7 +412,7 @@ export default function DoctorDetailView() {
 
   return (
     <div className="text-slate-900">
-      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-mg-teal mb-6">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs sm:text-sm text-mg-teal mb-4 sm:mb-6 overflow-x-auto no-scrollbar whitespace-nowrap">
         <Link to="/p/explore" className="hover:underline">Home</Link>
         <Icon name="chevronRight" className="w-3 h-3 text-slate-700" strokeWidth={3} />
         <Link to="/p/explore" className="hover:underline">Doctors</Link>
@@ -423,81 +430,152 @@ export default function DoctorDetailView() {
         )}
       </nav>
 
-      <div className="grid gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-5 lg:gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* ── Header card ─────────────────────────────────────────────── */}
-        <div className="lg:col-start-1 lg:row-start-1 relative rounded-xl border border-slate-200 p-5 sm:p-6 flex flex-col sm:flex-row gap-6">
-          <button
-            type="button"
-            onClick={share}
-            aria-label="Share this profile"
-            className="absolute top-4 right-4 w-10 h-10 grid place-items-center rounded-full text-slate-700 hover:bg-slate-50"
-          >
-            <Icon name="share" className="w-6 h-6" strokeWidth={1.5} />
-          </button>
+        {/* Phone first: who they are on top, then the facts a patient compares
+            doctors on — fee, rating, experience, registration — as a grid that
+            reads at a glance, then where they sit. */}
+        <div className="lg:col-start-1 lg:row-start-1 min-w-0 rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <div className="relative p-4 sm:p-6 bg-gradient-to-br from-mg-surface via-white to-white">
+            <button
+              type="button"
+              onClick={share}
+              aria-label="Share this profile"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 w-10 h-10 grid place-items-center rounded-full bg-white border border-slate-200 text-slate-700 hover:border-mg-teal hover:text-mg-teal transition"
+            >
+              <Icon name="share" className="w-5 h-5" strokeWidth={1.75} />
+            </button>
 
-          <div className="relative shrink-0 self-start">
-            <PhotoOrFallback
-              src={d.photoUrl}
-              alt={d.name}
-              className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl object-cover bg-slate-50"
-              fallback={(
-                <div aria-hidden="true" className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl bg-teal-50 text-teal-700 grid place-items-center text-4xl font-bold">
-                  {initialsOf(d.name)}
-                </div>
-              )}
-            />
-            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-white border border-mg-teal/30 px-2 py-0.5 text-[10px] font-semibold text-mg-teal shadow-sm">
-              <Icon name="shieldCheck" className="w-3 h-3" /> Mediigo Verified
-            </span>
-          </div>
+            <div className="flex items-start gap-4 sm:gap-6">
+              <div className="relative shrink-0">
+                <PhotoOrFallback
+                  src={d.photoUrl}
+                  alt={d.name}
+                  className="w-24 h-24 sm:w-36 sm:h-36 rounded-xl object-cover bg-slate-50 ring-4 ring-white shadow-md"
+                  fallback={(
+                    <div aria-hidden="true" className="w-24 h-24 sm:w-36 sm:h-36 rounded-xl bg-teal-50 text-teal-700 grid place-items-center text-3xl sm:text-4xl font-bold ring-4 ring-white shadow-md">
+                      {initialsOf(d.name)}
+                    </div>
+                  )}
+                />
+                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-white border border-mg-teal/30 px-2 py-0.5 text-[10px] font-semibold text-mg-teal shadow-sm">
+                  <Icon name="shieldCheck" className="w-3 h-3" /> Verified
+                </span>
+              </div>
 
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-[32px] leading-tight font-bold pr-12">{d.name}</h1>
-            {d.specialty && <p className="mt-1.5 text-lg font-semibold text-slate-800">{d.specialty}</p>}
-
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-base">
-              {years != null && <span className="text-slate-800">{years}+ years experience</span>}
-              {recommendPct != null && (
-                <>
-                  <span className="hidden sm:block w-px h-5 bg-slate-200" />
-                  <span className="inline-flex items-center gap-1 font-bold text-emerald-600">
-                    <Icon name="thumbUp" className="w-5 h-5" /> {recommendPct}%
-                  </span>
-                </>
-              )}
-              {reviewCount > 0 && <span className="text-slate-500">• {reviewCount}+ Patients</span>}
-            </div>
-
-            {qualifications.length > 0 && (
-              <p className="mt-3 flex items-start gap-2 text-[15px] text-slate-800">
-                <Icon name="academic" className="w-5 h-5 text-slate-500 shrink-0" strokeWidth={1.5} />
-                {qualifications.join(', ')}
-              </p>
-            )}
-            {languages.length > 0 && (
-              <p className="mt-2 flex items-start gap-2 text-[15px] text-slate-800">
-                <Icon name="chat" className="w-5 h-5 text-slate-500 shrink-0" strokeWidth={1.5} />
-                {languages.join(', ')}
-              </p>
-            )}
-
-            {hospital.name && (
-              <div className="mt-4 max-w-md rounded-xl border border-slate-200 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="flex items-center gap-1.5 text-[15px] font-semibold min-w-0">
-                    <Icon name="location" className="w-4 h-4 text-slate-400 shrink-0" strokeWidth={1.5} />
-                    <span className="truncate">{hospital.name}</span>
-                  </p>
-                  {hospital.distanceKm != null && (
-                    <span className="text-[15px] font-semibold text-slate-800 shrink-0 border-l border-slate-300 pl-2">
-                      {Number(hospital.distanceKm).toFixed(1).replace(/\.0$/, '')} KM
+              <div className="min-w-0 flex-1 pr-10 sm:pr-12">
+                <h1 className="text-xl sm:text-3xl leading-tight font-bold">{d.name}</h1>
+                {d.specialty && <p className="mt-1 text-sm sm:text-lg font-semibold text-mg-teal">{d.specialty}</p>}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <RatingBadge rating={rating} size="lg" />
+                  {recommendPct != null && (
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
+                      <Icon name="thumbUp" className="w-4 h-4" /> {recommendPct}%
                     </span>
                   )}
                 </div>
-                {hospital.fullAddress && <p className="mt-1.5 text-[13px] text-slate-600 line-clamp-2">{hospital.fullAddress}</p>}
-                <a href={directions} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-[15px] font-semibold text-mg-teal hover:underline">
-                  Get Directions
-                </a>
+              </div>
+            </div>
+
+            {d.specialtyDescription && (
+              <p className="mt-5 text-sm text-slate-600 leading-relaxed">
+                <span className="font-semibold text-slate-800">{d.specialty}: </span>
+                {d.specialtyDescription}
+              </p>
+            )}
+          </div>
+
+          {/* gap-px over a tinted grid draws the hairlines in both layouts. */}
+          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-100 border-y border-slate-100 [&>div]:bg-white [&>div]:p-4">
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Consultation</dt>
+              <dd className="mt-1 text-lg font-bold text-mg-navy">{fees.fresh != null ? inr(fees.fresh) : '—'}</dd>
+              {fees.followup != null && <dd className="text-[11px] text-slate-500">Follow-up {inr(fees.followup)}</dd>}
+            </div>
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Experience</dt>
+              <dd className="mt-1 text-lg font-bold text-slate-900">{years != null ? `${years}+ yrs` : '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Reg. number</dt>
+              <dd className="mt-1 text-sm font-semibold text-slate-900 break-words">{registration || '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Patients rated</dt>
+              <dd className="mt-1 text-lg font-bold text-slate-900">{rating.count || '—'}</dd>
+            </div>
+          </dl>
+
+          <div className="p-4 sm:p-6 space-y-3">
+            {education0.length > 0 && (
+              <div className="flex items-start gap-3">
+                <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 grid place-items-center shrink-0">
+                  <Icon name="academic" className="w-5 h-5" strokeWidth={1.5} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Education</p>
+                  <p className="text-sm text-slate-800 leading-snug">{education0.slice(0, 3).join(' · ')}</p>
+                </div>
+              </div>
+            )}
+            {languages.length > 0 && (
+              <div className="flex items-start gap-3">
+                <span className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 grid place-items-center shrink-0">
+                  <Icon name="chat" className="w-5 h-5" strokeWidth={1.5} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Speaks</p>
+                  <p className="text-sm text-slate-800">{languages.join(', ')}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Live today: who is in the chamber, and when this doctor next has room. */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="rounded-xl bg-mg-surface px-3 py-2.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Now serving</p>
+                <p className="mt-0.5 text-sm font-semibold text-mg-navy">
+                  {d.session?.isOnBreak ? 'On a break' : queue?.currentToken ? token(queue.currentToken) : d.session?.isBookingOpen ? 'Not started' : 'OPD closed'}
+                </p>
+              </div>
+              <div className="rounded-xl bg-teal-50 px-3 py-2.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-mg-teal/80">Next available</p>
+                <p className="mt-0.5 text-sm font-semibold text-mg-tealDark truncate">{nextText ?? 'No sittings this week'}</p>
+              </div>
+            </div>
+
+            {hospital.name && (
+              <div className="rounded-xl border border-slate-200 p-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold min-w-0">
+                    <Icon name="building" className="w-4 h-4 text-mg-teal shrink-0" strokeWidth={1.75} />
+                    <span className="truncate">{hospital.name}</span>
+                  </p>
+                  {hospital.distanceKm != null && (
+                    <span className="text-xs font-semibold text-slate-600 shrink-0 px-2 py-0.5 rounded-full bg-slate-100">
+                      {Number(hospital.distanceKm).toFixed(1).replace(/\.0$/, '')} km
+                    </span>
+                  )}
+                </div>
+                {hospital.fullAddress && <p className="mt-1 text-xs text-slate-600 leading-snug line-clamp-2">{hospital.fullAddress}</p>}
+                <div className={clsx('mt-3 grid gap-2', hospital.phone ? 'grid-cols-2' : 'grid-cols-1')}>
+                  <a
+                    href={directions}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-10 inline-flex items-center justify-center gap-1.5 rounded-lg border border-mg-teal/40 text-sm font-semibold text-mg-tealDark hover:bg-mg-teal hover:text-white transition"
+                  >
+                    <Icon name="navigate" className="w-4 h-4 rotate-45" /> Directions
+                  </a>
+                  {hospital.phone && (
+                    <a
+                      href={`tel:${hospital.phone}`}
+                      className="h-10 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:border-mg-teal transition"
+                    >
+                      <Icon name="phone" className="w-4 h-4 text-mg-teal" /> Call
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -506,9 +584,9 @@ export default function DoctorDetailView() {
         {/* ── Booking card ─────────────────────────────────────────────── */}
         <aside className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2">
           <div className="lg:sticky lg:top-24 space-y-5">
-            <div className="rounded-xl border border-slate-200 p-5 shadow-[0_1px_4px_rgba(15,23,42,0.04)]">
+            <div className="rounded-xl border border-slate-200 p-4 sm:p-5 shadow-[0_1px_4px_rgba(15,23,42,0.04)]">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Clinic Visit</h2>
+                <h2 className="text-lg sm:text-xl font-semibold">Book a clinic visit</h2>
                 {fees.fresh != null && <span className="text-xl font-bold">{inr(fees.fresh)}</span>}
               </div>
 
@@ -612,8 +690,8 @@ export default function DoctorDetailView() {
                 onClick={onBook}
                 disabled={!bookable}
                 className={clsx(
-                  'mt-5 w-full py-3.5 rounded-lg text-base font-semibold transition',
-                  bookable ? 'bg-mg-teal text-white hover:bg-mg-tealDark' : 'bg-slate-200 text-slate-500 cursor-not-allowed',
+                  'mt-5 w-full h-12 rounded-lg text-base font-semibold transition',
+                  bookable ? 'bg-mg-teal text-white hover:bg-mg-tealDark shadow-sm shadow-mg-teal/30' : 'bg-slate-200 text-slate-500 cursor-not-allowed',
                 )}
               >
                 {bookable ? 'Book Token' : 'Bookings closed'}
@@ -621,21 +699,16 @@ export default function DoctorDetailView() {
               <p className="mt-2 text-center text-[11px] text-slate-500">Pay at the clinic · No booking charges</p>
             </div>
 
-            {hospital.phone && (
-              <a href={`tel:${hospital.phone}`} className="flex items-center justify-center gap-2 text-[15px] text-slate-800 hover:text-mg-teal">
-                <Icon name="phone" className="w-4 h-4" strokeWidth={1.5} /> Call {phone(hospital.phone)}
-              </a>
-            )}
           </div>
         </aside>
 
         {/* ── Profile body ─────────────────────────────────────────────── */}
         <div className="lg:col-start-1 lg:row-start-2 min-w-0">
           <section>
-            <h2 className="text-3xl sm:text-[40px] leading-tight font-bold">About {d.name}</h2>
-            <div className="relative mt-5 bg-slate-100/70 rounded-md px-4 py-3">
+            <h2 className="text-xl sm:text-3xl leading-tight font-bold">About {d.name}</h2>
+            <div className="relative mt-4 bg-mg-surface rounded-xl px-4 py-3">
               <div className={clsx('overflow-hidden', !aboutOpen && 'max-h-[13rem]')}>
-                <ul className="list-disc pl-5 space-y-1 text-[15px] sm:text-base text-slate-800 leading-snug marker:text-slate-400">
+                <ul className="list-disc pl-5 space-y-1.5 text-sm sm:text-base text-slate-800 leading-relaxed marker:text-slate-400">
                   {aboutBullets.map((b) => <li key={b}>{b}</li>)}
                   {fees.fresh != null && (
                     <li>
@@ -653,7 +726,7 @@ export default function DoctorDetailView() {
                 )}
               </div>
             </div>
-            <button type="button" onClick={() => setAboutOpen((v) => !v)} className="mt-3 text-base font-semibold text-mg-teal hover:underline">
+            <button type="button" onClick={() => setAboutOpen((v) => !v)} className="mt-3 text-sm sm:text-base font-semibold text-mg-teal hover:underline">
               {aboutOpen ? 'Read Less' : 'Read More'}
             </button>
             {usedDemo && (
@@ -665,13 +738,13 @@ export default function DoctorDetailView() {
 
           <ClinicGallery id="clinic-photos" clinicName={hospital.name} photos={clinicPhotos} />
 
-          <div className="mt-6 pt-6 border-t border-slate-200 flex flex-wrap gap-3">
+          <div className="mt-6 pt-6 border-t border-slate-200 -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto no-scrollbar sm:flex-wrap">
             {tabs.map(([id, label]) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => jump(id)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-[15px] font-semibold text-slate-500 hover:border-mg-teal hover:text-mg-teal transition"
+                className="shrink-0 h-10 px-4 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:border-mg-teal hover:text-mg-teal transition"
               >
                 {label}
               </button>
@@ -684,7 +757,7 @@ export default function DoctorDetailView() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {videos.map((v) => (
                     <a key={v.url} href={v.url} target="_blank" rel="noopener noreferrer" className="group rounded-lg border border-slate-200 p-3 hover:shadow-md transition">
-                      <div className="relative aspect-video bg-slate-100 rounded overflow-hidden">
+                      <div className="relative aspect-video bg-slate-100 rounded-md overflow-hidden">
                         {v.thumbnailUrl && <img src={v.thumbnailUrl} alt="" loading="lazy" className="w-full h-full object-cover" />}
                         <span className="absolute inset-0 grid place-items-center">
                           <span className="w-12 h-12 rounded-full bg-white/90 grid place-items-center shadow group-hover:scale-110 transition">
@@ -727,7 +800,7 @@ export default function DoctorDetailView() {
                       </div>
                       {r.rating != null && <div className="mt-2.5"><Stars n={r.rating} /></div>}
                       {r.comment && <p className="mt-2 text-[15px] text-slate-600 leading-relaxed">{r.comment}</p>}
-                      {r.tag && <span className="mt-3 inline-block px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 text-sm font-semibold">{r.tag}</span>}
+                      {r.tag && <span className="mt-3 inline-block px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-sm font-semibold">{r.tag}</span>}
                     </li>
                   ))}
                 </ul>
@@ -858,7 +931,7 @@ export default function DoctorDetailView() {
                 key={o.doctorId}
                 to={`/p/doctors/${o.doctorId}`}
                 state={{ doctor: o }}
-                className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 hover:border-mg-teal hover:shadow-sm transition"
+                className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 hover:border-mg-teal hover:shadow-sm transition"
               >
                 <PhotoOrFallback
                   src={o.photoUrl}

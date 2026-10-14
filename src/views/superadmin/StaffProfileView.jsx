@@ -116,7 +116,7 @@ export default function StaffProfileView() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold text-slate-900 tracking-tight">{user.name}</h1>
-              <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded border uppercase', ROLE_CHIP[user.role])}>
+              <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-md border uppercase', ROLE_CHIP[user.role])}>
                 {ROLE_LABEL[user.role]}
               </span>
               <span className={clsx(
@@ -209,7 +209,7 @@ export default function StaffProfileView() {
                 <Link
                   key={a.id}
                   to={`/super/staff/${a.id}`}
-                  className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-200 transition"
+                  className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-200 transition"
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-800 truncate">{a.name}</p>

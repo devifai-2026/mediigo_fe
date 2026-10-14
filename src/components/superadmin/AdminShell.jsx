@@ -3,7 +3,6 @@ import { NavLink, Outlet } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useConfirm } from '../../context/ConfirmContext.jsx';
-import { PortalThemeProvider } from '../../context/PortalTheme.jsx';
 import { inr } from '../../lib/format.js';
 import { get as lsGet, set as lsSet } from '../../lib/storage.js';
 
@@ -70,7 +69,7 @@ function NavItem({ item, badges, collapsed }) {
         {/* Collapsed, the badge rides the icon as a dot so the count is still visible. */}
         {collapsed && item.badge && value > 0 && (
           <span className={clsx(
-            'absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1 rounded-full text-[9px] font-semibold grid place-items-center',
+            'absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1 rounded-full text-[10px] font-semibold grid place-items-center',
             BADGE_CLASS[item.badge],
           )}>
             {value}
@@ -117,7 +116,6 @@ export function AdminShell({ badges, headerStats, onAddClinic }) {
   };
 
   return (
-    <PortalThemeProvider value="patient">
     <div className="h-screen flex flex-col bg-[#F7F9FC] text-slate-800 antialiased font-display">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
         <div className="px-4 lg:px-6 py-2.5 flex items-center justify-between gap-3">
@@ -130,7 +128,7 @@ export function AdminShell({ badges, headerStats, onAddClinic }) {
                   Super Admin HQ
                 </span>
               </div>
-              <span className="block text-[9px] text-slate-600 mt-0.5 truncate">Cross-platform governance &amp; network analytics</span>
+              <span className="block text-[10px] text-slate-600 mt-0.5 truncate">Cross-platform governance &amp; network analytics</span>
             </div>
           </div>
 
@@ -155,7 +153,7 @@ export function AdminShell({ badges, headerStats, onAddClinic }) {
             <button
               type="button"
               onClick={onAddClinic}
-              className="bg-mg-teal hover:bg-mg-tealDark text-white font-medium text-xs px-3.5 py-2 rounded-md transition flex items-center gap-2"
+              className="bg-mg-teal hover:bg-mg-tealDark text-white font-medium text-xs px-3.5 py-2 rounded-lg transition flex items-center gap-2"
             >
               <i className="fa-solid fa-plus text-xs" aria-hidden="true" />
               <span className="hidden sm:inline">Add Clinic</span>
@@ -239,6 +237,5 @@ export function AdminShell({ badges, headerStats, onAddClinic }) {
         </main>
       </div>
     </div>
-    </PortalThemeProvider>
   );
 }

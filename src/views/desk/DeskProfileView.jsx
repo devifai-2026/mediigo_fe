@@ -242,7 +242,7 @@ function DoctorSettings({ doctorId, canEditDetails }) {
             <Field label="Qualifications" hint="Comma separated, e.g. MBBS, MD">
               <Input value={details.qualifications} disabled={!canEditDetails} onChange={(e) => setDetails({ ...details, qualifications: e.target.value })} placeholder="MBBS, MD (General Medicine)" />
             </Field>
-            <Field label="Average consult (minutes)" hint="Drives the waiting-time estimate patients see">
+            <Field label="Average consult (minutes)" hint="Sets the token slot times patients book online, and their wait estimate">
               <Input inputMode="numeric" maxLength={3} value={details.avgConsultMinutes} disabled={!canEditDetails} onChange={(e) => setDetails({ ...details, avgConsultMinutes: e.target.value.replace(/\D/g, '') })} placeholder="8" />
             </Field>
           </div>

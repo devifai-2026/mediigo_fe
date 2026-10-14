@@ -20,7 +20,7 @@ export default function ExecDashboardView() {
           <p className="text-xs text-slate-500">{data.date} · revenue counts completed consultations only</p>
         </div>
         {counts.pendingApprovals > 0 && (
-          <a href="/admin/approvals" className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl">
+          <a href="/admin/approvals" className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
             {counts.pendingApprovals} awaiting approval →
           </a>
         )}
@@ -59,7 +59,7 @@ export default function ExecDashboardView() {
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h3 className="text-base font-bold text-slate-900">Collection by clinic</h3>

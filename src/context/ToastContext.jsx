@@ -42,7 +42,7 @@ export function ToastProvider({ children }) {
             type="button"
             onClick={() => dismiss(t.id)}
             className={clsx(
-              'pointer-events-auto max-w-sm text-left px-4 py-3 rounded-2xl shadow-lg border text-xs font-semibold animate-slide-up',
+              'pointer-events-auto max-w-sm text-left px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold animate-slide-up',
               t.type === 'success' && 'bg-emerald-50 border-emerald-200 text-emerald-800',
               t.type === 'error' && 'bg-rose-50 border-rose-200 text-rose-700',
               t.type === 'warn' && 'bg-amber-50 border-amber-200 text-amber-800',

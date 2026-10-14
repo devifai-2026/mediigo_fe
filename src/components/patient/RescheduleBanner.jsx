@@ -66,7 +66,7 @@ export function RescheduleBanner({ token, onDone }) {
         <button
           type="button"
           onClick={load}
-          className="shrink-0 text-[11px] font-medium text-white bg-mg-teal hover:bg-mg-tealDark px-3 py-1.5 rounded-md transition"
+          className="shrink-0 text-[11px] font-medium text-white bg-mg-teal hover:bg-mg-tealDark px-3 py-1.5 rounded-lg transition"
         >
           Choose a new time
         </button>
@@ -99,11 +99,11 @@ export function RescheduleBanner({ token, onDone }) {
                     setPicked({ date: d.date, shift: first?.shift });
                   }}
                   className={clsx(
-                    'shrink-0 w-14 py-2 rounded-md border text-center transition',
+                    'shrink-0 w-14 py-2 rounded-lg border text-center transition',
                     picked?.date === d.date ? 'border-mg-teal bg-mg-teal/10' : 'border-slate-200 bg-white hover:border-mg-teal/50',
                   )}
                 >
-                  <span className="block text-[9px] font-bold uppercase text-slate-400">
+                  <span className="block text-[10px] font-bold uppercase text-slate-400">
                     {d.isToday ? 'Today' : DAY_LABEL[d.dayOfWeek]}
                   </span>
                   <span className="block text-base font-bold text-slate-800">{Number(d.date.slice(8, 10))}</span>
@@ -122,7 +122,7 @@ export function RescheduleBanner({ token, onDone }) {
                       type="button"
                       onClick={() => setPicked({ date: day.date, shift: s.shift })}
                       className={clsx(
-                        'p-2.5 rounded-md border text-left transition',
+                        'p-2.5 rounded-lg border text-left transition',
                         picked?.shift === s.shift ? 'border-mg-teal bg-mg-teal/10' : 'border-slate-200 bg-slate-50 hover:border-mg-teal/50',
                       )}
                     >

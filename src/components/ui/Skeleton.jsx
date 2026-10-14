@@ -1,5 +1,5 @@
 export function Skeleton({ className = 'h-4 w-full' }) {
-  return <div className={`animate-pulse rounded bg-slate-200 ${className}`} />;
+  return <div className={`animate-pulse rounded-md bg-slate-200 ${className}`} />;
 }
 
 export function SkeletonCard() {

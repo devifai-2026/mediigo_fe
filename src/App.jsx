@@ -91,10 +91,10 @@ const AGENT_NAV = [
 ];
 
 const ADMIN_NAV = [
-  { to: '/admin', label: 'Dashboard', icon: 'revenue' },
-  { to: '/admin/clinics', label: 'Clinics', icon: 'building' },
-  { to: '/admin/approvals', label: 'Approvals', icon: 'check' },
-  { to: '/admin/audit', label: 'Audit', icon: 'doc' },
+  { to: '/admin', label: 'Dashboard', icon: 'revenue', fa: 'fa-chart-line' },
+  { to: '/admin/clinics', label: 'Clinics', icon: 'building', fa: 'fa-hospital' },
+  { to: '/admin/approvals', label: 'Approvals', icon: 'check', fa: 'fa-clipboard-check' },
+  { to: '/admin/audit', label: 'Audit', icon: 'doc', fa: 'fa-list-check' },
 ];
 
 export default function App() {
@@ -202,7 +202,7 @@ export default function App() {
       <Route
         element={
           <RequireRole roles={[ROLES.EXEC_ADMIN, ROLES.SUPER_ADMIN]}>
-            <PortalShell items={ADMIN_NAV} subtitle="District Operations" />
+            <PortalShell items={ADMIN_NAV} subtitle="District Operations" variant="desk" />
           </RequireRole>
         }
       >

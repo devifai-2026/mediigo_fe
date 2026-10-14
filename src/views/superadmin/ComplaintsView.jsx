@@ -76,7 +76,7 @@ export default function ComplaintsView() {
         <button
           type="button"
           onClick={() => setRaising(true)}
-          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-plus" /> Raise Ticket
         </button>
@@ -181,7 +181,7 @@ export default function ComplaintsView() {
                           <span className="block text-[10px] text-slate-400">{timeOf(r.createdAt)}</span>
                         </td>
                         <td className="py-2.5 px-4">
-                          <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded', LOG_TONE[r.action] ?? 'bg-slate-100 text-slate-600')}>
+                          <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-md', LOG_TONE[r.action] ?? 'bg-slate-100 text-slate-600')}>
                             {r.action.replace(/_/g, ' ')}
                           </span>
                         </td>

@@ -82,7 +82,7 @@ export function SpecialtyPicker({
           <span
             key={s.id}
             className={clsx(
-              'inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded text-[10px] font-semibold',
+              'inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md text-[10px] font-semibold',
               i === 0 ? 'bg-mg-teal/10 text-mg-teal' : 'bg-slate-100 text-slate-600',
             )}
           >
@@ -134,7 +134,7 @@ export function SpecialtyPicker({
               )}
             >
               <span className={clsx(
-                'w-4 h-4 rounded border shrink-0 grid place-items-center',
+                'w-4 h-4 rounded-md border shrink-0 grid place-items-center',
                 checked ? 'bg-mg-teal border-mg-teal text-white' : 'border-slate-300',
               )}>
                 {checked && <Icon name="check" className="w-2.5 h-2.5" />}
@@ -148,7 +148,7 @@ export function SpecialtyPicker({
                 )}
               </span>
               {checked && value[0] === o.id && (
-                <span className="text-[9px] font-bold uppercase text-mg-teal shrink-0">Primary</span>
+                <span className="text-[10px] font-bold uppercase text-mg-teal shrink-0">Primary</span>
               )}
             </button>
           );

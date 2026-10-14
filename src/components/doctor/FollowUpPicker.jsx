@@ -100,9 +100,9 @@ export function FollowUpPicker({ doctorId, value, onChange }) {
                     : 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed',
               )}
             >
-              <span className="block text-[9px] font-bold uppercase text-slate-400">{DAY_LABEL[d.dayOfWeek]}</span>
+              <span className="block text-[10px] font-bold uppercase text-slate-400">{DAY_LABEL[d.dayOfWeek]}</span>
               <span className={clsx('block text-base font-bold leading-tight', active ? 'text-mg-teal' : 'text-slate-800')}>{dd}</span>
-              <span className="block text-[9px] text-slate-400">{MONTH[m - 1]}</span>
+              <span className="block text-[10px] text-slate-400">{MONTH[m - 1]}</span>
             </button>
           );
         })}

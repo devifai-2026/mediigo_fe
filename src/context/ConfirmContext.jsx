@@ -3,6 +3,7 @@ import { Modal } from '../components/ui/Modal.jsx';
 import { Button } from '../components/ui/Button.jsx';
 
 const ConfirmContext = createContext(null);
+
 export const useConfirm = () => useContext(ConfirmContext);
 
 /**
@@ -34,29 +35,29 @@ export function ConfirmProvider({ children }) {
     <ConfirmContext.Provider value={confirm}>
       {children}
       <Modal open={Boolean(state)} onClose={() => close(false)} title={state?.title || 'Please confirm'} size="sm">
-        <p className="text-xs text-slate-600 leading-relaxed">{state?.message}</p>
+        <p className="text-sm text-slate-600 leading-relaxed">{state?.message}</p>
 
         {state?.detail && (
-          <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
+          <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
             {state.detail}
           </div>
         )}
 
         {needsPhrase && (
           <div className="mt-4">
-            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Type <span className="font-mono text-slate-700">{state.confirmPhrase}</span> to confirm
             </label>
             <input
               autoFocus
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-teal-600 focus:bg-white"
+              className="w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-base sm:text-sm focus:outline-none focus:border-mg-teal focus:ring-2 focus:ring-mg-teal/20"
             />
           </div>
         )}
 
-        <div className="mt-5 flex gap-2 justify-end">
+        <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
           <Button variant="secondary" onClick={() => close(false)}>
             {state?.cancelLabel || 'Cancel'}
           </Button>

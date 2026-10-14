@@ -49,7 +49,7 @@ export default function AgentPerformanceView() {
         subtitle={p?.agent ? `${p.agent.name}${p.agent.district ? ` · ${p.agent.district} district` : ''}` : 'Your onboarding and field work, month by month'}
       >
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => setMonth((m) => shiftMonth(m, -1))} className="w-8 h-8 grid place-items-center rounded-md border border-slate-200 text-slate-500 hover:text-mg-blue" aria-label="Previous month">
+          <button type="button" onClick={() => setMonth((m) => shiftMonth(m, -1))} className="w-8 h-8 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:text-mg-blue" aria-label="Previous month">
             <i className="fa-solid fa-chevron-left text-xs" aria-hidden="true" />
           </button>
           <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700">
@@ -67,7 +67,7 @@ export default function AgentPerformanceView() {
             type="button"
             onClick={() => setMonth((m) => shiftMonth(m, 1))}
             disabled={isCurrent}
-            className="w-8 h-8 grid place-items-center rounded-md border border-slate-200 text-slate-500 hover:text-mg-blue disabled:opacity-40"
+            className="w-8 h-8 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:text-mg-blue disabled:opacity-40"
             aria-label="Next month"
           >
             <i className="fa-solid fa-chevron-right text-xs" aria-hidden="true" />
@@ -146,8 +146,8 @@ export default function AgentPerformanceView() {
                 {p.trend.map((t) => (
                   <div key={t.month} className="flex-1 flex flex-col items-center gap-1 min-w-0">
                     <div className="w-full flex items-end justify-center gap-1 h-32">
-                      <div className="w-1/3 bg-mg-teal/70 rounded-t" style={{ height: `${(t.submitted / maxTrend) * 100}%` }} title={`${t.submitted} submitted`} />
-                      <div className="w-1/3 bg-emerald-500 rounded-t" style={{ height: `${(t.approved / maxTrend) * 100}%` }} title={`${t.approved} approved`} />
+                      <div className="w-1/3 bg-mg-teal/70 rounded-t-md" style={{ height: `${(t.submitted / maxTrend) * 100}%` }} title={`${t.submitted} submitted`} />
+                      <div className="w-1/3 bg-emerald-500 rounded-t-md" style={{ height: `${(t.approved / maxTrend) * 100}%` }} title={`${t.approved} approved`} />
                     </div>
                     <span className={clsx('text-[11px]', t.month === month ? 'font-semibold text-mg-blue' : 'text-slate-500')}>{monthName(t.month, true)}</span>
                     <span className="text-[10px] text-slate-400">{t.approved}/{t.submitted} · {t.visits}v</span>
@@ -155,8 +155,8 @@ export default function AgentPerformanceView() {
                 ))}
               </div>
               <div className="flex items-center gap-4 text-[11px] text-slate-500">
-                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-mg-teal/70 mr-1" />Submitted</span>
-                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500 mr-1" />Approved</span>
+                <span><span className="inline-block w-2.5 h-2.5 rounded-md bg-mg-teal/70 mr-1" />Submitted</span>
+                <span><span className="inline-block w-2.5 h-2.5 rounded-md bg-emerald-500 mr-1" />Approved</span>
                 <span>v = visits</span>
               </div>
             </DeskCard>

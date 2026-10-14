@@ -148,7 +148,7 @@ export default function BookingsView() {
               <FollowUpPrompt token={t} onDone={refetch} />
               <div className="flex items-center gap-4">
               <div className="w-16 h-16 mg-panel grid place-items-center shrink-0 text-center">
-                <span className="block text-[9px] font-medium text-slate-600 leading-none">Token</span>
+                <span className="block text-[10px] font-medium text-slate-600 leading-none">Token</span>
                 <span className="block text-xl font-bold text-mg-navy leading-none -mt-3">{token(t.tokenNumber)}</span>
               </div>
               <div className="min-w-0 flex-1">

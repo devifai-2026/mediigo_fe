@@ -13,7 +13,7 @@ const TONES = {
 export function StatCard({ label, value, hint, icon, tone = 'slate', footer, className }) {
   const t = TONES[tone] ?? TONES.slate;
   return (
-    <div className={clsx('bg-white border border-slate-200 rounded-2xl p-5 shadow-sm', className)}>
+    <div className={clsx('bg-white border border-slate-200 rounded-xl p-5 shadow-sm', className)}>
       <div className="flex justify-between items-start gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>

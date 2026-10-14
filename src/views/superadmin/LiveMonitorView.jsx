@@ -93,7 +93,7 @@ function DoctorTile({ d }) {
         ].map(([label, v, tone]) => (
           <div key={label} className="rounded-md bg-mg-surface py-1.5">
             <p className={clsx('text-sm font-semibold', tone)}>{v}</p>
-            <p className="text-[9px] uppercase text-slate-400">{label}</p>
+            <p className="text-[10px] uppercase text-slate-400">{label}</p>
           </div>
         ))}
       </div>
@@ -148,7 +148,7 @@ export default function LiveMonitorView() {
         <button
           type="button"
           onClick={() => refetchLive()}
-          className="w-9 h-9 grid place-items-center bg-white border border-slate-200 rounded-md text-slate-500 hover:text-mg-blue"
+          className="w-9 h-9 grid place-items-center bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-mg-blue"
           aria-label="Refresh now"
           title="Refresh now"
         >
@@ -173,7 +173,7 @@ export default function LiveMonitorView() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search doctor, clinic, city…"
             aria-label="Search doctors"
-            className="pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-md text-xs w-full sm:w-64 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
+            className="pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs w-full sm:w-64 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
           />
         </div>
       </DeskCard>

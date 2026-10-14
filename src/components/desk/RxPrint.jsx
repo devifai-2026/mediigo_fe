@@ -25,19 +25,19 @@ export function RxPrint({ rx, clinicName }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 border border-gray-300 rounded p-2">
+      <div className="grid grid-cols-2 gap-2 border border-gray-300 rounded-md p-2">
         <div>
-          <p className="text-[9px] uppercase text-gray-500">Patient name</p>
+          <p className="text-[10px] uppercase text-gray-500">Patient name</p>
           <p className="font-semibold">{p.name}</p>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-gray-500">Age / Gender / Contact</p>
+          <p className="text-[10px] uppercase text-gray-500">Age / Gender / Contact</p>
           <p>{[patientLine(p), p.phone && `+91 ${p.phone}`].filter(Boolean).join(' • ') || '—'}</p>
         </div>
       </div>
 
       <div>
-        <p className="text-[9px] uppercase text-gray-500">Clinical diagnosis</p>
+        <p className="text-[10px] uppercase text-gray-500">Clinical diagnosis</p>
         <p className="font-semibold">{rx.diagnosis}</p>
       </div>
 
@@ -45,7 +45,7 @@ export function RxPrint({ rx, clinicName }) {
         <p className="text-2xl font-serif font-bold text-[#1E3FA0]">℞</p>
         <table className="w-full border-collapse text-[11px]">
           <thead>
-            <tr className="border-b border-gray-400 text-left text-[9px] uppercase text-gray-600">
+            <tr className="border-b border-gray-400 text-left text-[10px] uppercase text-gray-600">
               <th className="py-1 pr-2 w-5">#</th>
               <th className="py-1 pr-2">Medicine</th>
               <th className="py-1 pr-2">Dosage</th>
@@ -69,15 +69,15 @@ export function RxPrint({ rx, clinicName }) {
       </div>
 
       {rx.advice && (
-        <div className="border border-gray-300 rounded p-2">
-          <p className="text-[9px] uppercase text-gray-500">Advice &amp; instructions</p>
+        <div className="border border-gray-300 rounded-md p-2">
+          <p className="text-[10px] uppercase text-gray-500">Advice &amp; instructions</p>
           <p>{rx.advice}</p>
         </div>
       )}
       {rx.reviewDate && <p><strong>Review on:</strong> {longDate(rx.reviewDate)}</p>}
 
       <div className="pt-10 flex items-end justify-between">
-        <p className="text-[9px] text-gray-400">Issued via Mediigo EMR</p>
+        <p className="text-[10px] text-gray-400">Issued via Mediigo EMR</p>
         <div className="text-center">
           <div className="border-b border-gray-500 w-36 mb-1" />
           <p className="text-[11px] font-semibold">{d.name}</p>

@@ -46,6 +46,10 @@ const PATHS = {
   thumbUp: 'M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5',
   play: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664zM21 12a9 9 0 11-18 0 9 9 0 0118 0z',
   chevronLeft: 'M15 19l-7-7 7-7',
+  // A turn arrow, for "Get directions" — reads as navigation where a map pin
+  // only reads as an address.
+  navigate: 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8',
+  calendar: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
 };
 
 export function Icon({ name, className = 'w-5 h-5', strokeWidth = 2 }) {

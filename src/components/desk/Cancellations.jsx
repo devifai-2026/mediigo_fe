@@ -130,7 +130,7 @@ export function CancellationsPanel({ cancellations = [], forDoctor = false, onCh
             {c.wasPaid && <span className="ml-2 text-[10px] font-medium text-amber-700">PAID · NOT REFUNDED</span>}
           </p>
           <p className="text-xs text-slate-600 mt-0.5">
-            <i className="fa-solid fa-quote-left text-[9px] text-slate-400 mr-1" aria-hidden="true" />{c.reason || 'No reason given'}
+            <i className="fa-solid fa-quote-left text-[10px] text-slate-400 mr-1" aria-hidden="true" />{c.reason || 'No reason given'}
           </p>
           <p className="text-[11px] text-slate-400 mt-0.5">
             <i className={clsx('fa-solid mr-1', by.icon)} aria-hidden="true" />

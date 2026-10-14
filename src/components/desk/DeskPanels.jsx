@@ -44,7 +44,7 @@ export function SkippedPanel({ tokens = [], onRestore, busy }) {
                 type="button"
                 disabled={busy}
                 onClick={() => onRestore?.(t)}
-                className="shrink-0 px-3 py-1.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium shadow-sm transition disabled:opacity-50"
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium shadow-sm transition disabled:opacity-50"
               >
                 Recall Now
               </button>
@@ -78,7 +78,7 @@ function ActionButton({ children, tone = 'plain', ...rest }) {
     <button
       type="button"
       className={clsx(
-        'px-2.5 py-1.5 rounded-md text-xs font-medium transition whitespace-nowrap disabled:opacity-50',
+        'px-2.5 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap disabled:opacity-50',
         tone === 'plain' && 'bg-slate-100 hover:bg-slate-200 text-slate-700',
         tone === 'teal' && 'bg-mg-teal hover:bg-mg-tealDark text-white',
         tone === 'tealSoft' && 'bg-teal-50 hover:bg-teal-100 text-mg-teal',
@@ -148,16 +148,24 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, busy, canP
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-[13px] font-medium text-slate-900">{t.name}</p>
+                        {/* Online = the patient booked it themselves; In-clinic =
+                            booked here at the desk. Both are seen in person. */}
+                        <span className={clsx(
+                          'text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border',
+                          t.bookedOnline ? 'bg-blue-50 text-mg-blue border-blue-200' : 'bg-slate-50 text-slate-500 border-slate-200',
+                        )}>
+                          {t.bookedOnline ? 'Online' : 'In-clinic'}
+                        </span>
                         {t.isEmergency && (
                           <span className={clsx(
-                            'text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+                            'text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
                             urgent ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500',
                           )}>
                             Emergency
                           </span>
                         )}
                         {fu && (
-                          <span className={clsx('px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide border', fu.className)}>
+                          <span className={clsx('px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border', fu.className)}>
                             Follow-up · {fu.label}
                           </span>
                         )}
@@ -168,7 +176,7 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, busy, canP
                       {t.conditions?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {t.conditions.map((c) => (
-                            <span key={c} className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">{c}</span>
+                            <span key={c} className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">{c}</span>
                           ))}
                         </div>
                       )}

@@ -92,7 +92,7 @@ export default function ClinicsMasterView() {
         <button
           type="button"
           onClick={openAddClinic}
-          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-plus" /> Onboard New Clinic
         </button>
@@ -117,7 +117,7 @@ export default function ClinicsMasterView() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={tab === 'clinics' ? 'Search clinic, code, city or specialty…' : 'Search doctor, clinic, reg no…'}
-            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-800 outline-none focus:border-mg-blue focus:bg-white"
+            className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-4 py-2 text-xs font-medium text-slate-800 outline-none focus:border-mg-blue focus:bg-white"
           />
         </div>
 
@@ -182,7 +182,7 @@ export default function ClinicsMasterView() {
                         {c.specialties.length === 0
                           ? <span className="text-[11px] text-slate-400 italic">none yet</span>
                           : c.specialties.slice(0, 3).map((s) => (
-                            <span key={s} className="bg-blue-50 text-mg-navy font-semibold px-1.5 py-0.5 rounded text-[10px]">{s}</span>
+                            <span key={s} className="bg-blue-50 text-mg-navy font-semibold px-1.5 py-0.5 rounded-md text-[10px]">{s}</span>
                           ))}
                         {c.specialties.length > 3 && (
                           <span className="text-[10px] text-slate-400">+{c.specialties.length - 3}</span>
@@ -236,7 +236,7 @@ export default function ClinicsMasterView() {
                       <p className="text-[10px] text-slate-400">{d.district}</p>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="bg-blue-50 text-mg-navy font-semibold px-2 py-0.5 rounded text-[10px]">{d.specialty}</span>
+                      <span className="bg-blue-50 text-mg-navy font-semibold px-2 py-0.5 rounded-md text-[10px]">{d.specialty}</span>
                       <p className="text-[11px] text-slate-500 mt-0.5">Reg: <strong>{d.regNo}</strong></p>
                     </td>
                     <td className="py-3 px-4 text-center">

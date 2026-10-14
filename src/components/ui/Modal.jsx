@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { useFocusTrap } from '../../hooks/useFocusTrap.js';
 import { Icon } from './Icon.jsx';
-import { useIsBrandTheme } from '../../context/PortalTheme.jsx';
 
 const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
 
@@ -16,7 +15,6 @@ const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl'
  */
 export function Modal({ open, onClose, title, subtitle, eyebrow, children, size = 'md', variant = 'center', closeOnBackdrop = true }) {
   const panelRef = useRef(null);
-  const brand = useIsBrandTheme();
   useFocusTrap(panelRef, open);
 
   useEffect(() => {
@@ -47,16 +45,13 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, size 
         aria-modal="true"
         aria-label={title || 'Dialog'}
         className={clsx(
-          'bg-white w-full shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]',
+          'bg-white w-full shadow-2xl ring-1 ring-slate-900/5 flex flex-col max-h-[90vh] font-display',
           SIZES[size],
-          brand && 'font-display',
-          variant === 'sheet'
-            ? (brand ? 'rounded-t-xl sm:rounded-xl animate-slide-up' : 'rounded-t-3xl sm:rounded-3xl animate-slide-up')
-            : (brand ? 'rounded-xl' : 'rounded-3xl'),
+          variant === 'sheet' ? 'rounded-t-2xl sm:rounded-2xl animate-slide-up' : 'rounded-2xl',
         )}
       >
         {title && (
-          <div className="flex items-start justify-between gap-3 p-5 pb-3 border-b border-slate-100 shrink-0">
+          <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4 border-b border-slate-100 shrink-0">
             <div>
               {/* A small label above the title, e.g. "Clinic profile". */}
               {eyebrow && (
@@ -64,14 +59,14 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, size 
                   {eyebrow}
                 </span>
               )}
-              <h3 className={clsx('text-slate-900 leading-tight', brand ? 'font-semibold text-lg' : 'font-bold text-base')}>{title}</h3>
-              {subtitle && <p className={clsx('text-[11px] mt-0.5', brand ? 'text-mg-teal' : 'text-slate-500')}>{subtitle}</p>}
+              <h3 className="text-lg font-semibold text-slate-900 leading-tight">{title}</h3>
+              {subtitle && <p className="text-xs mt-1 text-mg-teal">{subtitle}</p>}
             </div>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
+              className="-mr-1.5 -mt-1 w-9 h-9 grid place-items-center rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
             >
               <Icon name="cross" className="w-4 h-4" />
             </button>

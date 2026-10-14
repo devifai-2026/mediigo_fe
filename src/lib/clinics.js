@@ -1,4 +1,5 @@
 import { directionsUrl } from './maps.js';
+import { relativeDay, time12 } from './format.js';
 
 /**
  * Patients browse clinics, not doctors: one clinic or hospital, many doctors.
@@ -45,3 +46,17 @@ export const clinicDirections = (c) => (c?.coordinates
   : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([c?.name, c?.address?.line1, c?.address?.city].filter(Boolean).join(', '))}`);
 
 export const km = (d) => (d == null ? '' : `${Number(d) < 10 ? Number(d).toFixed(1).replace(/\.0$/, '') : Math.round(d)} km`);
+
+/**
+ * When a doctor next sits, from the /nearby row's `nextAvailable`:
+ * "Now · till 1:00 PM", "Today · 6:00 PM", "Tomorrow · 10:00 AM", "17 Oct · …".
+ * A doctor taking tokens right now is available now, whatever the weekly
+ * pattern says — the desk can open a session outside it. Null when nothing in
+ * the booking horizon has room.
+ */
+export const nextAvailableText = (n, session) => {
+  if (session?.isBookingOpen && !session?.isOnBreak) return 'Now';
+  if (!n) return null;
+  if (n.inProgress) return `Now · till ${time12(n.endTime)}`;
+  return `${relativeDay(n.date)} · ${time12(n.startTime)}`;
+};

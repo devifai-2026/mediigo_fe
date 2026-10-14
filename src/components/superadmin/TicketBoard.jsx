@@ -43,7 +43,7 @@ export function TicketBoard({ tickets, onOpen, onMove, canTriage }) {
                     onDragStart={(e) => e.dataTransfer.setData('text/plain', t.id)}
                     onClick={() => onOpen(t)}
                     className={clsx(
-                      'w-full text-left bg-white rounded-xl border p-3 shadow-sm hover:shadow-md transition',
+                      'w-full text-left bg-white rounded-lg border p-3 shadow-sm hover:shadow-md transition',
                       t.unread ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200',
                       canTriage && 'cursor-grab active:cursor-grabbing',
                     )}
@@ -52,7 +52,7 @@ export function TicketBoard({ tickets, onOpen, onMove, canTriage }) {
                       <span className="text-[10px] font-mono font-semibold text-slate-400">{t.ref}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {t.unread && <span className="w-2 h-2 rounded-full bg-mg-blue" title="Unread" />}
-                        <span className={clsx('text-[9px] font-semibold px-1.5 py-0.5 rounded border uppercase', p.chip)}>
+                        <span className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded-md border uppercase', p.chip)}>
                           {p.label}
                         </span>
                       </div>
@@ -61,7 +61,7 @@ export function TicketBoard({ tickets, onOpen, onMove, canTriage }) {
                     <p className="text-xs font-semibold text-slate-900 mt-1.5 leading-snug">{t.title}</p>
 
                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                      <span className={clsx('text-[9px] font-semibold px-1.5 py-0.5 rounded', ROLE_TONE[t.raisedByRole] ?? 'bg-slate-100 text-slate-600')}>
+                      <span className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded-md', ROLE_TONE[t.raisedByRole] ?? 'bg-slate-100 text-slate-600')}>
                         {ROLE_LABEL[t.raisedByRole] ?? t.raisedByRole}
                       </span>
                       <span className="text-[10px] text-slate-400">{t.raisedByName}</span>

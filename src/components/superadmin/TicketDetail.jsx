@@ -53,15 +53,15 @@ export function TicketDetail({ ticketId, open, onClose, onChanged, canTriage }) 
       ) : (
         <div className="space-y-5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded border uppercase', p.chip)}>{p.label}</span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+            <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-md border uppercase', p.chip)}>{p.label}</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
               {CATEGORY[ticket.category] ?? ticket.category}
             </span>
-            <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded', ROLE_TONE[ticket.raisedByRole] ?? 'bg-slate-100')}>
+            <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-md', ROLE_TONE[ticket.raisedByRole] ?? 'bg-slate-100')}>
               {ROLE_LABEL[ticket.raisedByRole] ?? ticket.raisedByRole}
             </span>
             {ticket.districtName && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">{ticket.districtName}</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">{ticket.districtName}</span>
             )}
           </div>
 
@@ -107,11 +107,11 @@ export function TicketDetail({ ticketId, open, onClose, onChanged, canTriage }) 
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold text-slate-800">{c.authorName}</span>
-                    <span className={clsx('text-[9px] font-semibold px-1.5 py-0.5 rounded', ROLE_TONE[c.authorRole] ?? 'bg-slate-100')}>
+                    <span className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded-md', ROLE_TONE[c.authorRole] ?? 'bg-slate-100')}>
                       {ROLE_LABEL[c.authorRole] ?? c.authorRole}
                     </span>
                     {c.internal && (
-                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">INTERNAL</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-200 text-amber-900">INTERNAL</span>
                     )}
                     <span className="text-[10px] text-slate-400 ml-auto">{shortDate(c.createdAt)} {timeOf(c.createdAt)}</span>
                   </div>

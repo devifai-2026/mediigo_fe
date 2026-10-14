@@ -69,7 +69,7 @@ export function DemoAccounts({ roles, kind, onPick }) {
           onClick={copySecret}
           title={`Copy ${kind === 'otp' ? 'OTP' : 'password'}`}
           className={clsx(
-            'group flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-md border transition',
+            'group flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-lg border transition',
             copied
               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
               : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-mg-teal hover:text-mg-teal',
@@ -79,7 +79,7 @@ export function DemoAccounts({ roles, kind, onPick }) {
             {kind === 'otp' ? 'OTP' : 'Pass'}
           </span>
           <span className="font-mono">{secret}</span>
-          <i className={clsx('fa-solid text-[9px]', copied ? 'fa-check' : 'fa-copy')} />
+          <i className={clsx('fa-solid text-[10px]', copied ? 'fa-check' : 'fa-copy')} />
         </button>
       </div>
 
@@ -97,7 +97,7 @@ export function DemoAccounts({ roles, kind, onPick }) {
                 )}
               >
                 <span className="flex items-center gap-1.5">
-                  <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase', ROLE_CHIP[role])}>
+                  <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-md border uppercase', ROLE_CHIP[role])}>
                     {ROLE_LABEL[role]}
                   </span>
                   <span className="text-[10px] text-slate-400 font-semibold">

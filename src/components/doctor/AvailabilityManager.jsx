@@ -87,7 +87,7 @@ export function AvailabilityManager({ doctorId, canEdit = true }) {
           <div
             key={d.date}
             className={clsx(
-              'p-3 rounded-2xl border flex items-start gap-3',
+              'p-3 rounded-xl border flex items-start gap-3',
               d.isOpen ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-200',
             )}
           >
@@ -95,9 +95,9 @@ export function AvailabilityManager({ doctorId, canEdit = true }) {
               'w-12 shrink-0 text-center rounded-xl py-1.5 border',
               d.isToday ? 'bg-teal-600 text-white border-teal-600' : 'bg-slate-50 text-slate-700 border-slate-200',
             )}>
-              <p className="text-[9px] font-bold uppercase leading-none">{DAY_LABEL[d.dayOfWeek]}</p>
+              <p className="text-[10px] font-bold uppercase leading-none">{DAY_LABEL[d.dayOfWeek]}</p>
               <p className="text-base font-black leading-tight">{dayNumber(d.date)}</p>
-              <p className="text-[9px] leading-none opacity-75">{monthShort(d.date)}</p>
+              <p className="text-[10px] leading-none opacity-75">{monthShort(d.date)}</p>
             </div>
 
             <div className="flex-grow min-w-0">

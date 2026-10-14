@@ -143,7 +143,7 @@ export default function StaffView() {
         <button
           type="button"
           onClick={() => open('create')}
-          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-user-plus" /> Add Staff
         </button>
@@ -186,7 +186,7 @@ export default function StaffView() {
                     {u.email && <p className="text-[10px] text-slate-400">{u.email}</p>}
                   </td>
                   <td className="py-3 px-4">
-                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded border uppercase', ROLE_CHIP[u.role])}>
+                    <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-md border uppercase', ROLE_CHIP[u.role])}>
                       {ROLE_LABEL[u.role]}
                     </span>
                   </td>

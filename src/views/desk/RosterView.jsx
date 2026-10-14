@@ -104,7 +104,7 @@ export default function RosterView() {
         badge={today && <Pill tone="slate">Today: {today}</Pill>}
       >
         {isDoctor && (
-          <Link to="/d/followups" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-mg-teal text-mg-teal hover:bg-teal-50 text-xs font-medium transition">
+          <Link to="/d/followups" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-mg-teal text-mg-teal hover:bg-teal-50 text-xs font-medium transition">
             <i className="fa-solid fa-rotate" aria-hidden="true" /> My follow-ups
           </Link>
         )}

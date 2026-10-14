@@ -22,9 +22,9 @@ const MAX_ZOOM = 4;
 // the pre-upload guard all read these, so the UI cannot promise something the
 // server will reject — which is what "image/*" did: it offered GIF, BMP, SVG
 // and HEIC in the picker, all of which failed only after uploading.
-const ACCEPT_MIME = ['image/jpeg', 'image/png'];
-const ACCEPT_ATTR = '.jpg,.jpeg,.png,image/jpeg,image/png';
-const MAX_MB = 8;
+export const ACCEPT_MIME = ['image/jpeg', 'image/png'];
+export const ACCEPT_ATTR = '.jpg,.jpeg,.png,image/jpeg,image/png';
+export const MAX_MB = 8;
 const FORMAT_HINT = 'JPEG or PNG · up to 8MB';
 
 /**
@@ -109,7 +109,7 @@ export function PhotoCropper({ open, file, onCancel, onDone, busy = false, title
               Drag to reposition and pinch or scroll to zoom. The circle is what patients will see.
             </p>
 
-            <div className="relative w-full h-72 rounded-2xl overflow-hidden bg-slate-900">
+            <div className="relative w-full h-72 rounded-xl overflow-hidden bg-slate-900">
               {src && (
                 <Cropper
                   image={src}
@@ -191,8 +191,8 @@ export function PhotoField({ value, name, onUpload, onRemove, onReject, busy, la
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-        {label} <span className="text-slate-300 font-bold normal-case tracking-normal">· optional</span>
+      <p className="text-xs font-medium text-slate-700">
+        {label} <span className="font-normal text-slate-400">(optional)</span>
       </p>
       <div className="flex items-center gap-4">
         <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-100 border border-slate-200 grid place-items-center shrink-0">

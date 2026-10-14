@@ -103,7 +103,7 @@ export default function MasterApprovalsView() {
                 type="button"
                 disabled={busy === c.id || !c.hasGeocode}
                 onClick={() => approve(c)}
-                className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow transition disabled:opacity-50"
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow transition disabled:opacity-50"
               >
                 Approve Clinic
               </button>
@@ -111,7 +111,7 @@ export default function MasterApprovalsView() {
                 type="button"
                 disabled={busy === c.id}
                 onClick={() => reject(c)}
-                className="flex-1 sm:flex-none px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold text-xs rounded-xl transition disabled:opacity-50"
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold text-xs rounded-lg transition disabled:opacity-50"
               >
                 Reject
               </button>

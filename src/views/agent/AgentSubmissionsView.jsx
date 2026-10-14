@@ -153,7 +153,7 @@ export default function AgentSubmissionsView() {
           />
           {!subs.length && (
             <div className="pb-8 text-center">
-              <Link to="/a/onboard" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-mg-teal hover:bg-mg-tealDark text-white text-xs font-medium">
+              <Link to="/a/onboard" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-mg-teal hover:bg-mg-tealDark text-white text-xs font-medium">
                 <i className="fa-solid fa-hospital" aria-hidden="true" /> Onboard a clinic
               </Link>
             </div>
@@ -184,7 +184,7 @@ export default function AgentSubmissionsView() {
                   <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span><strong className="font-medium">Reason:</strong> {s.rejectionReason || 'No reason given'}</span>
                     {s.leadId && (
-                      <Link to={`/a/onboard?lead=${s.leadId}`} className="shrink-0 px-3 py-1.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-medium text-center">
+                      <Link to={`/a/onboard?lead=${s.leadId}`} className="shrink-0 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-medium text-center">
                         Fix &amp; resubmit
                       </Link>
                     )}

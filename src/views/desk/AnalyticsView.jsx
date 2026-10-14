@@ -369,14 +369,14 @@ function LedgerTable({ ledger, canVoid, onVoid, range }) {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search patient, token, receipt…"
               aria-label="Search the ledger"
-              className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs w-full sm:w-56 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
+              className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs w-full sm:w-56 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
             />
           </div>
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value)}
             aria-label="Payment method"
-            className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs focus:outline-none focus:border-mg-teal"
+            className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-mg-teal"
           >
             <option value="ALL">All methods</option>
             <option value="CASH">Cash</option>
@@ -573,7 +573,7 @@ function FootfallSection({ analytics, footfall, range, analyticsError, footfallE
                 <Bar
                   key={h.hour}
                   label={`${hourLabel(h.hour)} – ${hourLabel(h.hour + 1)}`}
-                  note={peak?.hour === h.hour && <span className="ml-1.5 text-[9px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">PEAK</span>}
+                  note={peak?.hour === h.hour && <span className="ml-1.5 text-[10px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md">PEAK</span>}
                   value={h.count}
                   max={peak.count}
                   display={`${h.count} patient${h.count === 1 ? '' : 's'}`}
@@ -674,7 +674,7 @@ function FootfallRegister({ footfall, range }) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, phone, diagnosis, medicine…"
             aria-label="Search the footfall register"
-            className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs w-full sm:w-72 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
+            className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs w-full sm:w-72 focus:outline-none focus:border-mg-teal focus:ring-1 focus:ring-mg-teal"
           />
         </div>
       </div>
@@ -716,8 +716,8 @@ function FootfallRegister({ footfall, range }) {
                         <div className="flex flex-wrap gap-1">
                           {x.medicines.map((m, i) => (
                             // eslint-disable-next-line react/no-array-index-key
-                            <span key={i} className="px-1.5 py-0.5 bg-teal-50 text-mg-teal text-[10px] rounded border border-teal-100">
-                              <i className="fa-solid fa-pills mr-1 text-[9px]" aria-hidden="true" />{m.name}{m.dosage && ` (${m.dosage})`}
+                            <span key={i} className="px-1.5 py-0.5 bg-teal-50 text-mg-teal text-[10px] rounded-md border border-teal-100">
+                              <i className="fa-solid fa-pills mr-1 text-[10px]" aria-hidden="true" />{m.name}{m.dosage && ` (${m.dosage})`}
                             </span>
                           ))}
                         </div>

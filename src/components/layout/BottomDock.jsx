@@ -16,7 +16,7 @@ export function BottomDock({ items, brand = false }) {
             }
           >
             {item.badge > 0 && (
-              <span className="absolute -top-0.5 right-1 min-w-[16px] h-4 px-1 bg-amber-500 text-white text-[9px] font-extrabold rounded-full grid place-items-center">
+              <span className="absolute -top-0.5 right-1 min-w-[16px] h-4 px-1 bg-amber-500 text-white text-[10px] font-extrabold rounded-full grid place-items-center">
                 {item.badge}
               </span>
             )}

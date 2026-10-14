@@ -141,7 +141,7 @@ export function ClinicGallery({ id, clinicName, photos }) {
       />
       {/* Too cramped to label the small mobile thumbnails; the viewer says. */}
       <span className={clsx(
-        'absolute left-2 top-2 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white',
+        'absolute left-2 top-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white',
         !big && 'hidden sm:block',
       )}
       >
@@ -171,7 +171,7 @@ export function ClinicGallery({ id, clinicName, photos }) {
               onClick={() => setTab(t.value)}
               aria-pressed={tab === t.value}
               className={clsx(
-                'px-3 py-1.5 rounded-md text-sm font-medium transition',
+                'px-3 py-1.5 rounded-lg text-sm font-medium transition',
                 tab === t.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800',
               )}
             >

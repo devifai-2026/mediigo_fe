@@ -50,8 +50,8 @@ export function BookingPass({ token: t, onDone }) {
 
       <p className="text-center font-black tracking-widest text-[10px] mb-2">OPD TOKEN PASS</p>
 
-      <div className="text-center border border-black rounded py-2 mb-2">
-        <p className="text-[9px] tracking-widest">TOKEN</p>
+      <div className="text-center border border-black rounded-md py-2 mb-2">
+        <p className="text-[10px] tracking-widest">TOKEN</p>
         <p className="text-2xl font-black leading-none">{token(t.tokenNumber)}</p>
         {t.shift && (
           <p className="text-[10px] mt-1">
@@ -96,7 +96,7 @@ export function BookingPass({ token: t, onDone }) {
         <QrCode value={qrPayload} size={96} />
       </div>
 
-      <p className="text-center text-[9px] border-t border-dashed border-black pt-2">
+      <p className="text-center text-[10px] border-t border-dashed border-black pt-2">
         Show this pass at the front desk.<br />
         Track your live queue position in the Mediigo app.
       </p>

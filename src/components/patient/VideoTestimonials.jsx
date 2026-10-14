@@ -68,7 +68,7 @@ function Card({ video, index, onPlay }) {
     <button
       type="button"
       onClick={onPlay}
-      className="group snap-start shrink-0 w-[280px] sm:w-[300px] text-left rounded-xl border border-slate-200 bg-white p-3 hover:shadow-md hover:border-mg-teal/40 transition"
+      className="group snap-start shrink-0 w-[280px] sm:w-[300px] text-left rounded-lg border border-slate-200 bg-white p-3 hover:shadow-md hover:border-mg-teal/40 transition"
     >
       <div className="relative aspect-video rounded-lg overflow-hidden">
         {poster && !posterFailed ? (
@@ -87,12 +87,12 @@ function Card({ video, index, onPlay }) {
           </span>
         </span>
         {duration && (
-          <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">{duration}</span>
+          <span className="absolute bottom-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">{duration}</span>
         )}
       </div>
       <p className="mt-3 text-[15px] font-semibold text-slate-900 truncate">{video.patientName}</p>
       {video.condition && (
-        <span className="mt-1 inline-block rounded bg-mg-teal/10 px-2 py-0.5 text-xs font-medium text-mg-teal">
+        <span className="mt-1 inline-block rounded-md bg-mg-teal/10 px-2 py-0.5 text-xs font-medium text-mg-teal">
           Treated for {video.condition}
         </span>
       )}

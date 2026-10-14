@@ -17,7 +17,7 @@ export function WrongPortal({ role }) {
 
   return (
     <div className="min-h-screen grid place-items-center bg-slate-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center">
+      <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 shadow-xl p-8 text-center">
         <Logo className="w-14 h-14 mx-auto mb-4" rounded="rounded-2xl" />
         <h1 className="text-xl font-black text-slate-900">Wrong portal for this account</h1>
         <p className="text-xs text-slate-500 mt-2 leading-relaxed">
@@ -27,7 +27,7 @@ export function WrongPortal({ role }) {
 
         {target ? (
           <>
-            <div className="mt-5 p-4 rounded-2xl bg-teal-50 border border-teal-200 text-left">
+            <div className="mt-5 p-4 rounded-xl bg-teal-50 border border-teal-200 text-left">
               <p className="text-[10px] font-extrabold uppercase tracking-wider text-teal-700">Open instead</p>
               <p className="text-sm font-bold text-slate-900 mt-1">{target.label}</p>
               <a href={href} className="text-xs font-mono font-bold text-teal-700 hover:underline break-all">

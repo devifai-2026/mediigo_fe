@@ -213,7 +213,7 @@ export default function PatientsMasterView() {
             <input
               type="text" value={filters.q} onChange={(e) => set({ q: e.target.value })}
               placeholder="Search patient name or phone…"
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-800 outline-none focus:border-mg-blue focus:bg-white"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-4 py-2 text-xs font-medium text-slate-800 outline-none focus:border-mg-blue focus:bg-white"
             />
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function PatientsMasterView() {
           <select
             value={filters.hospitalId}
             onChange={(e) => set({ hospitalId: e.target.value, doctorId: '' })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
+            className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">All clinics</option>
             {(options?.clinics ?? []).map((c) => (
@@ -232,7 +232,7 @@ export default function PatientsMasterView() {
 
           <select
             value={filters.doctorId} onChange={(e) => set({ doctorId: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
+            className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">All doctors</option>
             {doctorOptions.map((d) => (
@@ -242,7 +242,7 @@ export default function PatientsMasterView() {
 
           <select
             value={filters.visitType} onChange={(e) => set({ visitType: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
+            className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">Any visit type</option>
             <option value="fresh">Fresh</option>
@@ -252,7 +252,7 @@ export default function PatientsMasterView() {
 
           <select
             value={filters.source} onChange={(e) => set({ source: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
+            className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">Any source</option>
             <option value="APP">Patient app</option>
@@ -264,12 +264,12 @@ export default function PatientsMasterView() {
           <input
             type="date" value={filters.from} max={filters.to || undefined}
             onChange={(e) => set({ from: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
+            className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           />
           <input
             type="date" value={filters.to} min={filters.from || undefined}
             onChange={(e) => set({ to: e.target.value })}
-            className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
+            className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           />
         </div>
 
@@ -300,7 +300,7 @@ export default function PatientsMasterView() {
             <span className="text-[11px] font-semibold text-slate-500">Sort:</span>
             <select
               value={filters.sort} onChange={(e) => set({ sort: e.target.value })}
-              className="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 outline-none focus:border-mg-blue"
+              className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 outline-none focus:border-mg-blue"
             >
               <option value="recent">Most recent visit</option>
               <option value="visits">Most visits</option>
@@ -367,7 +367,7 @@ export default function PatientsMasterView() {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className={clsx(
-                        'font-semibold px-2 py-0.5 rounded text-[10px]',
+                        'font-semibold px-2 py-0.5 rounded-md text-[10px]',
                         p.isRepeat ? 'bg-teal-50 text-mg-tealDark' : 'bg-blue-50 text-mg-navy',
                       )}>
                         {p.isRepeat ? 'REPEAT' : 'FRESH'}
@@ -379,9 +379,9 @@ export default function PatientsMasterView() {
                     <td className="py-3 px-4 text-center">
                       <span className="font-semibold text-slate-900 text-sm">{p.totalVisits}</span>
                       <div className="flex items-center justify-center gap-1 mt-1">
-                        {p.fresh > 0 && <span className={clsx('px-1 rounded text-[9px] font-semibold', VISIT_CHIP.fresh)}>{p.fresh}F</span>}
-                        {p.followup > 0 && <span className={clsx('px-1 rounded text-[9px] font-semibold', VISIT_CHIP.followup)}>{p.followup}U</span>}
-                        {p.emergency > 0 && <span className={clsx('px-1 rounded text-[9px] font-semibold', VISIT_CHIP.emergency)}>{p.emergency}E</span>}
+                        {p.fresh > 0 && <span className={clsx('px-1 rounded-md text-[10px] font-semibold', VISIT_CHIP.fresh)}>{p.fresh}F</span>}
+                        {p.followup > 0 && <span className={clsx('px-1 rounded-md text-[10px] font-semibold', VISIT_CHIP.followup)}>{p.followup}U</span>}
+                        {p.emergency > 0 && <span className={clsx('px-1 rounded-md text-[10px] font-semibold', VISIT_CHIP.emergency)}>{p.emergency}E</span>}
                       </div>
                     </td>
                     <td className="py-3 px-4">

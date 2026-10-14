@@ -7,9 +7,9 @@ export function DarkHero({ children, className = '' }) {
   );
 }
 
-export function LivePill({ children = 'Real time queue telemetry' }) {
+export function LivePill({ children = 'Real time queue telemetry', className = '' }) {
   return (
-    <p className="inline-flex items-center gap-2 text-xs sm:text-sm">
+    <p className={`inline-flex items-center gap-2 text-xs sm:text-sm ${className}`}>
       <span className="mg-live-dot w-2 h-2 rounded-full bg-red-500 text-red-500" />
       {children}
     </p>

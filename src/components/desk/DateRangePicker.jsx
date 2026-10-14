@@ -110,13 +110,13 @@ export function DateRangePicker({ value, onChange, className }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         className={clsx(
-          'inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition',
+          'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition',
           open ? 'border-mg-blue bg-blue-50 text-mg-blue' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300',
         )}
       >
         <i className="fa-regular fa-calendar text-mg-teal" aria-hidden="true" />
         <span className="whitespace-nowrap">{rangeLabel(value)}</span>
-        <i className={clsx('fa-solid fa-chevron-down text-[9px] text-slate-400 transition', open && 'rotate-180')} aria-hidden="true" />
+        <i className={clsx('fa-solid fa-chevron-down text-[10px] text-slate-400 transition', open && 'rotate-180')} aria-hidden="true" />
       </button>
 
       {open && (
@@ -134,7 +134,7 @@ export function DateRangePicker({ value, onChange, className }) {
                   type="button"
                   onClick={() => apply(p.range(today))}
                   className={clsx(
-                    'text-left px-2 py-1.5 rounded-md text-xs transition',
+                    'text-left px-2 py-1.5 rounded-lg text-xs transition',
                     presetOf(value) === p.key ? 'bg-blue-50 text-mg-blue font-medium' : 'text-slate-600 hover:bg-slate-50',
                   )}
                 >
@@ -153,7 +153,7 @@ export function DateRangePicker({ value, onChange, className }) {
                       setMode(k);
                       if (k === 'day') setDraft((d) => ({ from: d.to || d.from, to: d.to || d.from }));
                     }}
-                    className={clsx('flex-1 py-1.5 rounded-md text-xs font-medium transition',
+                    className={clsx('flex-1 py-1.5 rounded-lg text-xs font-medium transition',
                       mode === k ? 'bg-mg-blue text-white shadow-sm' : 'text-slate-600 hover:text-slate-900')}
                   >
                     {label}

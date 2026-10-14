@@ -102,11 +102,11 @@ export default function SecurityPolicyView() {
                 key={r}
                 type="button"
                 onClick={() => toggleRole(r)}
-                className={clsx('flex items-center justify-between p-3 rounded-xl border transition text-left',
+                className={clsx('flex items-center justify-between p-3 rounded-lg border transition text-left',
                   on ? 'bg-teal-50 border-teal-300' : 'bg-slate-50 border-slate-200 hover:border-slate-300')}
               >
                 <span className="text-xs font-semibold text-slate-800">{ROLE_LABEL[r]}</span>
-                <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded',
+                <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-md',
                   on ? 'bg-mg-teal text-white' : 'bg-slate-200 text-slate-500')}
                 >
                   {on ? '2FA ON' : 'OFF'}
@@ -120,7 +120,7 @@ export default function SecurityPolicyView() {
       <div className="glass-card rounded-xl p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-900">WhatsApp delivery (WABridge)</h3>
-          <span className={clsx('text-[10px] font-semibold px-2 py-1 rounded border',
+          <span className={clsx('text-[10px] font-semibold px-2 py-1 rounded-md border',
             form.enabled ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200')}
           >
             {form.enabled ? 'Live' : 'Console only'}

@@ -26,7 +26,7 @@ export function MoneyInput({ value, onChange, tone = 'slate', placeholder = '0',
         placeholder={placeholder}
         disabled={disabled}
         className={clsx(
-          'w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold',
+          'w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold',
           'focus:outline-none transition disabled:opacity-60 disabled:bg-slate-50',
           tones[tone], className,
         )}

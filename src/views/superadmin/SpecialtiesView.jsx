@@ -146,7 +146,7 @@ export default function SpecialtiesView() {
         <button
           type="button"
           onClick={openNew}
-          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          className="bg-mg-blue hover:bg-mg-navy text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md flex items-center gap-2"
         >
           <i className="fa-solid fa-plus" /> Add specialty
         </button>

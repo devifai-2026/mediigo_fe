@@ -20,7 +20,7 @@ export default function AuditView() {
       <div><p className="text-slate-700">{shortDate(r.createdAt)}</p><p className="text-[10px] text-slate-400">{timeOf(r.createdAt)}</p></div>
     ) },
     { key: 'action', label: 'Action', render: (r) => (
-      <span className={`text-[10px] font-bold px-2 py-1 rounded border ${TONE[r.action] || 'text-slate-600 bg-slate-50 border-slate-200'}`}>
+      <span className={`text-[10px] font-bold px-2 py-1 rounded-md border ${TONE[r.action] || 'text-slate-600 bg-slate-50 border-slate-200'}`}>
         {r.action.replace(/_/g, ' ')}
       </span>
     ) },
@@ -39,7 +39,7 @@ export default function AuditView() {
         <h2 className="text-xl font-bold text-slate-900">Audit trail</h2>
         <p className="text-xs text-slate-500">Every lifecycle action, retained for two years</p>
       </div>
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
         <DataTable columns={columns} rows={data || []} exportName="mediigo-audit" pageSize={20} />
       </div>
     </div>

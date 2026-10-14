@@ -82,7 +82,7 @@ export default function TrackTokenView() {
               <p className="text-sm font-black tracking-tight text-slate-900 leading-none">
                 Medi<span className="text-teal-600">igo</span>
               </p>
-              <p className="text-[8px] uppercase font-bold tracking-widest text-teal-700 mt-0.5">Live queue pass</p>
+              <p className="text-[10px] uppercase font-bold tracking-widest text-teal-700 mt-0.5">Live queue pass</p>
             </div>
           </div>
           <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-700 border border-teal-200 bg-teal-50 rounded-full px-2.5 py-1 shrink-0">
@@ -93,8 +93,8 @@ export default function TrackTokenView() {
       </header>
 
       <main className="max-w-md mx-auto px-5 py-6 space-y-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-teal-700">Consultation OPD</p>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-teal-700">Consultation OPD</p>
           <h1 className="text-lg font-bold text-slate-900 mt-1">{data.doctorName}</h1>
           <p className="text-[11px] text-slate-500 mt-0.5">
             {data.hospitalName}
@@ -102,7 +102,7 @@ export default function TrackTokenView() {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-5">
           <div className="text-center">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Your queue / serial token</p>
             <p className={clsx('text-6xl font-black leading-none mt-2', done ? 'text-slate-300' : 'text-teal-600')}>
@@ -131,18 +131,18 @@ export default function TrackTokenView() {
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-teal-50/70 border border-teal-100 p-3 text-center">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Estimated wait</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Estimated wait</p>
                   <p className="text-xl font-black text-teal-700 mt-1">
                     {data.isOnBreak ? 'Paused' : `~ ${data.estimatedWaitMinutes} min`}
                   </p>
-                  <p className="text-[9px] text-slate-400 mt-0.5">
+                  <p className="text-[10px] text-slate-400 mt-0.5">
                     {data.isOnBreak ? 'Doctor is on a break' : 'Updated live'}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-center">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Now consulting</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Now consulting</p>
                   <p className="text-xl font-black text-amber-600 mt-1">{fmtToken(data.nowServing)}</p>
-                  <p className="text-[9px] text-slate-400 mt-0.5">Active in chamber</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Active in chamber</p>
                 </div>
               </div>
 
@@ -164,7 +164,7 @@ export default function TrackTokenView() {
             type="button"
             onClick={load}
             disabled={refreshing}
-            className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white text-sm font-bold rounded-xl py-3 transition inline-flex items-center justify-center gap-2"
+            className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white text-sm font-bold rounded-lg py-3 transition inline-flex items-center justify-center gap-2"
           >
             <Icon name="refresh" className={clsx('w-4 h-4', refreshing && 'animate-spin')} />
             {refreshing ? 'Updating…' : 'Refresh'}

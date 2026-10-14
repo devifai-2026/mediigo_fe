@@ -89,7 +89,7 @@ export default function DoctorFollowUpsView() {
               <div
                 key={r.tokenId}
                 className={clsx(
-                  'bg-white rounded-2xl border shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-4',
+                  'bg-white rounded-xl border shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-4',
                   r.overdue ? 'border-rose-200' : 'border-slate-200',
                 )}
               >

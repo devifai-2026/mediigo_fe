@@ -30,12 +30,14 @@ export function DeskHeader({ items, badge }) {
     ? [doctor?.specialty, doctor?.chamberNumber && `Chamber ${doctor.chamberNumber}`].filter(Boolean).join(' • ')
     : role === ROLES.FIELD_AGENT
       ? ['Field Agent', user?.district?.name].filter(Boolean).join(' • ')
-      : ['Front Desk', user?.clinic?.name].filter(Boolean).join(' • ');
+      : role === ROLES.EXEC_ADMIN || role === ROLES.SUPER_ADMIN
+        ? [role === ROLES.SUPER_ADMIN ? 'Super Admin' : 'District Admin', user?.district?.name].filter(Boolean).join(' • ')
+        : ['Front Desk', user?.clinic?.name].filter(Boolean).join(' • ');
 
   const endShift = async () => {
     const ok = await confirm({
       title: 'End shift session?',
-      message: role === ROLES.FIELD_AGENT ? 'You will be signed out on this device.' : 'You will be signed out of the OPD desk on this device.',
+      message: role === ROLES.DOCTOR || role === ROLES.RECEPTIONIST ? 'You will be signed out of the OPD desk on this device.' : 'You will be signed out on this device.',
       confirmLabel: 'Log out',
     });
     if (ok) logout();
@@ -56,7 +58,7 @@ export function DeskHeader({ items, badge }) {
                   </span>
                 )}
               </div>
-              <span className="block text-[9px] text-slate-600 mt-0.5 truncate">Smart Clinic Operations Engine</span>
+              <span className="block text-[10px] text-slate-600 mt-0.5 truncate">Smart Clinic Operations Engine</span>
             </div>
           </Link>
 
@@ -141,7 +143,7 @@ export function DeskDock({ items }) {
             )}
           >
             <i className={clsx('fa-solid text-base', item.fa)} aria-hidden="true" />
-            <span className="text-[9px] font-medium whitespace-nowrap">{item.label}</span>
+            <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
           </NavLink>
         ))}
       </div>

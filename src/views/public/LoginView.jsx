@@ -11,7 +11,6 @@ import { LivePill } from '../../components/layout/DarkHero.jsx';
 import { ROLE_HOME, ROLES } from '../../lib/constants.js';
 import { ACTIVE_PORTAL } from '../../lib/portals.js';
 import { DemoAccounts } from '../../components/ui/DemoAccounts.jsx';
-import { PortalThemeProvider } from '../../context/PortalTheme.jsx';
 
 export default function LoginView() {
   const navigate = useNavigate();
@@ -99,7 +98,6 @@ export default function LoginView() {
   };
 
   return (
-    <PortalThemeProvider value="patient">
     <div className="min-h-screen flex flex-col bg-white font-display">
       <header className="bg-white border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
@@ -107,7 +105,7 @@ export default function LoginView() {
             <img src="/logo-mark.png" alt="" className="w-9 h-auto" />
             <div className="min-w-0 leading-none">
               <span className="block text-lg font-bold text-mg-navy tracking-tight">Mediigo</span>
-              <span className="block text-[9px] text-slate-600 mt-0.5">Book Doctor Easily</span>
+              <span className="block text-[10px] text-slate-600 mt-0.5">Book Doctor Easily</span>
             </div>
           </Link>
           {servesPatient && (
@@ -239,6 +237,5 @@ export default function LoginView() {
         </section>
       </main>
     </div>
-    </PortalThemeProvider>
   );
 }

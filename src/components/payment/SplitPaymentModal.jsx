@@ -72,7 +72,7 @@ export function SplitPaymentModal({ open, onClose, totalFee, patientName, onConf
   return (
     <Modal open={open} onClose={onClose} title="Collect payment" subtitle={patientName} variant="sheet" size="md">
       <div className="space-y-4">
-        <div className="bg-slate-900 text-white rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center justify-between">
           <span className="text-xs font-semibold text-slate-300">Total due</span>
           <span className="text-2xl font-black">{inr(totalFee)}</span>
         </div>
@@ -112,7 +112,7 @@ export function SplitPaymentModal({ open, onClose, totalFee, patientName, onConf
         {/* Running tally, always visible above the CTA. */}
         <div
           className={clsx(
-            'rounded-2xl border p-3 flex items-center justify-between text-xs font-bold transition-colors',
+            'rounded-xl border p-3 flex items-center justify-between text-xs font-bold transition-colors',
             balanced && 'bg-emerald-50 border-emerald-200 text-emerald-700',
             remaining > 0 && 'bg-amber-50 border-amber-200 text-amber-800',
             remaining < 0 && 'bg-rose-50 border-rose-200 text-rose-700',

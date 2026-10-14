@@ -82,10 +82,10 @@ export function AddAgentModal({ open, onClose, onDone }) {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2.5 border rounded-xl text-slate-600 font-semibold hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="px-4 py-2.5 border rounded-lg text-slate-600 font-semibold hover:bg-slate-50">
               Cancel
             </button>
-            <button type="submit" disabled={busy} className="px-5 py-2.5 bg-mg-teal text-white font-semibold rounded-xl shadow-lg hover:bg-mg-tealDark disabled:opacity-50">
+            <button type="submit" disabled={busy} className="px-5 py-2.5 bg-mg-teal text-white font-semibold rounded-lg shadow-lg hover:bg-mg-tealDark disabled:opacity-50">
               {busy ? 'Registering…' : 'Register Agent'}
             </button>
           </div>
