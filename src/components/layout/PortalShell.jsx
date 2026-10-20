@@ -3,6 +3,11 @@ import { GlassHeader } from './GlassHeader.jsx';
 import { PatientHeader } from './PatientHeader.jsx';
 import { BottomDock, TopTabs } from './BottomDock.jsx';
 import { DeskHeader, DeskDock } from '../desk/DeskChrome.jsx';
+import { SiteFooter } from '../legal/SiteFooter.jsx';
+import { useNoIndex } from '../../lib/seo.js';
+
+// Staff screens are never for search engines.
+function NoIndex({ title }) { useNoIndex(title); return null; }
 
 // One shell for every role; the nav items differ, the chrome does not — except
 // the patient portal, which follows the public Mediigo homepage design.
@@ -11,9 +16,11 @@ export function PortalShell({ items, subtitle, headerRight, maxWidth = 'max-w-7x
     return (
       <div className="min-h-screen flex flex-col bg-white font-display">
         <PatientHeader items={items} />
-        <main className="flex-1 w-full mx-auto px-4 py-8 pb-28 md:pb-12 max-w-6xl">
+        <main className="flex-1 w-full mx-auto px-4 py-8 pb-10 md:pb-12 max-w-6xl">
           <Outlet />
         </main>
+        {/* Clears the fixed bottom dock on phones. */}
+        <SiteFooter className="pb-24 md:pb-0" />
         <BottomDock items={items} brand />
       </div>
     );
@@ -25,6 +32,7 @@ export function PortalShell({ items, subtitle, headerRight, maxWidth = 'max-w-7x
   if (variant === 'desk') {
     return (
         <div className="min-h-screen flex flex-col bg-[#F7F9FC] font-display">
+          <NoIndex title={subtitle} />
           <DeskHeader items={items} badge={subtitle} />
           <main className={`flex-1 w-full mx-auto px-4 sm:px-6 py-5 sm:py-6 pb-28 md:pb-10 ${maxWidth}`}>
             <Outlet />
@@ -36,6 +44,7 @@ export function PortalShell({ items, subtitle, headerRight, maxWidth = 'max-w-7x
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
+      <NoIndex title={subtitle} />
       <GlassHeader subtitle={subtitle} right={headerRight} />
       {items?.length > 0 && <TopTabs items={items} />}
       <main className={`flex-1 w-full mx-auto px-4 py-5 pb-28 md:pb-8 ${maxWidth}`}>

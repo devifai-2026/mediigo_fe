@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { PhotoOrFallback } from '../ui/PhotoOrFallback.jsx';
@@ -38,6 +38,31 @@ export function IconTile({ icon, tone = 'teal', size = 'md' }) {
 }
 
 /** The heading row every desk page opens with. */
+/**
+ * The desk's one Refresh control. Live updates arrive over the socket, but a
+ * flaky clinic connection is common enough that staff need a way to be sure.
+ */
+export function RefreshButton({ onRefresh, label = 'Refresh', className }) {
+  const [spinning, setSpinning] = useState(false);
+  const run = async () => {
+    setSpinning(true);
+    try { await onRefresh?.(); } finally { setTimeout(() => setSpinning(false), 400); }
+  };
+  return (
+    <button
+      type="button"
+      onClick={run}
+      disabled={spinning}
+      className={clsx(
+        'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 transition disabled:opacity-60',
+        className,
+      )}
+    >
+      <i className={clsx('fa-solid fa-rotate-right', spinning && 'animate-spin')} aria-hidden="true" /> {label}
+    </button>
+  );
+}
+
 export function PageHeader({ icon, tone, title, subtitle, badge, children }) {
   return (
     <DeskCard className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">

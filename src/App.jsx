@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { RequireAuth, RequireRole, RedirectHome, PublicOrRoleHome } from './components/guards/Guards.jsx';
 import { PortalShell } from './components/layout/PortalShell.jsx';
@@ -7,6 +7,10 @@ import { ROLES } from './lib/constants.js';
 import LoginView from './views/public/LoginView.jsx';
 import NotFoundView from './views/public/NotFoundView.jsx';
 import ForbiddenView from './views/public/ForbiddenView.jsx';
+import DoctorLandingView from './views/public/DoctorLandingView.jsx';
+import LegalView from './views/public/LegalView.jsx';
+import { CookieBanner } from './components/legal/CookieBanner.jsx';
+import { LEGAL_DOCS } from './content/legal.jsx';
 
 import ExploreView from './views/patient/ExploreView.jsx';
 import DoctorDetailView from './views/patient/DoctorDetailView.jsx';
@@ -24,6 +28,7 @@ import RxView from './views/desk/RxView.jsx';
 import RosterView from './views/desk/RosterView.jsx';
 import AnalyticsView from './views/desk/AnalyticsView.jsx';
 import DeskProfileView from './views/desk/DeskProfileView.jsx';
+import PettyCashView from './views/desk/PettyCashView.jsx';
 
 import AgentOnboardView from './views/agent/AgentOnboardView.jsx';
 import AgentSubmissionsView from './views/agent/AgentSubmissionsView.jsx';
@@ -53,6 +58,7 @@ import MasterApprovalsView from './views/superadmin/MasterApprovalsView.jsx';
 import FinancialAuditView from './views/superadmin/FinancialAuditView.jsx';
 import ComplaintsView from './views/superadmin/ComplaintsView.jsx';
 import SecurityPolicyView from './views/superadmin/SecurityPolicyView.jsx';
+import EnquiriesView from './views/superadmin/EnquiriesView.jsx';
 
 import DisplayView from './views/public/DisplayView.jsx';
 import TrackTokenView from './views/public/TrackTokenView.jsx';
@@ -81,7 +87,13 @@ const deskNav = (base) => [
   { to: `${base}/profile`, label: 'Profile', icon: 'user', fa: 'fa-user-doctor' },
 ];
 const DOCTOR_NAV = deskNav('/d');
-const RECEPTION_NAV = deskNav('/r');
+// Petty cash is the desk drawer's, so only the front desk gets the tab (the
+// server allows only receptionists to record it).
+const RECEPTION_NAV = [
+  ...deskNav('/r').slice(0, 5),
+  { to: '/r/petty', label: 'Petty Cash', icon: 'revenue', fa: 'fa-wallet' },
+  ...deskNav('/r').slice(5),
+];
 
 const AGENT_NAV = [
   { to: '/a/followups', label: 'Follow-ups', icon: 'clock', fa: 'fa-route' },
@@ -96,6 +108,12 @@ const ADMIN_NAV = [
   { to: '/admin/approvals', label: 'Approvals', icon: 'check', fa: 'fa-clipboard-check' },
   { to: '/admin/audit', label: 'Audit', icon: 'doc', fa: 'fa-list-check' },
 ];
+
+// Ad links may use either address; keep ?utm_… and #enquire on the way through.
+function ToClinicLanding() {
+  const { search, hash } = useLocation();
+  return <Navigate to={`/clinic${search}${hash}`} replace />;
+}
 
 export default function App() {
   const { user } = useAuth();
@@ -114,9 +132,32 @@ export default function App() {
   const identity = user?._id ?? user?.id ?? 'guest';
 
   return (
+    <>
+    <CookieBanner />
     <Routes key={identity}>
+      {/* Legal and company pages, each at its own address: /privacy-policy,
+          /terms, /cookie-policy, /clinic-terms, /refund-policy,
+          /medical-disclaimer, /grievance-redressal, /about, /contact. */}
+      {LEGAL_DOCS.map((d) => <Route key={d.slug} path={`/${d.slug}`} element={<LegalView />} />)}
+      <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
+      <Route path="/terms-and-conditions" element={<Navigate to="/terms" replace />} />
+      <Route path="/cookies" element={<Navigate to="/cookie-policy" replace />} />
+
+      {/* mediigo.in → the patient portal for guests; signed-in users go home. */}
       <Route path="/" element={<RedirectHome />} />
-      <Route path="/login" element={<LoginView />} />
+      {/* Patients sign in here (OTP) — booking a doctor sends guests here. */}
+      {/* Keyed: without it React reuses the /login instance on /clinic/login
+          and carries over its "patient" tab, OTP step and typed number. */}
+      <Route path="/login" element={<LoginView key="patient" audience="patient" />} />
+
+      {/* Mediigo for clinics, on the same domain like a partner site:
+          /clinic is the public landing page doctors reach from ads, and
+          /clinic/login is where doctors, the front desk and Mediigo staff
+          sign in. Every staff page sends a signed-out visitor there. */}
+      <Route path="/clinic" element={<DoctorLandingView />} />
+      <Route path="/clinic/login" element={<LoginView key="staff" audience="staff" />} />
+      <Route path="/for-doctors" element={<ToClinicLanding />} />
+      <Route path="/staff/login" element={<Navigate to="/clinic/login" replace />} />
       <Route path="/403" element={<ForbiddenView />} />
       {/* Unauthed by design: a waiting-room screen cannot hold an expiring
           session, so it authenticates with a signed standee credential. */}
@@ -180,6 +221,7 @@ export default function App() {
         <Route path="/r/roster" element={<RosterView />} />
         <Route path="/r/analytics" element={<AnalyticsView />} />
         <Route path="/r/profile" element={<DeskProfileView />} />
+        <Route path="/r/petty" element={<PettyCashView />} />
         {/* Revenue was renamed Analytics; keep old links working. */}
         <Route path="/r/revenue" element={<Navigate to="/r/analytics" replace />} />
       </Route>
@@ -238,9 +280,11 @@ export default function App() {
         <Route path="/super/financials" element={<FinancialAuditView />} />
         <Route path="/super/complaints" element={<ComplaintsView />} />
         <Route path="/super/security" element={<SecurityPolicyView />} />
+        <Route path="/super/enquiries" element={<EnquiriesView />} />
       </Route>
 
       <Route path="*" element={<NotFoundView />} />
     </Routes>
+    </>
   );
 }

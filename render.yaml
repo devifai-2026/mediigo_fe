@@ -23,6 +23,20 @@ services:
         value: "22"
       - key: API_PROXY_TARGET
         value: https://darkslategrey-penguin-138082.hostingersite.com
+      # SEO: the public domain used in canonical links, sitemap.xml and link
+      # previews (server.js + seo.js). Set SEO_NOINDEX=true on any staging or
+      # preview service so it never competes with mediigo.com in search.
+      - key: PUBLIC_SITE_URL
+        value: https://mediigo.com
+      - key: VITE_SITE_URL
+        value: https://mediigo.com
+      - key: SEO_NOINDEX
+        value: "false"
+      # Optional, for ads: loaded only after a visitor accepts cookies.
+      - key: VITE_META_PIXEL_ID
+        sync: false
+      - key: VITE_GA_MEASUREMENT_ID
+        sync: false
       # Free tier spins down after ~15 min idle; server.js pings the backend's
       # /healthz on this interval to keep it warm. Set ENABLED=false on a paid
       # instance. NOTE: this only keeps the BACKEND awake — a service cannot

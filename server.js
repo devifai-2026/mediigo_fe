@@ -5,9 +5,11 @@
 // That keeps the httpOnly refresh cookie first-party, exactly as the Vite dev
 // proxy does locally — no SameSite=None, no CORS exemption, no backend change.
 import express from 'express';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import { createMetaResolver, renderHead, robotsTxt, sitemapXml } from './seo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, 'dist');
@@ -24,6 +26,11 @@ if (!process.env.API_PROXY_TARGET) {
   // that cannot reach its API is more useful up (serving the SPA) than dead.
   console.warn(`API_PROXY_TARGET not set — defaulting to ${DEFAULT_API_TARGET}`);
 }
+
+// The public address search engines and link previews should use.
+const SITE_URL = (process.env.PUBLIC_SITE_URL || 'https://mediigo.com').replace(/\/$/, '');
+// A staging or preview deploy must never be indexed: set SEO_NOINDEX=true there.
+const NOINDEX_ALL = process.env.SEO_NOINDEX === 'true';
 
 const app = express();
 app.disable('x-powered-by');
@@ -69,6 +76,24 @@ const proxy = createProxyMiddleware({
 app.use('/api', proxy);
 app.use('/socket.io', proxy);
 
+// ---------------------------------------------------------------- SEO
+// robots.txt and sitemap.xml are generated so they always use the configured
+// domain (PUBLIC_SITE_URL) and list every live doctor profile.
+const indexHtml = (() => {
+  try { return fs.readFileSync(path.join(dist, 'index.html'), 'utf8'); } catch { return null; }
+})();
+const metaFor = createMetaResolver({ siteUrl: SITE_URL, apiTarget: API_TARGET, noindexAll: NOINDEX_ALL });
+
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(robotsTxt({ siteUrl: SITE_URL, noindexAll: NOINDEX_ALL }));
+});
+
+app.get('/sitemap.xml', async (_req, res) => {
+  res.type('application/xml').setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(await sitemapXml({ siteUrl: SITE_URL, apiTarget: API_TARGET }));
+});
+
 // Hashed asset filenames are immutable; index.html must never be cached or
 // clients keep booting an old bundle that points at deleted chunks.
 app.use(
@@ -85,9 +110,14 @@ app.use(
 
 // SPA fallback: every non-asset path returns index.html so a hard reload or a
 // pasted deep link (/super/staff, /d/queue, /display/:serialId) boots the app
-// and lets react-router resolve the route client-side.
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(dist, 'index.html'));
+// and lets react-router resolve the route client-side — with that page's SEO
+// tags already in the HTML (see seo.js).
+app.get('*', async (req, res) => {
+  if (!indexHtml) return res.sendFile(path.join(dist, 'index.html'));
+  const meta = await metaFor(req.path);
+  if (meta.robots?.startsWith('noindex')) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(renderHead(indexHtml, meta));
 });
 
 /**

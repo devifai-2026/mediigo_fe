@@ -87,18 +87,6 @@ const REVIEWS = [
   ['The token system meant we hardly waited. The doctor was thorough and unhurried.', 'Minimal waiting time', 4],
 ];
 
-const TESTIMONIALS = [
-  ['I came in worried and left with a clear plan. The doctor explained every step and the follow-up was just as careful.', 236],
-  ['We booked a token from home and walked in right when it was our turn. The consultation itself was unhurried and thorough.', 184],
-  ['After months of trying different things, the treatment finally worked. I am really grateful for the patience shown to us.', 312],
-  ['The doctor listened to everything before saying a word. That alone made a huge difference for our family.', 147],
-  ['Clear diagnosis, very few medicines, and a quick recovery. I have already recommended the clinic to my neighbours.', 205],
-];
-
-// A CC0 clip (MDN's sample media), standing in for real patient footage so the
-// player can be exercised end to end.
-const SAMPLE_VIDEO = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
-
 /**
  * Generic clinic photos for demos, from Wikimedia Commons under CC0 / CC BY /
  * CC BY-SA. Chosen to carry no other business's name or signage — a real
@@ -155,21 +143,8 @@ export function demoProfileFor(doctor, doctorId) {
   });
   const average = reviews.reduce((a, r) => a + r.rating, 0) / reviews.length;
 
-  const videoTestimonials = Array.from({ length: 4 }, (_, i) => {
-    const [quote, durationSec] = TESTIMONIALS[(seed + i) % TESTIMONIALS.length];
-    return {
-      id: `demo-video-${i}`,
-      patientName: REVIEWERS[(seed + i * 7 + 1) % REVIEWERS.length],
-      condition: spec.conditions[(seed + i * 5) % spec.conditions.length],
-      quote,
-      url: SAMPLE_VIDEO,
-      durationSec,
-    };
-  });
-
   return {
     experienceYears: years,
-    videoTestimonials,
     clinicPhotos: DEMO_CLINIC_PHOTOS,
     conditionsTreated: spec.conditions,
     proceduresPerformed: spec.procedures,

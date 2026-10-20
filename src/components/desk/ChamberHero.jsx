@@ -59,7 +59,7 @@ export function ChamberHero({
 
   const sessionLabel = onBreak
     ? `Session paused — ${s.session.breakReason || 'on break'}`
-    : s?.session?.isBookingOpen ? 'Live OPD session active' : 'Bookings closed';
+    : s?.session?.isBookingOpen ? 'Live OPD session active' : 'Live OPD · online bookings closed';
 
   return (
     <section className="relative overflow-hidden rounded-xl bg-hero-desk text-white shadow-lg shadow-blue-950/10">

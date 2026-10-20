@@ -5,19 +5,21 @@ import { useConfirm } from '../../context/ConfirmContext.jsx';
 import { api } from '../../lib/api.js';
 import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 import { inr } from '../../lib/format.js';
+import { CredentialsModal } from '../../components/onboarding/CredentialsModal.jsx';
 
 export default function MasterApprovalsView() {
   const { approvals, refetch } = useConsole();
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState(null);
+  const [issued, setIssued] = useState(null);
 
   const approve = async (c) => {
     setBusy(c.id);
     try {
       const r = await api.post(`/api/admin/submissions/${c.id}/approve`);
-      const temp = r.data?.data?.tempPassword;
-      toast.success(temp ? `Approved — front desk temp password: ${temp}` : 'Clinic approved and published');
+      toast.success('Clinic approved and published');
+      if (r.data?.data?.credentials?.length) setIssued(r.data.data);
       refetch();
     } catch (e) {
       toast.error(e.message);
@@ -119,6 +121,7 @@ export default function MasterApprovalsView() {
           </div>
         ))}
       </div>
+      <CredentialsModal result={issued} onClose={() => setIssued(null)} />
     </section>
   );
 }

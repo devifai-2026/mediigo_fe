@@ -17,6 +17,8 @@ import { LivePill } from '../../components/layout/DarkHero.jsx';
 import { AnchoredMenu } from '../../components/ui/AnchoredMenu.jsx';
 import clsx from 'clsx';
 import { PhotoOrFallback } from '../../components/ui/PhotoOrFallback.jsx';
+import { useSeo } from '../../lib/seo.js';
+import { SITE } from '../../lib/site.js';
 
 // "All Clinics" is not a specialty — it is the absence of a filter — so it
 // stays in code rather than the admin-managed list, where it could be hidden
@@ -27,6 +29,19 @@ const ALL_TILE = { label: 'All Clinics', value: '', img: '/categories/AllClinics
 const TILE_LIMIT = 8;
 
 export default function ExploreView() {
+  useSeo({
+    title: 'Find & Book Doctors Near You — OPD Tokens & Live Queue',
+    description: 'Find doctors and clinics near you by specialty, see fees and OPD timings, and book a token online. Track the live queue and skip the crowded waiting room with Mediigo.',
+    path: '/p/explore',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org', '@type': 'Organization', name: SITE.name, url: SITE.url,
+        logo: `${SITE.url}/logo-mark.png`, email: SITE.supportEmail,
+        sameAs: Object.values(SITE.social).filter(Boolean),
+      },
+      { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE.name, url: SITE.url },
+    ],
+  });
   const { isAuthed, user } = useAuth();
   // A location saved on the profile beats the city centre and survives a new
   // device, so seed from it before asking the browser again.

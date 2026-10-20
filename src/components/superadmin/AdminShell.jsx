@@ -26,6 +26,7 @@ const CORE = [
   { to: '/super/billing', icon: 'fa-indian-rupee-sign', label: 'Billing' },
   { to: '/super/reviews', icon: 'fa-star', label: 'Reviews' },
   { to: '/super/agents', icon: 'fa-users-gear', label: 'Field Agents', badge: 'agents' },
+  { to: '/super/enquiries', icon: 'fa-inbox', label: 'Clinic Enquiries' },
   { to: '/super/executives', icon: 'fa-user-tie', label: 'Executive Managers' },
   { to: '/super/staff', icon: 'fa-id-badge', label: 'Staff Administration' },
   { to: '/super/approvals', icon: 'fa-check-double', label: 'Master Approvals', badge: 'pending' },

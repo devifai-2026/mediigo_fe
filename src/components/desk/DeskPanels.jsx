@@ -3,7 +3,7 @@ import { inr, token } from '../../lib/format.js';
 import { TOKEN_STATUS } from '../../lib/constants.js';
 import { followUpBadge, FOLLOWUP_STATUS } from '../../lib/followUps.js';
 import { OUTCOME_LABEL, pad2, patientLine } from './deskFormat.js';
-import { DeskCard, Pill, Segmented, StatTile, EmptyNote } from './ui.jsx';
+import { DeskCard, Pill, Segmented, StatTile, EmptyNote, RefreshButton } from './ui.jsx';
 
 export { DeskCard, AudioUnlockBanner } from './ui.jsx';
 
@@ -96,10 +96,11 @@ function ActionButton({ children, tone = 'plain', ...rest }) {
  *
  * Actions: IN_CHAMBER (call), SKIPPED, COMPLETED, RECALL (re-announce the
  * patient already inside), RESTORE (skipped → back in the queue),
- * RELEASE_FOLLOWUP (free a follow-up slot nobody confirmed) and RX (open the
+ * RECALL_COMPLETED (bring a finished patient back), RELEASE_FOLLOWUP (free a
+ * follow-up slot nobody confirmed) and RX (open the
  * prescription pad for that patient — doctors only).
  */
-export function DeskRoster({ snapshot: s, filter, onFilter, onAction, busy, canPrescribe = false, canCancel = false }) {
+export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh, busy, canPrescribe = false, canCancel = false }) {
   const tokens = s?.tokens ?? [];
   const rows = filter === 'ALL' ? tokens : tokens.filter((t) => t.status === filter);
   const counts = {
@@ -117,7 +118,10 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, busy, canP
           <h3 className="text-base font-semibold text-slate-900">OPD Queue Roster</h3>
           <p className="text-xs text-slate-500">Real-time status management &amp; sequence controller</p>
         </div>
-        <Segmented value={filter} onChange={onFilter} options={ROSTER_FILTERS.map((o) => ({ ...o, count: counts[o.value] }))} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Segmented value={filter} onChange={onFilter} options={ROSTER_FILTERS.map((o) => ({ ...o, count: counts[o.value] }))} />
+          {onRefresh && <RefreshButton onRefresh={onRefresh} />}
+        </div>
       </div>
 
       {!rows.length ? (
@@ -253,7 +257,11 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, busy, canP
                             <i className="fa-solid fa-file-prescription" aria-hidden="true" /> Rx
                           </ActionButton>
                         )}
-                        {t.status === TOKEN_STATUS.COMPLETED && !canPrescribe && <span className="text-xs text-slate-400">—</span>}
+                        {t.status === TOKEN_STATUS.COMPLETED && (
+                          <ActionButton disabled={busy} title="Bring this patient back — into the chamber if it is free" onClick={() => onAction('RECALL_COMPLETED', t)}>
+                            <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Recall
+                          </ActionButton>
+                        )}
                       </div>
                     </td>
                   </tr>

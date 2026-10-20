@@ -15,6 +15,7 @@ import { RescheduleBanner } from '../../components/patient/RescheduleBanner.jsx'
 import { BookingPass } from '../../components/patient/BookingPass.jsx';
 import { RatingDialog } from '../../components/patient/RatingDialog.jsx';
 import { FollowUpPrompt } from '../../components/patient/FollowUpPrompt.jsx';
+import { useNoIndex } from '../../lib/seo.js';
 
 /**
  * The bookings list the prototype declared but never implemented — its
@@ -22,6 +23,7 @@ import { FollowUpPrompt } from '../../components/patient/FollowUpPrompt.jsx';
  * single object rather than a history.
  */
 export default function BookingsView() {
+  useNoIndex('My bookings');
   const { data: tokens, loading, refetch } = useApi('/api/patients/me/tokens');
   const [tab, setTab] = useState('upcoming');
   const [pass, setPass] = useState(null);

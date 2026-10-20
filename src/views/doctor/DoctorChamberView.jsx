@@ -15,6 +15,7 @@ import { OutcomeDialog } from '../../components/doctor/OutcomeDialog.jsx';
 import { CancellationsPanel } from '../../components/desk/Cancellations.jsx';
 import { ChamberHero } from '../../components/desk/ChamberHero.jsx';
 import { AudioUnlockBanner, DeskStats, SkippedPanel, DeskRoster } from '../../components/desk/DeskPanels.jsx';
+import { RefreshButton } from '../../components/desk/ui.jsx';
 
 export default function DoctorChamberView() {
   const { user } = useAuth();
@@ -75,6 +76,11 @@ export default function DoctorChamberView() {
         <AudioUnlockBanner onUnlock={unlock}>Tap to enable the call chime and voice announcements</AudioUnlockBanner>
       )}
 
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-base font-semibold text-slate-900">Today’s OPD Queue</h1>
+        <RefreshButton onRefresh={refetch} label="Refresh queue" />
+      </div>
+
       <ChamberHero
         snapshot={s}
         current={current}
@@ -100,6 +106,7 @@ export default function DoctorChamberView() {
         filter={filter}
         onFilter={setFilter}
         busy={desk.busy}
+        onRefresh={refetch}
         canPrescribe
         onAction={(action, t) => (action === 'RX' ? navigate(`/d/rx?token=${t.tokenId}`) : desk.onRowAction(action, t))}
       />

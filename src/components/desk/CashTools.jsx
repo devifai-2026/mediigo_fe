@@ -26,12 +26,14 @@ export function PettyExpenseModal({ open, onClose, onSaved, toast }) {
     setNote('');
   }, [open]);
 
-  const valid = Number(amount) >= 1 && category.trim().length >= 2;
+  // The remark is mandatory: an expense nobody can explain at day close is a
+  // hole in the drawer.
+  const valid = Number(amount) >= 1 && category.trim().length >= 2 && note.trim().length >= 3;
 
   const save = async () => {
     setBusy(true);
     try {
-      await api.post('/api/pos/expenses', { amount: Number(amount), category: category.trim(), note: note.trim() || undefined });
+      await api.post('/api/pos/expenses', { amount: Number(amount), category: category.trim(), note: note.trim() });
       toast.success(`Logged ${inr(amount)} petty expense — deducted from cash in hand`);
       onSaved?.();
       onClose();
@@ -67,8 +69,8 @@ export function PettyExpenseModal({ open, onClose, onSaved, toast }) {
             ))}
           </div>
         </Field>
-        <Field label="Note (optional)">
-          <Input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} placeholder="Shop name, bill number…" />
+        <Field label="Remark" required hint="Who was paid and why — shop name, bill number, approved by…">
+          <Input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Sharma Stores, bill #2231, approved by Dr. Mehta" />
         </Field>
         <p className="text-[11px] text-slate-500">
           <i className="fa-solid fa-circle-info mr-1" aria-hidden="true" />

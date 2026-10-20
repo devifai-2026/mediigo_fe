@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -7,11 +7,12 @@ import { useApi } from '../../hooks/useApi.js';
 import { useQueueSnapshot } from '../../hooks/useQueueSnapshot.js';
 import { api, unwrap } from '../../lib/api.js';
 import { ROLES, TOKEN_STATUS } from '../../lib/constants.js';
-import { phone, token } from '../../lib/format.js';
+import { inr, phone, token } from '../../lib/format.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input, Select, Textarea } from '../../components/ui/Field.jsx';
-import { DeskCard, DoctorPicker, EmptyNote, IconTile, LoadError, PageHeader, Pill, PrintPortal, SectionHead } from '../../components/desk/ui.jsx';
-import { RxPrint } from '../../components/desk/RxPrint.jsx';
+import { DeskCard, DoctorPicker, EmptyNote, IconTile, LoadError, PageHeader, Pill, PrintPortal, RefreshButton, SectionHead } from '../../components/desk/ui.jsx';
+import { RxHeader, RxPrint, RxViewModal } from '../../components/desk/RxPrint.jsx';
+import { isoToday } from '../../components/desk/DateRangePicker.jsx';
 import { patientLine } from '../../components/desk/deskFormat.js';
 
 const blankMed = () => ({ name: '', dosage: '1-0-1', duration: '5 Days', instruction: 'After meals' });
@@ -23,6 +24,11 @@ const STATUS_LABEL = {
   [TOKEN_STATUS.SKIPPED]: 'Skipped',
 };
 
+// Mirrors the server's symptomsOf(): the complaint plus declared conditions.
+const symptomsOf = (p) => [p?.complaint, ...(p?.conditions ?? []).map((c) => `k/c/o ${c}`)].filter(Boolean).join('; ');
+
+const VISIT_STATUS = { COMPLETED: 'Seen', IN_CHAMBER: 'In chamber', WAITING: 'Waiting', SKIPPED: 'Skipped', RESCHEDULE_NEEDED: 'Rescheduling' };
+
 const visitDate = (iso) => (iso
   ? new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   : '');
@@ -31,9 +37,9 @@ const visitDate = (iso) => (iso
  * Rx / EMR.
  *
  * The doctor writes a prescription for a patient from today's list; it is
- * saved to that patient's record and printed. The patient's earlier
- * prescriptions at this clinic sit beside the pad, so the doctor sees what
- * was given last time before writing this time.
+ * saved to that patient's record and printed. Beside the pad, the EMR looks
+ * the patient up by mobile number and shows their last three visits at this
+ * clinic — the full history is in the footfall register.
  *
  * The front desk sees the same record, read-only, to reprint a pad or answer
  * "what was I given?" at the counter.
@@ -51,7 +57,9 @@ export default function RxView() {
   }, [doctors, pickedDoctor, isDoctor]);
   const doctorId = isDoctor ? user?.doctorId : pickedDoctor;
 
-  const { snapshot } = useQueueSnapshot(doctorId || null);
+  const { snapshot, refetch: refetchQueue } = useQueueSnapshot(doctorId || null);
+  // The doctor's record: header details and fees for the Total Due default.
+  const { data: doctorRec } = useApi(doctorId ? `/api/doctors/${doctorId}` : null, { skip: !doctorId });
   const patients = useMemo(
     () => (snapshot?.tokens ?? []).filter((t) => STATUS_LABEL[t.status]),
     [snapshot],
@@ -62,11 +70,17 @@ export default function RxView() {
   const patient = patients.find((t) => t.tokenId === wanted) ?? fallback ?? null;
   const pick = (tokenId) => setParams(tokenId ? { token: tokenId } : {}, { replace: true });
 
-  const emrUrl = patient?.patientId ? `/api/prescriptions?patientId=${patient.patientId}` : null;
-  const { data: history, loading: historyLoading, error: historyError, refetch: refetchHistory } = useApi(emrUrl, { skip: !emrUrl });
+  // EMR lookup is by mobile number, starting from the selected patient's.
+  const [phoneQuery, setPhoneQuery] = useState('');
+  useEffect(() => { setPhoneQuery(patient?.phone || ''); }, [patient?.tokenId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const digits = phoneQuery.replace(/\D/g, '').slice(-10);
+  const lookupUrl = digits.length === 10 ? `/api/prescriptions/lookup?phone=${digits}` : null;
+  const { data: history, loading: historyLoading, error: historyError, refetch: refetchHistory } = useApi(lookupUrl, { skip: !lookupUrl });
 
   const [printing, setPrinting] = useState(null);
-  const clinicName = user?.clinic?.name || '';
+  const [viewing, setViewing] = useState(null);
+  const clinicName = doctorRec?.hospital?.name || user?.clinic?.name || '';
+  const footfallPath = `${isDoctor ? '/d' : '/r'}/analytics`;
 
   return (
     <div className="space-y-5">
@@ -81,7 +95,9 @@ export default function RxView() {
             {patient.status === TOKEN_STATUS.IN_CHAMBER ? 'In Chamber' : 'Selected'}: <strong className="font-semibold">{token(patient.tokenNumber)}</strong>
           </Pill>
         )}
-      />
+      >
+        <RefreshButton onRefresh={() => { refetchQueue(); if (lookupUrl) refetchHistory(); }} />
+      </PageHeader>
 
       {!isDoctor && doctors?.length > 0 && (
         <DeskCard className="p-3 sm:p-4">
@@ -100,6 +116,8 @@ export default function RxView() {
               <RxWriter
                 patients={patients}
                 patient={patient}
+                doctor={doctorRec}
+                clinicName={clinicName}
                 onPick={pick}
                 onSaved={(rx, print) => {
                   refetchHistory();
@@ -114,15 +132,21 @@ export default function RxView() {
 
           <div className="lg:col-span-5">
             {historyError && !history && <LoadError error={historyError} onRetry={refetchHistory} what="this patient’s records" className="mb-4" />}
-            <EmrTimeline
-              patient={patient}
-              history={history}
+            <EmrLookup
+              phoneQuery={phoneQuery}
+              onPhone={setPhoneQuery}
+              valid={Boolean(lookupUrl)}
+              history={lookupUrl ? history : null}
               loading={historyLoading}
+              onView={setViewing}
               onPrint={setPrinting}
+              footfallPath={footfallPath}
             />
           </div>
         </div>
       )}
+
+      <RxViewModal rx={viewing} clinicName={clinicName} onClose={() => setViewing(null)} onPrint={(rx) => { setViewing(null); setPrinting(rx); }} />
 
       <PrintPortal active={Boolean(printing)} onDone={() => setPrinting(null)}>
         <RxPrint rx={printing} clinicName={clinicName} />
@@ -156,8 +180,21 @@ function PatientSummary({ patient }) {
   );
 }
 
-function RxWriter({ patients, patient, onPick, onSaved, toast }) {
+/**
+ * What the patient still owes, as a starting point for the pad: nothing if the
+ * visit was paid at the desk, otherwise the doctor's fee for this visit type.
+ */
+const defaultDue = (patient, doctor) => {
+  if (!patient) return '';
+  if (patient.paymentMode) return '0';
+  const fee = patient.fee ?? doctor?.fees?.[patient.visitType || 'fresh'];
+  return fee != null ? String(fee) : '';
+};
+
+function RxWriter({ patients, patient, doctor, clinicName, onPick, onSaved, toast }) {
+  const [symptoms, setSymptoms] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
+  const [totalDue, setTotalDue] = useState('');
   const [meds, setMeds] = useState([blankMed()]);
   const [advice, setAdvice] = useState('');
   const [reviewDate, setReviewDate] = useState('');
@@ -166,11 +203,14 @@ function RxWriter({ patients, patient, onPick, onSaved, toast }) {
   // A fresh pad for every patient: one patient's medicines must never be
   // saved or printed under the next one's name.
   useEffect(() => {
-    setDiagnosis(patient?.complaint || '');
+    // Symptoms come straight from the booking; the diagnosis is the doctor's.
+    setSymptoms(symptomsOf(patient));
+    setDiagnosis('');
+    setTotalDue(defaultDue(patient, doctor));
     setMeds([blankMed()]);
     setAdvice('');
     setReviewDate('');
-  }, [patient?.tokenId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [patient?.tokenId, Boolean(doctor)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setMed = (i, patch) => setMeds((m) => m.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const filled = meds.filter((m) => m.name.trim());
@@ -182,10 +222,12 @@ function RxWriter({ patients, patient, onPick, onSaved, toast }) {
     try {
       const rx = unwrap(await api.post('/api/prescriptions', {
         tokenId: patient.tokenId,
+        symptoms: symptoms.trim(),
         diagnosis: diagnosis.trim(),
         medicines: filled.map((m) => ({ ...m, name: m.name.trim() })),
         advice: advice.trim(),
         reviewDate: reviewDate || null,
+        totalDue: totalDue === '' ? null : Number(totalDue),
       }));
       toast.success(`Prescription saved to ${patient.name}’s record`);
       onSaved(rx, print);
@@ -201,6 +243,13 @@ function RxWriter({ patients, patient, onPick, onSaved, toast }) {
 
   return (
     <DeskCard className="p-4 sm:p-5 space-y-4">
+      <RxHeader
+        hospitalName={clinicName}
+        doctor={doctor || {}}
+        date={isoToday()}
+        tokenNumber={patient?.tokenNumber}
+      />
+
       <Field label="Select patient to prescribe" required>
         <Select value={patient?.tokenId || ''} onChange={(e) => onPick(e.target.value)}>
           {patients.map((p) => (
@@ -213,8 +262,12 @@ function RxWriter({ patients, patient, onPick, onSaved, toast }) {
 
       <PatientSummary patient={patient} />
 
-      <Field label="Diagnosis & clinical symptoms" required>
-        <Input value={diagnosis} maxLength={300} onChange={(e) => setDiagnosis(e.target.value)} placeholder="e.g. Viral fever & cough / Acute gastritis" />
+      <Field label="Clinical symptoms" hint="Filled in automatically from the booking — edit if needed">
+        <Input value={symptoms} maxLength={500} onChange={(e) => setSymptoms(e.target.value)} placeholder="e.g. Fever for 3 days, dry cough" />
+      </Field>
+
+      <Field label="Diagnosis" required>
+        <Input value={diagnosis} maxLength={300} onChange={(e) => setDiagnosis(e.target.value)} placeholder="e.g. Viral fever / Acute gastritis" />
       </Field>
 
       <div className="space-y-2">
@@ -284,10 +337,16 @@ function RxWriter({ patients, patient, onPick, onSaved, toast }) {
         <Textarea rows={2} value={advice} maxLength={1000} onChange={(e) => setAdvice(e.target.value)} placeholder="e.g. Rest for 3 days, warm fluids. CBC if fever persists." />
       </Field>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
         <Field label="Review date (printed on the pad)" hint="To hold a token for the patient, book a follow-up when you finish the consultation.">
           <Input type="date" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} />
         </Field>
+        <Field label="Total due (₹)" hint={patient?.paymentMode ? `Consultation paid at the desk (${patient.paymentMode}) — add tests or procedures` : 'Printed on the pad; collect it at the desk'}>
+          <Input inputMode="decimal" value={totalDue} onChange={(e) => setTotalDue(e.target.value.replace(/[^\d.]/g, ''))} placeholder="0" />
+        </Field>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-xs text-slate-500">{totalDue !== '' && <>Patient to pay <strong className="font-semibold text-slate-800">{inr(Number(totalDue) || 0)}</strong></>}</p>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => save(false)} disabled={!canSave || saving} className="flex-1">
             Save only
@@ -333,69 +392,89 @@ function PatientList({ patients, selected, onPick }) {
   );
 }
 
-function EmrTimeline({ patient, history, loading, onPrint }) {
+function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPrint, footfallPath }) {
+  const visits = history?.visits ?? [];
+  const more = history ? history.totalVisits - visits.length : 0;
   return (
     <DeskCard className="p-4 sm:p-5 space-y-4">
       <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
         <IconTile icon="fa-folder-open" tone="blue" />
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-slate-900">Patient EMR Medical Record</h2>
-          <p className="text-xs text-slate-500 truncate">
-            {patient ? `${patient.name} — prescriptions at this clinic` : 'Historical prescriptions & visit log'}
-          </p>
+          <h2 className="text-base font-semibold text-slate-900">Patient EMR Record</h2>
+          <p className="text-xs text-slate-500">Last 3 visits for a mobile number at this clinic</p>
         </div>
       </div>
 
-      {loading && !history ? (
+      <Field label="Patient mobile number">
+        <div className="relative">
+          <i className="fa-solid fa-mobile-screen absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" aria-hidden="true" />
+          <Input
+            inputMode="numeric"
+            value={phoneQuery}
+            onChange={(e) => onPhone(e.target.value.replace(/[^\d+ ]/g, ''))}
+            placeholder="10-digit mobile number"
+            className="pl-8"
+          />
+        </div>
+      </Field>
+
+      {!valid ? (
+        <div className="bg-mg-surface rounded-lg">
+          <EmptyNote icon="fa-magnifying-glass" title="Enter a mobile number" hint="Every visit booked with that number is fetched — family members sharing a phone included." />
+        </div>
+      ) : loading && !history ? (
         <div className="space-y-3">
           {[0, 1].map((i) => <div key={i} className="h-28 rounded-lg bg-slate-100 animate-pulse" />)}
         </div>
-      ) : !history?.length ? (
+      ) : !visits.length ? (
         <div className="bg-mg-surface rounded-lg">
-          <EmptyNote
-            icon="fa-notes-medical"
-            title="No previous prescriptions"
-            hint="Saving a prescription starts this patient’s record."
-          />
+          <EmptyNote icon="fa-notes-medical" title="No visits for this number" hint="Saving a prescription starts this patient’s record." />
         </div>
       ) : (
         <div className="space-y-3 max-h-[620px] overflow-y-auto pr-1 custom-scrollbar">
-          {history.map((rx) => (
-            <article key={rx._id} className="rounded-lg border border-slate-200 bg-white p-3.5 space-y-2.5 hover:border-mg-teal transition">
+          {visits.map((v) => (
+            <article key={v.tokenId} className="rounded-lg border border-slate-200 bg-white p-3.5 space-y-2.5">
               <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-mg-blue">{rx.diagnosis}</p>
-                  <p className="text-[11px] text-slate-500">
-                    {rx.doctorSnapshot?.name} • {visitDate(rx.date)}{rx.tokenNumber != null && ` • ${token(rx.tokenNumber)}`}
+                  <p className="text-sm font-semibold text-slate-900">{visitDate(v.date)} · {token(v.tokenNumber)}</p>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    {[v.patientName, patientLine(v), v.doctorName].filter(Boolean).join(' • ')}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onPrint(rx)}
-                  className="shrink-0 px-2.5 py-1 rounded-lg border border-mg-teal text-mg-teal hover:bg-mg-teal hover:text-white text-[11px] font-medium transition"
-                >
-                  <i className="fa-solid fa-print mr-1" aria-hidden="true" />Print Rx
-                </button>
+                <Pill tone={v.status === 'COMPLETED' ? 'emerald' : 'slate'}>{VISIT_STATUS[v.status] || v.status}</Pill>
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Medicines ({rx.medicines.length})</p>
-                {rx.medicines.map((m, i) => (
-                  // eslint-disable-next-line react/no-array-index-key
-                  <div key={i} className="flex items-center justify-between gap-2 text-xs bg-mg-surface px-2.5 py-1.5 rounded-md">
-                    <span className="font-medium text-slate-800 truncate">{m.name}</span>
-                    <span className="text-[11px] text-mg-teal shrink-0">{[m.dosage, m.duration && `(${m.duration})`].filter(Boolean).join(' ')}</span>
+              {v.symptoms && <p className="text-[11px] text-slate-600"><strong className="font-medium">Symptoms:</strong> {v.symptoms}</p>}
+              {v.prescriptions.length ? v.prescriptions.map((rx) => (
+                <div key={rx._id} className="rounded-md bg-mg-surface p-2.5 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs font-semibold text-mg-blue">{rx.diagnosis}</p>
+                    <div className="flex gap-1.5 shrink-0">
+                      <button type="button" onClick={() => onView(rx)} className="px-2 py-0.5 rounded-md border border-mg-teal text-mg-teal hover:bg-mg-teal hover:text-white text-[11px] font-medium transition">
+                        View
+                      </button>
+                      <button type="button" onClick={() => onPrint(rx)} className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 text-[11px]" aria-label="Print prescription">
+                        <i className="fa-solid fa-print" aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
-              {rx.advice && (
-                <p className="text-[11px] text-slate-600 bg-teal-50/60 p-2 rounded-md border border-teal-100">
-                  <strong className="font-medium">Advice:</strong> {rx.advice}
-                </p>
-              )}
-              {rx.reviewDate && <p className="text-[11px] text-slate-500">Review on {visitDate(rx.reviewDate)}</p>}
+                  <p className="text-[11px] text-slate-600 truncate">
+                    <i className="fa-solid fa-pills text-mg-teal mr-1" aria-hidden="true" />
+                    {rx.medicines.map((m) => m.name).join(', ')}
+                  </p>
+                </div>
+              )) : <p className="text-[11px] italic text-slate-400">No prescription for this visit</p>}
             </article>
           ))}
         </div>
+      )}
+
+      {valid && history && (
+        <Link
+          to={`${footfallPath}?view=FOOTFALL&range=year&q=${encodeURIComponent(history.phone)}`}
+          className="block text-center text-xs font-medium text-mg-teal hover:underline"
+        >
+          {more > 0 ? `${more} older visit${more === 1 ? '' : 's'} — ` : ''}See full history in the footfall register →
+        </Link>
       )}
     </DeskCard>
   );

@@ -7,6 +7,8 @@ import { Button } from '../ui/Button.jsx';
 import { Field, Input } from '../ui/Field.jsx';
 import { SpecialtyPicker } from '../ui/SpecialtyPicker.jsx';
 import { PhotoField } from '../ui/PhotoCropper.jsx';
+import { DoctorBasicsFields, DoctorPublicProfileFields, RegistrationFields } from '../doctor/DoctorProfileFields.jsx';
+import { BLANK_PROFILE, toProfilePayload } from '../../lib/doctorProfile.js';
 
 /**
  * Add a doctor to an existing clinic.
@@ -15,6 +17,10 @@ import { PhotoField } from '../ui/PhotoCropper.jsx';
  * shape the seed script uses, so a doctor added here is indistinguishable from
  * one onboarded by an agent.
  *
+ * Collects every field the patient's doctor page shows, through the same
+ * mapping the clinic's profile editor uses. Registration details are checked
+ * here because nobody but Mediigo support can change them afterwards.
+ *
  * The photo is uploaded AFTER approval, because the doctor id it attaches to
  * does not exist until then. That is also why a failed photo upload does not
  * fail the whole flow — the doctor is already created, and losing them over an
@@ -22,8 +28,8 @@ import { PhotoField } from '../ui/PhotoCropper.jsx';
  */
 
 const BLANK = {
-  name: '', phone: '', councilRegNo: '', qualifications: '',
-  experienceYears: '', chamberNumber: '',
+  ...BLANK_PROFILE,
+  name: '', phone: '',
   feeFresh: 500, feeFollowup: 250, feeEmergency: 900,
 };
 
@@ -43,7 +49,7 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
 
   if (!open) return null;
 
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const options = specialties ?? [];
   const primary = options.find((o) => o.id === specialtyIds[0]);
 
@@ -55,6 +61,7 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
       return;
     }
     if (!specialtyIds.length) { toast.error('Pick at least one specialty'); return; }
+    if (!form.registrationCouncil.trim()) { toast.error('Medical council is required'); return; }
     if (!form.councilRegNo.trim()) { toast.error('Council registration number is required'); return; }
 
     setBusy(true);
@@ -68,13 +75,10 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
           // it can never end up doubled.
           name: form.name.trim(),
           phone: form.phone.replace(/\D/g, '').slice(-10),
-          // The primary is what the card leads with; the rest ride on
-          // specialtyIds below.
+          // The primary is what the card leads with; specialtyIds is all of them.
           specialty: primary?.name ?? '',
-          councilRegNo: form.councilRegNo.trim(),
-          qualifications: form.qualifications.split(',').map((q) => q.trim()).filter(Boolean),
-          experienceYears: Number(form.experienceYears) || 0,
-          chamberNumber: form.chamberNumber.trim(),
+          specialtyIds,
+          ...toProfilePayload(form, { includeLocked: true }),
           fees: {
             fresh: Number(form.feeFresh) || 0,
             followup: Number(form.feeFollowup) || 0,
@@ -85,13 +89,6 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
       await api.post(`/api/onboarding/submissions/${sub._id}/submit`);
       const approved = unwrap(await api.post(`/api/admin/submissions/${sub._id}/approve`, {}));
       const doctorId = approved?.doctor?._id;
-
-      // Every selected specialty, now that the doctor exists.
-      if (doctorId && specialtyIds.length) {
-        await api.patch(`/api/doctors/${doctorId}`, { specialtyIds }).catch(() => {
-          toast.warn('Doctor created, but the extra specialties did not save. Edit them from the clinic.');
-        });
-      }
 
       if (doctorId && photo) {
         const body = new FormData();
@@ -147,20 +144,9 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
           hint="The first is the primary and leads on the patient card. Only published specialties appear here."
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Council registration no." required>
-            <Input value={form.councilRegNo} onChange={set('councilRegNo')} placeholder="MMC-20001" />
-          </Field>
-          <Field label="Qualifications" hint="Comma separated">
-            <Input value={form.qualifications} onChange={set('qualifications')} placeholder="MBBS, MD" />
-          </Field>
-          <Field label="Years of experience">
-            <Input value={form.experienceYears} onChange={set('experienceYears')} placeholder="8" inputMode="numeric" />
-          </Field>
-          <Field label="Chamber number">
-            <Input value={form.chamberNumber} onChange={set('chamberNumber')} placeholder="204" />
-          </Field>
-        </div>
+        <RegistrationFields form={form} set={set} />
+
+        <DoctorBasicsFields form={form} set={set} />
 
         {/* Fees are per doctor, never per specialty: two paediatricians at the
             same clinic routinely charge differently. */}
@@ -172,6 +158,15 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
             <Field label="Emergency"><Input value={form.feeEmergency} onChange={set('feeEmergency')} inputMode="numeric" /></Field>
           </div>
         </div>
+
+        <details className="rounded-lg border border-slate-200 p-3">
+          <summary className="cursor-pointer text-[11px] font-semibold text-slate-600">
+            Public profile — about, conditions, education, memberships (optional, the clinic can add these later)
+          </summary>
+          <div className="pt-3">
+            <DoctorPublicProfileFields form={form} set={set} />
+          </div>
+        </details>
 
         <PhotoField
           value={photo ? URL.createObjectURL(photo) : null}

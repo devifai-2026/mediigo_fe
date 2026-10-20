@@ -9,8 +9,10 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { initials, phone as fmtPhone, ageOf, shortDate } from '../../lib/format.js';
 import { useGeolocation } from '../../hooks/useGeolocation.js';
 import { AvatarEditor, EditDetailsModal, ChangePhoneModal, DeleteAccountModal } from '../../components/patient/AccountSettings.jsx';
+import { useNoIndex } from '../../lib/seo.js';
 
 export default function ProfileView() {
+  useNoIndex('My profile');
   const { user, refreshUser, logout } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();

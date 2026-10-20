@@ -56,7 +56,16 @@ export function useDeskActions(doctorId, refetch) {
 
   const restore = (t) => act(() => api.post(`/api/queue/tokens/${t.tokenId}/restore`), `${token(t.tokenNumber)} is back in the queue`);
 
+  /** Bring a completed patient back: into the chamber if free, else next in line. */
+  const recallCompleted = (t) => act(async () => {
+    const r = await api.post(`/api/queue/tokens/${t.tokenId}/recall-completed`);
+    const into = r.data?.data?.status === 'IN_CHAMBER';
+    toast.success(into ? `${token(t.tokenNumber)} recalled into the chamber` : `${token(t.tokenNumber)} recalled — next in line after the current patient`);
+    return r;
+  });
+
   const onRowAction = async (action, t) => {
+    if (action === 'RECALL_COMPLETED') return recallCompleted(t);
     if (action === 'RELEASE_FOLLOWUP') {
       if (await releaseFollowUp(t)) refetch?.();
       return;
@@ -68,5 +77,5 @@ export function useDeskActions(doctorId, refetch) {
     return setStatus(t, action);
   };
 
-  return { busy, callNext, recall, complete, skip, restore, onRowAction };
+  return { busy, callNext, recall, complete, skip, restore, recallCompleted, onRowAction };
 }

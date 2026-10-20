@@ -6,6 +6,9 @@ import { PhotoField } from '../ui/PhotoCropper.jsx';
 import { Modal } from '../ui/Modal.jsx';
 import { ClinicMap } from './ClinicMap.jsx';
 import { inr } from '../../lib/format.js';
+import { Button } from '../ui/Button.jsx';
+import { RegistrationFields } from '../doctor/DoctorProfileFields.jsx';
+import { toProfileForm, toProfilePayload, BLANK_PROFILE } from '../../lib/doctorProfile.js';
 
 const Stat = ({ label, value, tone = 'text-slate-900' }) => (
   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
@@ -22,6 +25,22 @@ export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
   const [photoUrl, setPhotoUrl] = useState(doctor?.photoUrl ?? null);
 
   useEffect(() => { setPhotoUrl(doctor?.photoUrl ?? null); }, [doctor]);
+
+  // Registration is locked for clinics; a super admin is the one who may
+  // correct it. The console row carries only the number, so read the record.
+  const [reg, setReg] = useState(null);
+  const [regBusy, setRegBusy] = useState(false);
+  useEffect(() => {
+    if (!open || !doctor?.id) return undefined;
+    let live = true;
+    setReg(null);
+    api.get(`/api/doctors/${doctor.id}`)
+      .then((r) => { if (live) setReg(toProfileForm(r.data?.data)); })
+      // The public read refuses doctors at clinics that are not active; fall
+      // back to the number the console already has.
+      .catch(() => { if (live) setReg({ ...BLANK_PROFILE, councilRegNo: doctor.regNo || '' }); });
+    return () => { live = false; };
+  }, [open, doctor?.id, doctor?.regNo]);
 
   if (!open || !doctor) return null;
 
@@ -47,6 +66,17 @@ export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
       toast.success('Photo removed');
       onChanged?.();
     } catch (e) { toast.error(e.message); } finally { setPhotoBusy(false); }
+  };
+
+  const setRegField = (k) => (e) => setReg((f) => ({ ...f, [k]: e.target.value }));
+  const saveRegistration = async () => {
+    const { councilRegNo, registrationCouncil, registrationYear } = toProfilePayload(reg, { includeLocked: true });
+    setRegBusy(true);
+    try {
+      await api.patch(`/api/doctors/${doctor.id}`, { councilRegNo, registrationCouncil, ...(registrationYear ? { registrationYear } : {}) });
+      toast.success('Registration corrected — the change is audited');
+      onChanged?.();
+    } catch (e) { toast.error(e.message); } finally { setRegBusy(false); }
   };
 
   return (
@@ -75,6 +105,18 @@ export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-mg-navy">{doctor.specialty}</span>
           <span className="text-[10px] text-slate-400">Reg {doctor.regNo}</span>
         </div>
+
+        {reg && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3 space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">Medical registration · super admin only</p>
+            <RegistrationFields form={reg} set={setRegField} />
+            <div className="flex justify-end">
+              <Button size="sm" onClick={saveRegistration} loading={regBusy} disabled={!reg.councilRegNo.trim()}>
+                Save correction
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <Stat label="Today" value={doctor.patientsToday} tone="text-emerald-600" />

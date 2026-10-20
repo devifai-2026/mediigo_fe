@@ -84,7 +84,7 @@ export function AddressAutocomplete({ onResolved, disabled }) {
       </Field>
 
       {open && items.length > 0 && (
-        <div className="absolute z-30 left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+        <div className="absolute z-30 left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-xl overflow-hidden">
           {items.map((s) => (
             <button
               key={s.placeId}
