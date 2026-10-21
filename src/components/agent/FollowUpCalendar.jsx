@@ -5,6 +5,8 @@ import { DeskCard } from '../desk/ui.jsx';
 const OPEN = new Set(['NEW', 'FOLLOW_UP', 'INTERESTED']);
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+
+
 export const KIND = {
   PLANNED: { label: 'Scheduled', dot: 'bg-amber-500', chip: 'bg-amber-50 text-amber-800 border-amber-200' },
   OVERDUE: { label: 'Overdue', dot: 'bg-rose-500', chip: 'bg-rose-50 text-rose-800 border-rose-200' },
