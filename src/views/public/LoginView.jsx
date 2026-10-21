@@ -11,17 +11,31 @@ import { LivePill } from '../../components/layout/DarkHero.jsx';
 import { ROLE_HOME, ROLES } from '../../lib/constants.js';
 import { ACTIVE_PORTAL } from '../../lib/portals.js';
 import { DemoAccounts } from '../../components/ui/DemoAccounts.jsx';
+import { useNoIndex } from '../../lib/seo.js';
 
-export default function LoginView() {
+/**
+ * `audience` splits the one sign-in screen by route, the way a consumer app
+ * keeps its partner login apart: /login is for patients (OTP), /clinic/login
+ * for doctors, the front desk and Mediigo staff (password). Without it, both
+ * tabs show — which is also what a single-portal dev build falls back to.
+ */
+export default function LoginView({ audience }) {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
   const { requestOtp, verifyOtp, staffLogin } = useAuth();
+  useNoIndex(audience === 'staff' ? 'Clinic & staff sign in' : 'Sign in');
 
   // A port that serves no patient role opens straight on the staff tab.
-  const servesPatient = !ACTIVE_PORTAL || ACTIVE_PORTAL.roles.includes(ROLES.PATIENT);
-  const servesStaff = !ACTIVE_PORTAL || ACTIVE_PORTAL.roles.some((r) => r !== ROLES.PATIENT);
-  const [mode, setMode] = useState(servesPatient ? 'patient' : 'staff');
+  const portalPatient = !ACTIVE_PORTAL || ACTIVE_PORTAL.roles.includes(ROLES.PATIENT);
+  const portalStaff = !ACTIVE_PORTAL || ACTIVE_PORTAL.roles.some((r) => r !== ROLES.PATIENT);
+  let servesPatient = portalPatient && audience !== 'staff';
+  let servesStaff = portalStaff && audience !== 'patient';
+  if (!servesPatient && !servesStaff) { servesPatient = portalPatient; servesStaff = portalStaff; }
+  const [chosenMode, setMode] = useState(servesPatient ? 'patient' : 'staff');
+  // The route decides when only one kind of sign-in is offered here; the tab
+  // choice only matters when both are.
+  const mode = !servesPatient ? 'staff' : !servesStaff ? 'patient' : chosenMode;
   const [step, setStep] = useState('entry');   // entry | otp
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
@@ -108,9 +122,13 @@ export default function LoginView() {
               <span className="block text-[10px] text-slate-600 mt-0.5">Book Doctor Easily</span>
             </div>
           </Link>
-          {servesPatient && (
+          {servesPatient ? (
             <Link to="/p/explore" className="text-xs text-mg-teal hover:text-mg-tealDark font-medium">
               Browse clinics →
+            </Link>
+          ) : (
+            <Link to="/clinic" className="text-xs text-mg-teal hover:text-mg-tealDark font-medium">
+              Mediigo for clinics →
             </Link>
           )}
         </div>
@@ -121,12 +139,25 @@ export default function LoginView() {
         {/* The homepage hero, so signing in feels like the same product. */}
         <section className="mg-hero hidden lg:flex flex-col p-8 min-h-[560px]">
           <LivePill />
-          <h2 className="mt-8 text-4xl font-semibold tracking-tight leading-tight">
-            Find &amp; Book<br />Doctors Nearby
-          </h2>
-          <p className="mt-3 text-sm text-white/90 max-w-sm leading-relaxed">
-            Skip the crowded waiting room. Get a digital token, real-time wait estimates and a alert when your turn is close.
-          </p>
+          {servesPatient ? (
+            <>
+              <h2 className="mt-8 text-4xl font-semibold tracking-tight leading-tight">
+                Find &amp; Book<br />Doctors Nearby
+              </h2>
+              <p className="mt-3 text-sm text-white/90 max-w-sm leading-relaxed">
+                Skip the crowded waiting room. Get a digital token, real-time wait estimates and an alert when your turn is close.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="mt-8 text-4xl font-semibold tracking-tight leading-tight">
+                Your OPD,<br />running on time
+              </h2>
+              <p className="mt-3 text-sm text-white/90 max-w-sm leading-relaxed">
+                Live queue, digital tokens, prescriptions and the day’s collection — for doctors, the front desk and the Mediigo team.
+              </p>
+            </>
+          )}
           <img
             src="/assets/herobanner.png"
             alt=""
@@ -183,9 +214,17 @@ export default function LoginView() {
                 <Button type="submit" loading={busy} className="w-full" size="lg">
                   Send OTP on WhatsApp
                 </Button>
+                <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+                  By continuing you agree to our <Link to="/terms" className="underline hover:text-mg-blue">Terms of Use</Link> and <Link to="/privacy-policy" className="underline hover:text-mg-blue">Privacy Policy</Link>.
+                </p>
                 <Link to="/p/explore" className="block text-center text-xs font-medium text-mg-teal hover:text-mg-tealDark pt-1">
                   Browse clinics without signing in →
                 </Link>
+                {!servesStaff && (
+                  <p className="text-center text-xs text-slate-500">
+                    Doctor or clinic staff? <Link to="/clinic/login" className="font-medium text-mg-blue hover:underline">Sign in here</Link>
+                  </p>
+                )}
 
                 <DemoAccounts
                   roles={ACTIVE_PORTAL?.roles}
@@ -204,6 +243,16 @@ export default function LoginView() {
                 <Button type="submit" loading={busy} className="w-full" size="lg">
                   <Icon name="shield" className="w-4 h-4" /> Sign in
                 </Button>
+                <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+                  Use of the clinic desk is subject to the <Link to="/clinic-terms" className="underline hover:text-mg-blue">Clinic &amp; Doctor Terms</Link> and <Link to="/privacy-policy" className="underline hover:text-mg-blue">Privacy Policy</Link>.
+                </p>
+                {!servesPatient && (
+                  <p className="text-center text-xs text-slate-500">
+                    New to Mediigo? <Link to="/clinic#enquire" className="font-medium text-mg-blue hover:underline">Get your clinic on board</Link>
+                    <span className="mx-1.5 text-slate-300">·</span>
+                    <Link to="/p/explore" className="font-medium text-mg-teal hover:underline">Book a doctor</Link>
+                  </p>
+                )}
 
                 <DemoAccounts
                   roles={ACTIVE_PORTAL?.roles}

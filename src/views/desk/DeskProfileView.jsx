@@ -13,8 +13,12 @@ import { Field, Input } from '../../components/ui/Field.jsx';
 import { MoneyInput } from '../../components/ui/MoneyInput.jsx';
 import { PhotoField } from '../../components/ui/PhotoCropper.jsx';
 import { AvailabilityManager } from '../../components/doctor/AvailabilityManager.jsx';
+import { WeeklyScheduleEditor } from '../../components/doctor/WeeklyScheduleEditor.jsx';
+import { DoctorBasicsFields, DoctorPublicProfileFields, RegistrationFields } from '../../components/doctor/DoctorProfileFields.jsx';
+import { SpecialtyPicker } from '../../components/ui/SpecialtyPicker.jsx';
+import { toProfileForm, toProfilePayload } from '../../lib/doctorProfile.js';
 import { StandeePanel } from '../../components/doctor/StandeePanel.jsx';
-import { Avatar, DeskCard, DoctorPicker, EmptyNote, PageHeader, Pill, SectionHead } from '../../components/desk/ui.jsx';
+import { Avatar, DeskCard, DoctorPicker, EmptyNote, PageHeader, Pill, RefreshButton, SectionHead } from '../../components/desk/ui.jsx';
 
 const errMsg = (e) => e?.response?.data?.error?.message || e.message;
 
@@ -28,9 +32,10 @@ const hm = (minutes) => {
 /**
  * Profile & settings.
  *
- * A doctor manages their own profile. The front desk picks a doctor and
- * manages what the server lets it: fees, photo, bookings and availability —
- * name, qualifications and chamber stay the doctor's to change.
+ * A doctor manages their own profile; the front desk picks one of the
+ * clinic's doctors and manages theirs — details, public profile, fees, photo,
+ * bookings and availability. Registration details are shown but locked: only
+ * Mediigo support can correct them.
  */
 export default function DeskProfileView() {
   const { user, role } = useAuth();
@@ -60,32 +65,30 @@ export default function DeskProfileView() {
         </>
       )}
       {doctorId
-        ? <DoctorSettings key={doctorId} doctorId={doctorId} canEditDetails={isDoctor} />
+        ? <DoctorSettings key={doctorId} doctorId={doctorId} />
         : doctors && <DeskCard><EmptyNote icon="fa-user-doctor" title="No doctors at this clinic yet" /></DeskCard>}
     </div>
   );
 }
 
-function DoctorSettings({ doctorId, canEditDetails }) {
+function DoctorSettings({ doctorId }) {
   const toast = useToast();
   const confirm = useConfirm();
   const { data: doctor, refetch } = useApi(`/api/doctors/${doctorId}`);
   const { snapshot } = useQueueSnapshot(doctorId);
+  const { data: specialtyOptions } = useApi('/api/specialties');
 
   const [fees, setFees] = useState({ fresh: '', followup: '', emergency: '' });
-  const [details, setDetails] = useState({ name: '', qualifications: '', chamberNumber: '', avgConsultMinutes: '' });
+  const [details, setDetails] = useState(null);
+  const [specialtyIds, setSpecialtyIds] = useState([]);
   const [busy, setBusy] = useState(null);
   const [photoBusy, setPhotoBusy] = useState(false);
 
   useEffect(() => {
-    if (!doctor) return;
+    if (!doctor || !details) return;
     setFees(doctor.fees);
-    setDetails({
-      name: doctor.name || '',
-      qualifications: (doctor.qualifications || []).join(', '),
-      chamberNumber: doctor.chamberNumber || '',
-      avgConsultMinutes: doctor.avgConsultMinutes ?? '',
-    });
+    setDetails({ ...toProfileForm(doctor), name: doctor.name || '' });
+    setSpecialtyIds((doctor.specialtyIds || []).map(String));
   }, [doctor]);
 
   const run = async (key, fn, msg) => {
@@ -127,26 +130,27 @@ function DoctorSettings({ doctorId, canEditDetails }) {
     const open = !doctor.session?.isBookingOpen;
     if (!open) {
       const ok = await confirm({
-        title: 'Pause OPD bookings?',
-        message: `No new tokens can be issued for ${doctor.name}, in the app or at the desk.`,
+        title: 'Close online bookings?',
+        message: `Patients can no longer book ${doctor.name} from the app. Walk-ins can still be registered at the desk.`,
         detail: 'Patients already in the queue keep their tokens.',
-        confirmLabel: 'Pause bookings',
+        confirmLabel: 'Close online bookings',
       });
       if (!ok) return;
     }
-    run('booking', () => api.post(`/api/queue/${doctorId}/booking`, { isOpen: open }), open ? 'Bookings re-opened' : 'Bookings paused');
+    run('booking', () => api.post(`/api/queue/${doctorId}/booking`, { isOpen: open }), open ? 'Online bookings re-opened' : 'Online bookings closed');
   };
+
+  const setDetail = (k) => (e) => setDetails((d) => ({ ...d, [k]: e.target.value }));
 
   const saveDetails = () => run('details', () => api.patch(`/api/doctors/${doctorId}`, {
     name: details.name.trim(),
-    chamberNumber: details.chamberNumber.trim(),
-    qualifications: details.qualifications.split(',').map((q) => q.trim()).filter(Boolean).slice(0, 10),
-    ...(details.avgConsultMinutes !== '' ? { avgConsultMinutes: Number(details.avgConsultMinutes) } : {}),
-  }), 'Profile updated — announcements use the new chamber number');
+    ...(specialtyIds.length ? { specialtyIds } : {}),
+    ...toProfilePayload(details),
+  }), 'Profile updated');
 
   const saveFees = () => run('fees', () => api.patch(`/api/doctors/${doctorId}/fees`, fees), 'Consultation fees updated');
 
-  if (!doctor) return <div className="h-64 rounded-xl bg-white border border-slate-200 animate-pulse" />;
+  if (!doctor || !details) return <div className="h-64 rounded-xl bg-white border border-slate-200 animate-pulse" />;
 
   const open = Boolean(doctor.session?.isBookingOpen);
   const onBreak = Boolean(doctor.session?.isOnBreak);
@@ -178,9 +182,10 @@ function DoctorSettings({ doctorId, canEditDetails }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <RefreshButton onRefresh={refetch} />
             <Pill dot tone={onBreak ? 'amber' : open ? 'emerald' : 'rose'}>
-              {onBreak ? 'On break' : open ? 'Chamber active' : 'Bookings paused'}
+              {onBreak ? 'On break' : open ? 'Online bookings open' : 'Online bookings closed'}
             </Pill>
             <Button
               size="sm"
@@ -191,69 +196,95 @@ function DoctorSettings({ doctorId, canEditDetails }) {
               title={onBreak ? 'End the break first — a break already pauses the queue' : undefined}
             >
               <i className={clsx('fa-solid', open ? 'fa-ban' : 'fa-lock-open')} aria-hidden="true" />
-              {open ? 'Close booking' : 'Re-open booking'}
+              {open ? 'Close online booking' : 'Open online booking'}
             </Button>
           </div>
         </div>
       </DeskCard>
 
-      <DeskCard className="p-4 sm:p-5 space-y-4">
-        <SectionHead
-          icon="fa-calendar-xmark"
-          title="Availability & Leave Manager"
-          subtitle="Pause bookings instantly, or close dates and sittings in advance"
-          right={<Pill dot tone={open ? 'emerald' : 'rose'}>{open ? 'Bookings active' : 'Bookings paused'}</Pill>}
-        />
+      {/* Set up in this order: who the doctor is, when they sit, then how the
+          day is going. */}
+      <StepCard step={1} icon="fa-user-pen" title="Profile Details" subtitle="Shown to patients and read out in announcements">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="space-y-4">
+            <PhotoField
+              value={doctor.photo?.url ?? null}
+              name={doctor.name}
+              busy={photoBusy}
+              onUpload={uploadPhoto}
+              onRemove={removePhoto}
+              onReject={(m) => toast.error(m)}
+              hint="Shown to patients on the doctor card. JPEG, PNG or WebP · up to 8MB."
+            />
+            <Field label="Doctor name" hint="“Dr.” is added automatically">
+              <Input value={details.name} maxLength={80} onChange={setDetail('name')} />
+            </Field>
+            <SpecialtyPicker
+              options={specialtyOptions ?? []}
+              value={specialtyIds}
+              onChange={setSpecialtyIds}
+              hint="The first is the primary and leads on the patient card."
+            />
+            <RegistrationFields form={details} set={setDetail} locked />
+          </div>
+          <DoctorBasicsFields form={details} set={setDetail} />
+        </div>
+        <details className="rounded-lg border border-slate-200 p-3">
+          <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+            Public profile — about, conditions, education, memberships, awards
+          </summary>
+          <div className="pt-3">
+            <DoctorPublicProfileFields form={details} set={setDetail} />
+          </div>
+        </details>
+        <Button onClick={saveDetails} loading={busy === 'details'} disabled={details.name.trim().length < 2} className="w-full sm:w-auto">
+          <i className="fa-solid fa-check" aria-hidden="true" /> Save profile
+        </Button>
+      </StepCard>
+
+      <StepCard
+        step={2}
+        icon="fa-calendar-days"
+        title="Availability"
+        subtitle="Weekly sitting days & timings, plus leave for specific dates"
+        right={<Pill dot tone={open ? 'emerald' : 'rose'}>{open ? 'Online bookings open' : 'Online bookings closed'}</Pill>}
+      >
         {!open && (
           <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p className="text-xs font-medium text-rose-800">
               <i className="fa-solid fa-triangle-exclamation text-rose-600 mr-1.5" aria-hidden="true" />
-              OPD bookings are currently closed — patients cannot get a token.
+              Online bookings are closed — patients cannot book from the app. Walk-ins are still registered at the desk.
             </p>
             <Button size="sm" variant="danger" onClick={toggleBooking} loading={busy === 'booking'} disabled={onBreak}>
-              <i className="fa-solid fa-lock-open" aria-hidden="true" /> Re-open bookings now
+              <i className="fa-solid fa-lock-open" aria-hidden="true" /> Re-open online bookings
             </Button>
           </div>
         )}
-        <div className="rounded-lg border border-slate-200 p-4">
-          <AvailabilityManager doctorId={doctorId} />
-        </div>
-      </DeskCard>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <DeskCard className="p-4 sm:p-5 space-y-4">
-          <SectionHead icon="fa-user-pen" title="Profile Details" subtitle={canEditDetails ? 'Shown to patients and read out in announcements' : 'Only the doctor can change these'} />
-          <PhotoField
-            value={doctor.photo?.url ?? null}
-            name={doctor.name}
-            busy={photoBusy}
-            onUpload={uploadPhoto}
-            onRemove={removePhoto}
-            onReject={(m) => toast.error(m)}
-            hint="Shown to patients on the doctor card. JPEG, PNG or WebP · up to 8MB."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Doctor name">
-              <Input value={details.name} disabled={!canEditDetails} maxLength={80} onChange={(e) => setDetails({ ...details, name: e.target.value })} />
-            </Field>
-            <Field label="Chamber / room" hint="Read out in every voice announcement">
-              <Input value={details.chamberNumber} disabled={!canEditDetails} maxLength={20} onChange={(e) => setDetails({ ...details, chamberNumber: e.target.value })} placeholder="104" />
-            </Field>
-            <Field label="Qualifications" hint="Comma separated, e.g. MBBS, MD">
-              <Input value={details.qualifications} disabled={!canEditDetails} onChange={(e) => setDetails({ ...details, qualifications: e.target.value })} placeholder="MBBS, MD (General Medicine)" />
-            </Field>
-            <Field label="Average consult (minutes)" hint="Sets the token slot times patients book online, and their wait estimate">
-              <Input inputMode="numeric" maxLength={3} value={details.avgConsultMinutes} disabled={!canEditDetails} onChange={(e) => setDetails({ ...details, avgConsultMinutes: e.target.value.replace(/\D/g, '') })} placeholder="8" />
-            </Field>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="rounded-lg border border-slate-200 p-4">
+            <WeeklyScheduleEditor doctorId={doctorId} schedule={doctor.schedule} onSaved={refetch} />
           </div>
-          {canEditDetails && (
-            <Button onClick={saveDetails} loading={busy === 'details'} disabled={details.name.trim().length < 2} className="w-full">
-              Update profile
-            </Button>
-          )}
-        </DeskCard>
+          <div className="rounded-lg border border-slate-200 p-4">
+            <AvailabilityManager key={JSON.stringify(doctor.schedule ?? [])} doctorId={doctorId} />
+          </div>
+        </div>
+      </StepCard>
 
-        <DeskCard className="p-4 sm:p-5 space-y-4">
+      <StepCard step={3} icon="fa-stopwatch" title="Shift Performance" subtitle="Today’s consultations, measured from the queue — and the fees charged for them">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 text-center">
+          {[
+            ['Time in consultations', hm(totalMinutes), 'text-mg-blue'],
+            ['Average per patient', avgMinutes != null ? `${avgMinutes.toFixed(1)} mins` : '—', 'text-slate-900'],
+            ['Patients attended', `${pad2(snapshot?.counts?.completed)} patients`, 'text-slate-900'],
+            ['Patient rating', doctor.rating?.count ? `★ ${doctor.rating.average.toFixed(1)} / 5` : 'No reviews yet', 'text-amber-500'],
+          ].map(([label, value, tone]) => (
+            <div key={label} className="p-3 rounded-lg bg-mg-surface">
+              <span className="block text-[10px] uppercase text-slate-400">{label}</span>
+              <span className={clsx('text-sm font-semibold', tone)}>{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="pt-4 border-t border-slate-100 space-y-3">
           <SectionHead icon="fa-indian-rupee-sign" title="OPD Consultation Fees" subtitle="Applied at the front desk when a patient registers" />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[['fresh', 'Fresh consultation'], ['followup', 'Follow-up'], ['emergency', 'Emergency / urgent']].map(([k, label]) => (
@@ -263,32 +294,31 @@ function DoctorSettings({ doctorId, canEditDetails }) {
               </div>
             ))}
           </div>
-          <Button onClick={saveFees} loading={busy === 'fees'} className="w-full">
+          <Button onClick={saveFees} loading={busy === 'fees'} className="w-full sm:w-auto">
             <i className="fa-solid fa-check" aria-hidden="true" /> Save fee changes
           </Button>
-
-          <div className="pt-4 border-t border-slate-100 space-y-3">
-            <SectionHead icon="fa-stopwatch" title="Today’s Shift Performance" subtitle="Measured from today’s queue" />
-            <div className="grid grid-cols-2 gap-2.5 text-center">
-              {[
-                ['Time in consultations', hm(totalMinutes), 'text-mg-blue'],
-                ['Average per patient', avgMinutes != null ? `${avgMinutes.toFixed(1)} mins` : '—', 'text-slate-900'],
-                ['Patients attended', `${pad2(snapshot?.counts?.completed)} patients`, 'text-slate-900'],
-                ['Patient rating', doctor.rating?.count ? `★ ${doctor.rating.average.toFixed(1)} / 5` : 'No reviews yet', 'text-amber-500'],
-              ].map(([label, value, tone]) => (
-                <div key={label} className="p-3 rounded-lg bg-mg-surface">
-                  <span className="block text-[10px] uppercase text-slate-400">{label}</span>
-                  <span className={clsx('text-sm font-semibold', tone)}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </DeskCard>
-      </div>
+        </div>
+      </StepCard>
 
       <DeskCard className="p-4 sm:p-5">
         <StandeePanel doctorId={doctorId} />
       </DeskCard>
     </div>
+  );
+}
+
+/** One numbered step of the profile setup. */
+function StepCard({ step, icon, title, subtitle, right, children }) {
+  return (
+    <DeskCard className="p-4 sm:p-5 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="w-7 h-7 shrink-0 grid place-items-center rounded-full bg-mg-teal text-white text-xs font-bold">{step}</span>
+          <SectionHead icon={icon} title={title} subtitle={subtitle} />
+        </div>
+        {right}
+      </div>
+      {children}
+    </DeskCard>
   );
 }

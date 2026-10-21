@@ -4,6 +4,7 @@ import { AdminShell } from './AdminShell.jsx';
 import { AddClinicModal } from './AddClinicModal.jsx';
 import { AddAgentModal } from './AddAgentModal.jsx';
 import { ConsoleActionsContext } from './consoleActions.js';
+import { useNoIndex } from '../../lib/seo.js';
 
 function Inner() {
   const { badges, headerStats, refetch } = useConsole();
@@ -20,6 +21,7 @@ function Inner() {
 }
 
 export function AdminConsoleLayout() {
+  useNoIndex('Super Admin');
   return (
     <AdminConsoleProvider>
       <Inner />

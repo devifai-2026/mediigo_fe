@@ -9,6 +9,8 @@ import { Field, Textarea } from '../../components/ui/Field.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
+import { directionsUrl } from '../../lib/maps.js';
+import { CredentialsModal } from '../../components/onboarding/CredentialsModal.jsx';
 
 export default function ApprovalsView() {
   const { data, loading, refetch } = useApi('/api/admin/approvals');
@@ -20,12 +22,15 @@ export default function ApprovalsView() {
   const [rejecting, setRejecting] = useState(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [issued, setIssued] = useState(null);
 
   const approve = async (s) => {
     const okToApprove = await confirm({
       title: 'Approve and publish?',
       message: `${s.payload?.name} will go live and become visible to patients searching nearby.`,
-      detail: 'A front-desk login is created for the listed contact.',
+      detail: s.payload?.doctors?.length
+        ? `Logins are created for the front desk and ${s.payload.doctors.length} doctor${s.payload.doctors.length === 1 ? '' : 's'}.`
+        : 'A front-desk login is created for the listed contact.',
       confirmLabel: 'Approve & publish',
     });
     if (!okToApprove) return;
@@ -48,9 +53,10 @@ export default function ApprovalsView() {
     setBusy(true);
     try {
       const r = await api.post(`/api/admin/submissions/${s._id}/approve`, { trialDays });
-      const temp = r.data?.data?.tempPassword;
       const trialNote = trialDays > 0 ? ` · ${trialDays}-day free trial` : ' · no trial';
-      toast.success((temp ? `Approved — front desk temp password: ${temp}` : 'Approved and published') + trialNote);
+      toast.success(`Approved and published${trialNote}`);
+      // Every login it created, with the one-time passwords to hand over.
+      if (r.data?.data?.credentials?.length) setIssued(r.data.data);
       refetch();
     } catch (e) {
       toast.error(e.message);
@@ -102,13 +108,25 @@ export default function ApprovalsView() {
                 {s.geocodeResult?.lat ? (
                   <p className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
                     <Icon name="location" className="w-3 h-3" />
-                    Located · {s.geocodeResult.accuracy || 'verified'}
+                    Located · {s.geocodeResult.accuracy === 'MAP_PIN' ? 'pinned on map by the agent' : (s.geocodeResult.accuracy || 'verified')}
+                    <a href={directionsUrl(s.geocodeResult)} target="_blank" rel="noreferrer" className="ml-1.5 font-medium text-mg-teal hover:underline">
+                      Check on map →
+                    </a>
                   </p>
                 ) : (
                   <p className="text-[11px] text-rose-600 font-semibold flex items-center gap-1">
                     <Icon name="alert" className="w-3 h-3" />
                     No coordinates — cannot publish until the address is geocoded
                   </p>
+                )}
+                {s.payload?.photos?.length > 0 && (
+                  <div className="flex gap-1.5 overflow-x-auto pt-1">
+                    {s.payload.photos.map((ph) => (
+                      <a key={ph.url} href={ph.url} target="_blank" rel="noreferrer" title={ph.kind === 'INSIDE' ? 'Inside' : 'Outside'}>
+                        <img src={ph.url} alt="" className="w-16 h-12 object-cover rounded-md border border-slate-200 shrink-0" />
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -139,6 +157,7 @@ export default function ApprovalsView() {
           </div>
         </div>
       </Modal>
+      <CredentialsModal result={issued} onClose={() => setIssued(null)} />
     </div>
   );
 }

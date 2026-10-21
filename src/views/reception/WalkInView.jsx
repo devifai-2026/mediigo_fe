@@ -11,6 +11,7 @@ import { ReceiptPrintable } from '../../components/payment/ReceiptPrintable.jsx'
 import { inr, token } from '../../lib/format.js';
 import { ROLES, VISIT_LABEL } from '../../lib/constants.js';
 import { DeskCard, PageHeader, Pill } from '../../components/desk/ui.jsx';
+import { WalkInTokenCard } from '../../components/desk/WalkInTokenCard.jsx';
 import clsx from 'clsx';
 
 const VISIT_HINT = { fresh: 'Standard first visit', followup: 'Returning patient', emergency: 'Priority token' };
@@ -26,6 +27,8 @@ export default function WalkInView() {
   const [visitType, setVisitType] = useState('fresh');
   const [payOpen, setPayOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // `issued` stays on screen as the token card; `receipt` is only set while printing.
+  const [issued, setIssued] = useState(null);
   const [receipt, setReceipt] = useState(null);
 
   // A doctor registering at their own desk is almost always registering for
@@ -37,7 +40,8 @@ export default function WalkInView() {
   }, [doctors, doctorId, role, user?.doctorId]);
 
   const doctor = (doctors || []).find((d) => d._id === doctorId);
-  const closed = doctor && !doctor.session?.isBookingOpen;
+  // "Close booking" stops app bookings only; the desk can always register.
+  const onlineClosed = doctor && !doctor.session?.isBookingOpen;
   const listedFee = doctor?.fees?.[visitType] ?? 0;
   const [overrideOn, setOverrideOn] = useState(false);
   const [customFee, setCustomFee] = useState('');
@@ -53,7 +57,7 @@ export default function WalkInView() {
     setOverrideOn(false);
     setCustomFee('');
   }, [doctorId, visitType]);
-  const ready = form.name.trim() && doctorId && !closed;
+  const ready = form.name.trim() && doctorId;
 
   const collect = async (payment) => {
     setSubmitting(true);
@@ -74,12 +78,15 @@ export default function WalkInView() {
 
       toast.success(`Token ${token(result.token.tokenNumber)} issued · ${result.transaction.receiptNumber}`);
       setPayOpen(false);
-      setReceipt({
+      const slip = {
         transaction: result.transaction,
         token: result.token,
         doctor,
-        hospital: doctor?.hospital,
-      });
+        // The doctors list carries no hospital; the desk user's clinic is it.
+        hospital: doctor?.hospital ?? { name: user?.clinic?.name },
+      };
+      setIssued(slip);
+      setReceipt(slip);
       setForm({ name: '', phone: '', age: '', gender: 'M', complaint: '' });
     } catch (e) {
       // The server re-asserts the tender invariant; surface its exact message.
@@ -98,20 +105,24 @@ export default function WalkInView() {
         badge={doctor && <Pill tone="blue">{doctor.name}</Pill>}
       />
 
-      {closed && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <i className="fa-solid fa-ban text-rose-600 text-xl" aria-hidden="true" />
-            <div>
-              <h4 className="text-sm font-semibold text-rose-900">OPD bookings are closed for {doctor.name}</h4>
-              <p className="text-xs text-rose-700">New registrations are paused. Open the slot from the roster to continue.</p>
-            </div>
-          </div>
-          <Link to={rosterPath} className="shrink-0 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg text-center">
-            Manage availability
+      {onlineClosed && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-xs text-amber-900">
+            <i className="fa-solid fa-circle-info text-amber-500 mr-1.5" aria-hidden="true" />
+            Online bookings are closed for {doctor.name}. Walk-ins can still be registered here.
+          </p>
+          <Link to={rosterPath} className="shrink-0 text-xs font-medium text-amber-800 hover:underline">
+            Manage on roster
           </Link>
         </div>
       )}
+
+      <WalkInTokenCard
+        receipt={issued}
+        clinicName={user?.clinic?.name}
+        onPrint={() => setReceipt(issued)}
+        onClose={() => setIssued(null)}
+      />
 
       <DeskCard className="p-4 sm:p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -137,7 +148,7 @@ export default function WalkInView() {
               <option value="">Select a doctor…</option>
               {(doctors || []).map((d) => (
                 <option key={d._id} value={d._id}>
-                  {d.name}{d.specialty ? ` (${d.specialty})` : ''}{d.session?.isBookingOpen ? '' : ' — bookings closed'}
+                  {d.name}{d.specialty ? ` (${d.specialty})` : ''}{d.session?.isBookingOpen ? '' : ' — online closed'}
                 </option>
               ))}
             </Select>

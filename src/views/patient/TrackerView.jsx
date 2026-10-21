@@ -13,8 +13,10 @@ import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { token, duration } from '../../lib/format.js';
 import { patientsAhead, progressPct } from '../../lib/queue.js';
 import { TOKEN_STATUS } from '../../lib/constants.js';
+import { useNoIndex } from '../../lib/seo.js';
 
 export default function TrackerView() {
+  useNoIndex('Live tracker');
   const { data: tokens, loading, refetch } = useApi('/api/patients/me/tokens?status=WAITING');
   const confirm = useConfirm();
   const toast = useToast();

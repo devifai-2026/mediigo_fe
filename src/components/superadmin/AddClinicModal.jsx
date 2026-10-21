@@ -3,6 +3,8 @@ import { api, unwrap } from '../../lib/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useApi } from '../../hooks/useApi.js';
 import { AddressAutocomplete } from '../onboarding/AddressAutocomplete.jsx';
+import { MapPicker } from '../onboarding/MapPicker.jsx';
+import { ClinicPhotosField } from '../onboarding/ClinicPhotosField.jsx';
 
 /**
  * Super Admin direct onboarding. Layout follows the prototype's
@@ -13,7 +15,8 @@ const BLANK = {
   doctorName: '', clinicName: '', code: '', specialty: '', education: '',
   regNo: '', phone: '', districtId: '', isOnline: 'true',
   line1: '', city: '', pincode: '', state: 'West Bengal',
-  lat: null, lng: null, placeId: '', formatted: '',
+  lat: null, lng: null, placeId: '', formatted: '', pinSource: '',
+  photos: [],
   feeFresh: 500, feeFollowup: 300, feeEmergency: 800,
 };
 
@@ -39,6 +42,8 @@ export function AddClinicModal({ open, onClose, onDone }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    // Approval needs coordinates — a clinic with none never shows in search.
+    if (form.lat == null) { toast.error('Drop a pin on the map for the clinic location'); return; }
     setBusy(true);
     try {
       // Create the clinic submission, then immediately authorize it — the
@@ -56,8 +61,9 @@ export function AddClinicModal({ open, onClose, onDone }) {
           // Pass the Places pin through so the server trusts it instead of
           // re-geocoding the typed address to a slightly different spot.
           ...(form.lat != null && form.lng != null
-            ? { geocode: { lat: form.lat, lng: form.lng, placeId: form.placeId, formatted: form.formatted } }
+            ? { geocode: { lat: form.lat, lng: form.lng, placeId: form.placeId, formatted: form.formatted, source: form.pinSource } }
             : {}),
+          photos: form.photos,
           primaryContact: { name: form.doctorName, phone: form.phone.replace(/\D/g, '').slice(-10) },
         },
       }));
@@ -108,19 +114,16 @@ export function AddClinicModal({ open, onClose, onDone }) {
               city: r.city || f.city,
               state: r.state || f.state,
               pincode: r.pincode || f.pincode,
-              lat: r.lat, lng: r.lng, placeId: r.placeId, formatted: r.formatted,
+              lat: r.lat, lng: r.lng, placeId: r.placeId, formatted: r.formatted, pinSource: 'PLACES',
             }))}
           />
 
-          {form.lat != null && (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 flex items-start gap-2">
-              <i className="fa-solid fa-location-dot mt-0.5 shrink-0" />
-              <span>
-                Location pinned at {form.lat.toFixed(5)}, {form.lng.toFixed(5)} — this clinic will appear
-                correctly in patient search. Edit any field below if Google got it wrong.
-              </span>
-            </div>
-          )}
+          <MapPicker
+            key={`map-${open}`}
+            height="h-60"
+            value={form.lat != null ? { lat: form.lat, lng: form.lng } : null}
+            onChange={({ lat, lng }) => setForm((f) => ({ ...f, lat, lng, placeId: '', pinSource: 'MAP_PIN' }))}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -166,6 +169,12 @@ export function AddClinicModal({ open, onClose, onDone }) {
             <label className={LABEL}>City *</label>
             <input required value={form.city} onChange={set('city')} placeholder="Kolkata" className={INPUT} />
           </div>
+
+          <ClinicPhotosField
+            value={form.photos}
+            onChange={(photos) => setForm((f) => ({ ...f, photos }))}
+            onError={(m) => toast.error(m)}
+          />
 
           <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-xl space-y-3">
             <h4 className="font-semibold text-mg-navy text-xs uppercase tracking-wider">Default Consultation Fees</h4>

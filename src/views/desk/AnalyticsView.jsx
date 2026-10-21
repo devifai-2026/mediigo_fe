@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -9,12 +10,13 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Select } from '../../components/ui/Field.jsx';
 import { MoneyInput } from '../../components/ui/MoneyInput.jsx';
 import {
-  Avatar, DeskCard, EmptyNote, IconTile, LoadError, PageHeader, Pill, PrintPortal, SectionHead, Segmented, StatTile,
+  Avatar, DeskCard, EmptyNote, IconTile, LoadError, PageHeader, Pill, PrintPortal, RefreshButton, SectionHead, Segmented, StatTile,
 } from '../../components/desk/ui.jsx';
+import { RxPrint, RxViewModal } from '../../components/desk/RxPrint.jsx';
 import { PettyExpenseModal, VoidExpenseModal, ShiftReport } from '../../components/desk/CashTools.jsx';
 import { pad2, patientLine } from '../../components/desk/deskFormat.js';
 import {
-  DateRangePicker, PRESETS, isoToday, presetOf, rangeLabel,
+  DateRangePicker, PRESETS, isoToday, presetOf, rangeLabel, shiftIso,
 } from '../../components/desk/DateRangePicker.jsx';
 
 // One-tap shortcuts beside the calendar; anything else is picked from it.
@@ -68,14 +70,21 @@ export default function AnalyticsView() {
   const { user, role } = useAuth();
   const toast = useToast();
   const isDoctor = role === ROLES.DOCTOR;
-  const [view, setView] = useState('REVENUE');
-  const [range, setRange] = useState(() => ({ from: isoToday(), to: isoToday() }));
+  // The clinic's admin doctor sees every doctor's numbers, like the desk does.
+  const ownNumbersOnly = isDoctor && !user?.isClinicAdmin;
+  // Deep links (the EMR's "full history") arrive as ?view=FOOTFALL&range=year&q=<phone>.
+  const [params] = useSearchParams();
+  const [view, setView] = useState(() => (['COMBINED', 'REVENUE', 'FOOTFALL'].includes(params.get('view')) ? params.get('view') : 'COMBINED'));
+  const [range, setRange] = useState(() => (params.get('range') === 'year'
+    ? { from: shiftIso(isoToday(), -364), to: isoToday() }
+    : { from: isoToday(), to: isoToday() }));
+  const initialSearch = params.get('q') || '';
   const single = range.from === range.to;
   const viewingToday = single && range.from === isoToday();
   const preset = presetOf(range);
   const [doctorId, setDoctorId] = useState('');
 
-  const { data: doctors } = useApi(isDoctor ? null : '/api/doctors', { skip: isDoctor });
+  const { data: doctors } = useApi(ownNumbersOnly ? null : '/api/doctors', { skip: ownNumbersOnly });
   const doc = doctorId ? `&doctorId=${doctorId}` : '';
   const q = `from=${range.from}&to=${range.to}${doc}`;
   const { data: analytics, error: analyticsError, refetch: refetchAnalytics } = useApi(`/api/pos/analytics?${q}`);
@@ -97,17 +106,21 @@ export default function AnalyticsView() {
 
   const refreshMoney = () => { refetchAnalytics(); refetchLedger(); if (single) refetchDayClose(); };
   const footfallView = view === 'FOOTFALL';
+  const combinedView = view === 'COMBINED';
+  const refreshAll = () => { refreshMoney(); refetchFootfall(); };
   const doctorName = doctors?.find((d) => d._id === doctorId)?.name;
 
   return (
     <div className="space-y-5">
       <PageHeader
-        icon={footfallView ? 'fa-users' : 'fa-indian-rupee-sign'}
+        icon={combinedView ? 'fa-chart-column' : footfallView ? 'fa-users' : 'fa-indian-rupee-sign'}
         tone="blue"
-        title={footfallView ? 'Patient Footfall Analytics' : 'Revenue Analytics'}
-        subtitle={footfallView
-          ? 'Patient traffic volume, peak hours & OPD density'
-          : 'Collection metrics, payment channels & the financial ledger'}
+        title={combinedView ? 'Revenue & Footfall Report' : footfallView ? 'Patient Footfall Analytics' : 'Revenue Analytics'}
+        subtitle={combinedView
+          ? 'Each doctor’s collections and patient volume, side by side'
+          : footfallView
+            ? 'Patient traffic volume, peak hours & OPD density'
+            : 'Collection metrics, payment channels & the financial ledger'}
         badge={<Pill tone="emerald">Real-Time Audit</Pill>}
       >
         <label className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-mg-surface text-xs">
@@ -118,6 +131,7 @@ export default function AnalyticsView() {
             className="bg-transparent font-medium text-slate-900 focus:outline-none cursor-pointer"
             aria-label="Analytics view"
           >
+            <option value="COMBINED">Revenue &amp; Footfall (combined)</option>
             <option value="REVENUE">Revenue Analytics</option>
             <option value="FOOTFALL">Patient Footfall Analytics</option>
           </select>
@@ -128,12 +142,13 @@ export default function AnalyticsView() {
           options={QUICK}
         />
         <DateRangePicker value={range} onChange={setRange} />
-        {!isDoctor && doctors?.length > 1 && (
+        {!ownNumbersOnly && doctors?.length > 1 && (
           <Select value={doctorId} onChange={(e) => setDoctorId(e.target.value)} className="!w-auto !py-1.5" aria-label="Doctor">
             <option value="">All doctors</option>
             {doctors.map((d) => <option key={d._id} value={d._id}>{d.name}{d.specialty ? ` (${d.specialty})` : ''}</option>)}
           </Select>
         )}
+        <RefreshButton onRefresh={refreshAll} />
         <Button
           variant="secondary" size="sm" onClick={() => setPrinting(true)} disabled={!dayClose}
           title={single ? `Print the shift report for ${rangeText(range)}` : 'The shift report is for a single day — pick one date'}
@@ -153,8 +168,11 @@ export default function AnalyticsView() {
         </DeskCard>
       )}
 
-      {footfallView ? (
+      {combinedView ? (
+        <CombinedSection analytics={analytics} error={analyticsError} onRetry={refetchAnalytics} range={range} />
+      ) : footfallView ? (
         <FootfallSection
+          initialSearch={initialSearch}
           analytics={analytics} footfall={footfall} range={range}
           analyticsError={analyticsError} footfallError={footfallError}
           onRetry={() => { refetchAnalytics(); refetchFootfall(); }}
@@ -509,7 +527,7 @@ function Reconciliation({ dayClose }) {
 
 const hourLabel = (h) => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'AM' : 'PM'}`;
 
-function FootfallSection({ analytics, footfall, range, analyticsError, footfallError, onRetry }) {
+function FootfallSection({ analytics, footfall, range, analyticsError, footfallError, onRetry, initialSearch }) {
   const rows = footfall?.rows ?? [];
   const single = range.from === range.to;
 
@@ -543,7 +561,7 @@ function FootfallSection({ analytics, footfall, range, analyticsError, footfallE
     return (
       <div className="space-y-5">
         <LoadError error={analyticsError} onRetry={onRetry} what="footfall analytics" />
-        {footfallError ? <LoadError error={footfallError} onRetry={onRetry} what="the footfall register" /> : <FootfallRegister footfall={footfall} range={range} />}
+        {footfallError ? <LoadError error={footfallError} onRetry={onRetry} what="the footfall register" /> : <FootfallRegister footfall={footfall} range={range} initialSearch={initialSearch} />}
       </div>
     );
   }
@@ -637,16 +655,18 @@ function FootfallSection({ analytics, footfall, range, analyticsError, footfallE
 
       {footfallError
         ? <LoadError error={footfallError} onRetry={onRetry} what="the footfall register" />
-        : <FootfallRegister footfall={footfall} range={range} />}
+        : <FootfallRegister footfall={footfall} range={range} initialSearch={initialSearch} />}
     </div>
   );
 }
 
 const STATUS_TONE = { WAITING: 'amber', IN_CHAMBER: 'teal', COMPLETED: 'emerald', SKIPPED: 'rose', CANCELLED: 'slate', RESCHEDULE_NEEDED: 'slate' };
 
-function FootfallRegister({ footfall, range }) {
+function FootfallRegister({ footfall, range, initialSearch = '' }) {
   const multiDay = range.from !== range.to;
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch);
+  const [viewing, setViewing] = useState(null);
+  const [printing, setPrinting] = useState(null);
   const rows = footfall?.rows ?? [];
   const shown = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -711,8 +731,17 @@ function FootfallRegister({ footfall, range }) {
                   <td className="py-3 px-4"><Pill tone={STATUS_TONE[r.status] || 'slate'}>{r.status.replace('_', ' ').toLowerCase()}</Pill></td>
                   <td className="py-3 px-5">
                     {r.prescriptions.length ? r.prescriptions.map((x) => (
-                      <div key={x.id} className="mb-1.5 last:mb-0 p-2 bg-mg-surface rounded-md space-y-1">
-                        <p className="text-[11px] font-medium text-mg-blue">{x.diagnosis}</p>
+                      <button
+                        key={x.id}
+                        type="button"
+                        onClick={() => setViewing(x)}
+                        title="Open the prescription"
+                        className="block w-full text-left mb-1.5 last:mb-0 p-2 bg-mg-surface hover:bg-teal-50 rounded-md space-y-1 border border-transparent hover:border-mg-teal transition"
+                      >
+                        <p className="flex items-center justify-between gap-2 text-[11px] font-medium text-mg-blue">
+                          {x.diagnosis}
+                          <span className="text-[10px] text-mg-teal shrink-0"><i className="fa-regular fa-eye mr-0.5" aria-hidden="true" />View Rx</span>
+                        </p>
                         <div className="flex flex-wrap gap-1">
                           {x.medicines.map((m, i) => (
                             // eslint-disable-next-line react/no-array-index-key
@@ -721,7 +750,7 @@ function FootfallRegister({ footfall, range }) {
                             </span>
                           ))}
                         </div>
-                      </div>
+                      </button>
                     )) : <span className="text-[11px] italic text-slate-400">No prescription yet</span>}
                   </td>
                 </tr>
@@ -730,6 +759,125 @@ function FootfallRegister({ footfall, range }) {
           </table>
         </div>
       )}
+      <RxViewModal rx={viewing} onClose={() => setViewing(null)} onPrint={(rx) => { setViewing(null); setPrinting(rx); }} />
+      <PrintPortal active={Boolean(printing)} onDone={() => setPrinting(null)}>
+        <RxPrint rx={printing} />
+      </PrintPortal>
     </DeskCard>
+  );
+}
+
+// ---- Combined: revenue and footfall side by side --------------------------
+
+/**
+ * Revenue and footfall for each doctor in one table, so the two can be
+ * compared directly: who brings in the money, who sees the patients, and what
+ * each patient is worth to the clinic.
+ */
+function CombinedSection({ analytics, error, onRetry, range }) {
+  if (error && !analytics) return <LoadError error={error} onRetry={onRetry} what="the combined report" />;
+  if (!analytics) return <div className="h-64 rounded-xl bg-white border border-slate-200 animate-pulse" />;
+
+  const money = analytics.accounts.totals;
+  const p = analytics.patients.totals;
+  const docs = analytics.byDoctor ?? [];
+  const maxRevenue = Math.max(1, ...docs.map((d) => d.revenue));
+  const maxBooked = Math.max(1, ...docs.map((d) => d.booked));
+
+  // One row per day (or month): money and patients from the same bucket.
+  const byLabel = new Map();
+  for (const r of analytics.accounts.series) byLabel.set(r.label, { label: r.label, revenue: r.total, booked: 0, completed: 0 });
+  for (const r of analytics.patients.series) {
+    const row = byLabel.get(r.label) || { label: r.label, revenue: 0 };
+    byLabel.set(r.label, { ...row, booked: r.booked, completed: r.completed });
+  }
+  const trend = [...byLabel.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const trendMaxRevenue = Math.max(1, ...trend.map((r) => r.revenue));
+  const trendMaxBooked = Math.max(1, ...trend.map((r) => r.booked || 0));
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatTile label="Revenue" value={inr(money.total)} icon="fa-indian-rupee-sign" tone="blue" hint={`${money.count} receipts · ${rangeText(range)}`} />
+        <StatTile label="Footfall" value={`${pad2(p.booked)} patients`} icon="fa-users" tone="teal" hint={`${p.completed} seen · ${p.walkin} walk-in · ${p.online} online`} />
+        <StatTile label="Revenue per patient seen" value={p.completed ? inr(Math.round(money.total / p.completed)) : '—'} icon="fa-scale-balanced" tone="emerald" />
+        <StatTile label="Seen / booked" value={`${pct(p.completed, p.booked)}%`} icon="fa-chart-pie" tone="amber" hint={`${p.skipped} skipped · ${p.cancelled} cancelled`} />
+      </div>
+
+      <DeskCard className="overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-200 bg-mg-surface/50">
+          <SectionHead title="Doctor-wise Revenue vs Footfall" subtitle={`Comparative view · ${rangeText(range)}`} />
+        </div>
+        {!docs.length ? <EmptyNote icon="fa-user-doctor" title="No doctors in this report" /> : (
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full min-w-[820px] text-left text-xs">
+              <thead className="bg-mg-surface/70 border-b border-slate-200 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="py-3 px-5">Doctor</th>
+                  <th className="py-3 px-4 w-[26%]">Revenue</th>
+                  <th className="py-3 px-4 w-[26%]">Footfall</th>
+                  <th className="py-3 px-4 text-right">Per patient seen</th>
+                  <th className="py-3 px-5 text-right">Share (₹ / patients)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {docs.map((d) => (
+                  <tr key={d.doctorId} className="hover:bg-slate-50/70">
+                    <td className="py-3 px-5">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={d.name} src={d.photoUrl} className="w-9 h-9" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900 truncate">{d.name}</p>
+                          <p className="text-[11px] text-mg-teal truncate">{d.specialty}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Bar label={`${d.receipts} receipts`} value={d.revenue} max={maxRevenue} display={inr(d.revenue)} tone="blue" />
+                    </td>
+                    <td className="py-3 px-4">
+                      <Bar label={`${d.completed} seen`} value={d.booked} max={maxBooked} display={`${d.booked} patients`} tone="teal" />
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold text-slate-800">{d.completed ? inr(Math.round(d.revenue / d.completed)) : '—'}</td>
+                    <td className="py-3 px-5 text-right">
+                      <span className="font-semibold text-mg-blue">{pct(d.revenue, money.total)}%</span>
+                      <span className="text-slate-400"> / </span>
+                      <span className="font-semibold text-mg-teal">{pct(d.booked, p.booked)}%</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t-2 border-slate-200 bg-mg-surface/50 font-semibold text-slate-900">
+                <tr>
+                  <td className="py-3 px-5">All doctors</td>
+                  <td className="py-3 px-4">{inr(money.total)}</td>
+                  <td className="py-3 px-4">{p.booked} patients ({p.completed} seen)</td>
+                  <td className="py-3 px-4 text-right">{p.completed ? inr(Math.round(money.total / p.completed)) : '—'}</td>
+                  <td className="py-3 px-5 text-right">100%</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </DeskCard>
+
+      {trend.length > 1 && (
+        <DeskCard className="p-4 sm:p-5 space-y-4">
+          <SectionHead
+            title={`Revenue & Footfall per ${analytics.bucket === 'month' ? 'Month' : 'Day'}`}
+            subtitle="Blue is collections, teal is patients — read across to compare"
+          />
+          <div className="space-y-3">
+            {trend.map((r) => (
+              <div key={r.label} className="grid grid-cols-[90px_1fr_1fr] gap-3 items-center">
+                <span className="text-xs font-medium text-slate-700">{bucketLabel(r.label, analytics.bucket)}</span>
+                <Bar label="" value={r.revenue} max={trendMaxRevenue} display={inr(r.revenue)} tone="blue" />
+                <Bar label="" value={r.booked || 0} max={trendMaxBooked} display={`${r.booked || 0} patients`} tone="teal" />
+              </div>
+            ))}
+          </div>
+        </DeskCard>
+      )}
+    </div>
   );
 }

@@ -70,17 +70,17 @@ export default function RosterView() {
     const opening = !d.session.isBookingOpen;
     if (!opening) {
       const ok = await confirm({
-        title: `Close bookings for ${d.name}?`,
-        message: 'No new tokens can be issued, in the app or at the desk.',
+        title: `Close online bookings for ${d.name}?`,
+        message: 'Patients can no longer book from the app. Walk-ins can still be registered at the desk.',
         detail: 'Patients already in the queue keep their tokens.',
-        confirmLabel: 'Close bookings',
+        confirmLabel: 'Close online bookings',
       });
       if (!ok) return;
     }
     setBusyId(d.doctorId);
     try {
       await api.post(`/api/queue/${d.doctorId}/booking`, { isOpen: opening });
-      toast.success(opening ? `Bookings opened for ${d.name}` : `Bookings closed for ${d.name}`);
+      toast.success(opening ? `Online bookings opened for ${d.name}` : `Online bookings closed for ${d.name}`);
       refetch();
     } catch (e) {
       toast.error(e?.response?.data?.error?.message || e.message);
@@ -191,7 +191,7 @@ export default function RosterView() {
                   <span className="text-slate-500">
                     Slot state:{' '}
                     <strong className={clsx('font-medium', d.session.isBookingOpen ? 'text-emerald-700' : 'text-rose-600')}>
-                      {d.session.isBookingOpen ? 'Open for walk-ins & app' : 'Bookings on hold'}
+                      {d.session.isBookingOpen ? 'Open for app bookings & walk-ins' : 'App bookings closed · walk-ins only'}
                     </strong>
                     {booked > 0 && <span className="text-slate-400"> · {booked} booked today</span>}
                   </span>
@@ -204,7 +204,7 @@ export default function RosterView() {
                       disabled={d.session.isOnBreak}
                       title={d.session.isOnBreak ? 'End the break first — a break already pauses the queue' : undefined}
                     >
-                      {d.session.isBookingOpen ? 'Hold slot' : 'Open slot'}
+                      {d.session.isBookingOpen ? 'Close online booking' : 'Open online booking'}
                     </Button>
                   )}
                 </div>

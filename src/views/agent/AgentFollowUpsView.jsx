@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { DeskCard, EmptyNote, PageHeader, Pill, Segmented, StatTile } from '../../components/desk/ui.jsx';
 import { AddLeadModal, LogVisitModal, OUTCOMES } from '../../components/agent/LeadModals.jsx';
+import { DayAgenda, FollowUpCalendar, dayKey, followUpEvents } from '../../components/agent/FollowUpCalendar.jsx';
 import { APPROVAL } from './approvalStatus.js';
 
 const STAGE = {
@@ -58,6 +59,8 @@ function LeadCard({ lead, onLog }) {
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <Pill tone={stage.tone}>{stage.label}</Pill>
+          {/* They asked us first, from the /clinic page — call back quickly. */}
+          {lead.source === 'ENQUIRY' && <Pill tone="amber">Website enquiry</Pill>}
           {approval && <Pill tone={approval.tone} dot>{approval.short}</Pill>}
         </div>
       </div>
@@ -164,6 +167,9 @@ export default function AgentFollowUpsView() {
   const [q, setQ] = useState('');
   const [adding, setAdding] = useState(false);
   const [logging, setLogging] = useState(null);
+  const [view, setView] = useState('CARDS');
+  const [month, setMonth] = useState(() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), 1); });
+  const [day, setDay] = useState(() => dayKey(new Date()));
 
   const leads = data ?? [];
   const now = new Date();
@@ -195,6 +201,16 @@ export default function AgentFollowUpsView() {
     return [...filtered].sort((a, b) => (a.nextVisitAt ? new Date(a.nextVisitAt) : Infinity) - (b.nextVisitAt ? new Date(b.nextVisitAt) : Infinity));
   }, [groups, filter, q]);
 
+  // Calendar ignores the status filter (it shows every dated follow-up) but honours search.
+  const searched = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return s ? leads.filter((l) => [l.clinicName, l.contactName, l.contactPhone, l.address?.city, l.address?.line1].some((v) => String(v || '').toLowerCase().includes(s))) : leads;
+  }, [leads, q]);
+  const events = useMemo(() => followUpEvents(searched), [searched]);
+  const dayEvents = events.filter((e) => dayKey(e.at) === day);
+  const dayLeads = [...new Map(dayEvents.map((e) => [e.lead._id, e.lead])).values()];
+  const [dy, dm, dd] = day.split('-').map(Number);
+
   const replace = (lead) => setData((rows) => {
     const list = rows ?? [];
     return list.some((r) => r._id === lead._id) ? list.map((r) => (r._id === lead._id ? lead : r)) : [lead, ...list];
@@ -220,7 +236,17 @@ export default function AgentFollowUpsView() {
       </div>
 
       <DeskCard className="p-3 sm:p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <Segmented value={filter} onChange={setFilter} options={FILTERS.map((f) => ({ ...f, count: groups[f.value]?.length ?? 0 }))} />
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <Segmented
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'CARDS', label: <><i className="fa-solid fa-table-cells-large mr-1.5" aria-hidden="true" />Cards</> },
+              { value: 'CALENDAR', label: <><i className="fa-regular fa-calendar mr-1.5" aria-hidden="true" />Calendar</> },
+            ]}
+          />
+          {view === 'CARDS' && <Segmented value={filter} onChange={setFilter} options={FILTERS.map((f) => ({ ...f, count: groups[f.value]?.length ?? 0 }))} />}
+        </div>
         <div className="relative">
           <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" aria-hidden="true" />
           <input
@@ -233,7 +259,21 @@ export default function AgentFollowUpsView() {
         </div>
       </DeskCard>
 
-      {loading && !data ? (
+      {view === 'CALENDAR' ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
+            <div className="xl:col-span-2">
+              <FollowUpCalendar events={events} month={month} onMonth={setMonth} selected={day} onSelect={setDay} />
+            </div>
+            <DayAgenda date={new Date(dy, dm - 1, dd)} events={dayEvents} />
+          </div>
+          {dayLeads.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {dayLeads.map((l) => <LeadCard key={l._id} lead={l} onLog={setLogging} />)}
+            </div>
+          )}
+        </div>
+      ) : loading && !data ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[0, 1].map((i) => <div key={i} className="h-48 rounded-xl bg-white border border-slate-200 animate-pulse" />)}
         </div>

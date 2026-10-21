@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { ROLE_HOME } from '../../lib/constants.js';
+import { ROLE_HOME, ROLES } from '../../lib/constants.js';
 import { portalAllows } from '../../lib/portals.js';
 import { WrongPortal } from './WrongPortal.jsx';
 import { Logo } from '../ui/Icon.jsx';
@@ -29,8 +29,10 @@ export function RequireAuth({ children }) {
 
 export function RequireRole({ roles, children }) {
   const { status, role } = useAuth();
+  const location = useLocation();
   if (status === 'loading') return <AuthSplash />;
-  if (status !== 'authed') return <Navigate to="/login" replace />;
+  // Every role-gated tree is a staff area; patients only ever use RequireAuth.
+  if (status !== 'authed') return <Navigate to="/clinic/login" state={{ from: location.pathname }} replace />;
   // A role this port does not serve gets told where to go, not bounced into a
   // redirect loop against a home route that also isn't served here.
   if (!portalAllows(role)) return <WrongPortal role={role} />;
@@ -61,10 +63,17 @@ export function PublicOrRoleHome({ roles, children }) {
   return children;
 }
 
+/**
+ * The bare domain. A guest lands on the patient portal — browsing doctors
+ * needs no account; booking asks them to sign in. Staff start at /clinic.
+ */
 export function RedirectHome() {
   const { status, role } = useAuth();
   if (status === 'loading') return <AuthSplash />;
-  if (status !== 'authed') return <Navigate to="/login" replace />;
+  if (status !== 'authed') {
+    // A staff-only build (VITE_PORTAL=district|super) serves no patient pages.
+    return <Navigate to={portalAllows(ROLES.PATIENT) ? '/p/explore' : '/clinic/login'} replace />;
+  }
   if (!portalAllows(role)) return <WrongPortal role={role} />;
   return <Navigate to={ROLE_HOME[role] || '/p/explore'} replace />;
 }

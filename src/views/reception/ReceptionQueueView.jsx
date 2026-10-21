@@ -15,7 +15,7 @@ import { BreakStateManager } from '../../components/doctor/BreakStateManager.jsx
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { ChamberHero } from '../../components/desk/ChamberHero.jsx';
 import { DeskStats, SkippedPanel, DeskRoster } from '../../components/desk/DeskPanels.jsx';
-import { AudioUnlockBanner, DeskCard, DoctorPicker, Pill } from '../../components/desk/ui.jsx';
+import { AudioUnlockBanner, DeskCard, DoctorPicker, Pill, RefreshButton } from '../../components/desk/ui.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { CancelTokenModal, CancellationsPanel } from '../../components/desk/Cancellations.jsx';
 
@@ -54,17 +54,17 @@ export default function ReceptionQueueView() {
     const name = doctors?.find((d) => d._id === doctorId)?.name || 'this doctor';
     if (!isOpen) {
       const ok = await confirm({
-        title: 'Close bookings?',
-        message: `No new tokens can be issued for ${name}, in the app or at this desk.`,
+        title: 'Close online bookings?',
+        message: `Patients can no longer book ${name} from the app. Walk-ins can still be registered at this desk.`,
         detail: 'Patients already in the queue keep their tokens and are unaffected.',
-        confirmLabel: 'Close bookings',
+        confirmLabel: 'Close online bookings',
       });
       if (!ok) return;
     }
     setBookingBusy(true);
     try {
       await api.post(`/api/queue/${doctorId}/booking`, { isOpen });
-      toast.success(isOpen ? `Bookings opened for ${name}` : `Bookings closed for ${name}`);
+      toast.success(isOpen ? `Online bookings opened for ${name}` : `Online bookings closed for ${name}`);
       refetch();
     } catch (e) {
       toast.error(e?.response?.data?.error?.message || e.message);
@@ -94,7 +94,7 @@ export default function ReceptionQueueView() {
             is how a desk ends up unsure which one actually did it. */}
         <div className="flex items-center gap-3 shrink-0">
           <Pill dot tone={s?.session?.isOnBreak ? 'amber' : bookingOpen ? 'emerald' : 'slate'}>
-            {s?.session?.isOnBreak ? 'On break' : bookingOpen ? 'Bookings open' : 'Bookings closed'}
+            {s?.session?.isOnBreak ? 'On break' : bookingOpen ? 'Online bookings open' : 'Online bookings closed'}
           </Pill>
           <Button
             size="sm"
@@ -104,8 +104,9 @@ export default function ReceptionQueueView() {
             onClick={() => toggleBooking(!bookingOpen)}
           >
             <i className={clsx('fa-solid', bookingOpen ? 'fa-ban' : 'fa-lock-open')} aria-hidden="true" />
-            {bookingOpen ? 'Close bookings' : 'Open bookings'}
+            {bookingOpen ? 'Close online booking' : 'Open online booking'}
           </Button>
+          <RefreshButton onRefresh={refetch} />
         </div>
       </DeskCard>
 
@@ -133,6 +134,7 @@ export default function ReceptionQueueView() {
         filter={filter}
         onFilter={setFilter}
         busy={desk.busy}
+        onRefresh={refetch}
         canCancel
         onAction={(action, t) => (action === 'CANCEL' ? setCancelling(t) : desk.onRowAction(action, t))}
       />
