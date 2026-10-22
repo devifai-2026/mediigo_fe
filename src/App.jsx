@@ -17,6 +17,7 @@ import DoctorDetailView from './views/patient/DoctorDetailView.jsx';
 import TrackerView from './views/patient/TrackerView.jsx';
 import BookingsView from './views/patient/BookingsView.jsx';
 import ProfileView from './views/patient/ProfileView.jsx';
+import RecordsView from './views/patient/RecordsView.jsx';
 
 import DoctorChamberView from './views/doctor/DoctorChamberView.jsx';
 import DoctorFollowUpsView from './views/doctor/DoctorFollowUpsView.jsx';
@@ -29,6 +30,8 @@ import RosterView from './views/desk/RosterView.jsx';
 import AnalyticsView from './views/desk/AnalyticsView.jsx';
 import DeskProfileView from './views/desk/DeskProfileView.jsx';
 import PettyCashView from './views/desk/PettyCashView.jsx';
+
+import PharmacyView from './views/pharmacy/PharmacyView.jsx';
 
 import AgentOnboardView from './views/agent/AgentOnboardView.jsx';
 import AgentSubmissionsView from './views/agent/AgentSubmissionsView.jsx';
@@ -67,6 +70,7 @@ const PATIENT_NAV = [
   { to: '/p/explore', label: 'Explore', icon: 'compass' },
   { to: '/p/tracker', label: 'Tracker', icon: 'clock' },
   { to: '/p/bookings', label: 'Bookings', icon: 'ticket' },
+  { to: '/p/records', label: 'Records', icon: 'doc' },
   { to: '/p/profile', label: 'Profile', icon: 'user' },
 ];
 
@@ -93,6 +97,12 @@ const RECEPTION_NAV = [
   ...deskNav('/r').slice(0, 5),
   { to: '/r/petty', label: 'Petty Cash', icon: 'revenue', fa: 'fa-wallet' },
   ...deskNav('/r').slice(5),
+];
+
+// The clinic pharmacy: the prescriptions waiting to be filled, and the ones done.
+const PHARMACY_NAV = [
+  { to: '/ph/queue', label: 'To dispense', icon: 'list', fa: 'fa-prescription-bottle-medical' },
+  { to: '/ph/history', label: 'Dispensed', icon: 'doc', fa: 'fa-clock-rotate-left' },
 ];
 
 const AGENT_NAV = [
@@ -182,6 +192,7 @@ export default function App() {
         <Route path="/p/doctors/:doctorId" element={<DoctorDetailView />} />
         <Route path="/p/tracker" element={<RequireAuth><TrackerView /></RequireAuth>} />
         <Route path="/p/bookings" element={<RequireAuth><BookingsView /></RequireAuth>} />
+        <Route path="/p/records" element={<RequireAuth><RecordsView /></RequireAuth>} />
         <Route path="/p/profile" element={<RequireAuth><ProfileView /></RequireAuth>} />
       </Route>
 
@@ -224,6 +235,17 @@ export default function App() {
         <Route path="/r/petty" element={<PettyCashView />} />
         {/* Revenue was renamed Analytics; keep old links working. */}
         <Route path="/r/revenue" element={<Navigate to="/r/analytics" replace />} />
+      </Route>
+
+      <Route
+        element={
+          <RequireRole roles={[ROLES.PHARMACIST]}>
+            <PortalShell items={PHARMACY_NAV} subtitle="Pharmacy" variant="desk" />
+          </RequireRole>
+        }
+      >
+        <Route path="/ph/queue" element={<PharmacyView key="queue" view="PENDING" />} />
+        <Route path="/ph/history" element={<PharmacyView key="history" view="DONE" />} />
       </Route>
 
       <Route

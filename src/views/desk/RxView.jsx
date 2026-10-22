@@ -5,17 +5,22 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useApi } from '../../hooks/useApi.js';
 import { useQueueSnapshot } from '../../hooks/useQueueSnapshot.js';
+import { useSocketEvent } from '../../hooks/useSocketEvent.js';
+import { EVENTS } from '../../lib/socketEvents.js';
+import * as storage from '../../lib/storage.js';
 import { api, unwrap } from '../../lib/api.js';
-import { ROLES, TOKEN_STATUS } from '../../lib/constants.js';
+import { PHARMACY_STATUS, ROLES, TOKEN_STATUS } from '../../lib/constants.js';
 import { inr, phone, token } from '../../lib/format.js';
 import { Button } from '../../components/ui/Button.jsx';
-import { Field, Input, Select, Textarea } from '../../components/ui/Field.jsx';
+import { Field, INPUT, Input, Select, Textarea } from '../../components/ui/Field.jsx';
 import { DeskCard, DoctorPicker, EmptyNote, IconTile, LoadError, PageHeader, Pill, PrintPortal, RefreshButton, SectionHead } from '../../components/desk/ui.jsx';
 import { RxHeader, RxPrint, RxViewModal } from '../../components/desk/RxPrint.jsx';
 import { isoToday } from '../../components/desk/DateRangePicker.jsx';
 import { patientLine } from '../../components/desk/deskFormat.js';
-
-const blankMed = () => ({ name: '', dosage: '1-0-1', duration: '5 Days', instruction: 'After meals' });
+import { SuggestInput } from '../../components/desk/rx/SuggestInput.jsx';
+import { MedicineRows, blankMed, clearMedicineCache, isBlank, resolveSpoken } from '../../components/desk/rx/MedicineRows.jsx';
+import { DictationBar } from '../../components/desk/rx/DictationBar.jsx';
+import { parseDictation, useDictation } from '../../components/desk/rx/dictation.js';
 
 const STATUS_LABEL = {
   [TOKEN_STATUS.IN_CHAMBER]: 'In chamber',
@@ -74,8 +79,32 @@ export default function RxView() {
   const [phoneQuery, setPhoneQuery] = useState('');
   useEffect(() => { setPhoneQuery(patient?.phone || ''); }, [patient?.tokenId]); // eslint-disable-line react-hooks/exhaustive-deps
   const digits = phoneQuery.replace(/\D/g, '').slice(-10);
-  const lookupUrl = digits.length === 10 ? `/api/prescriptions/lookup?phone=${digits}` : null;
+  const lookupUrl = digits.length === 10 ? `/api/prescriptions/lookup?phone=${digits}&visits=30` : null;
   const { data: history, loading: historyLoading, error: historyError, refetch: refetchHistory } = useApi(lookupUrl, { skip: !lookupUrl });
+
+  // This patient's previous prescription here, for "Repeat last Rx". Matched on
+  // the name too: a family sharing one phone shares the lookup.
+  const lastRx = useMemo(() => {
+    const visit = (history?.visits ?? []).find((v) => v.tokenId !== patient?.tokenId
+      && v.prescriptions.length && (!patient?.name || v.patientName === patient.name));
+    return visit ? { ...visit.prescriptions[0], date: visit.date } : null;
+  }, [history, patient?.tokenId, patient?.name]);
+
+  // Whether this clinic has a pharmacy login to send prescriptions to.
+  const { data: pharmacy } = useApi('/api/pharmacy/status');
+  const hasPharmacy = Boolean(pharmacy?.hasPharmacy);
+  // The pharmacy dispensing one of this doctor's pads updates the EMR live.
+  useSocketEvent(EVENTS.PHARMACY_RX_UPDATED, () => { if (lookupUrl) refetchHistory(); }, [lookupUrl]);
+
+  const sendLater = async (rx) => {
+    try {
+      await api.post(`/api/prescriptions/${rx._id}/send-to-pharmacy`);
+      toast.success(`Sent to the pharmacy for ${rx.patientSnapshot?.name || 'the patient'}`);
+      refetchHistory();
+    } catch (e) {
+      toast.error(e?.response?.data?.error?.message || e.message);
+    }
+  };
 
   const [printing, setPrinting] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -118,6 +147,8 @@ export default function RxView() {
                 patient={patient}
                 doctor={doctorRec}
                 clinicName={clinicName}
+                lastRx={lastRx}
+                hasPharmacy={hasPharmacy}
                 onPick={pick}
                 onSaved={(rx, print) => {
                   refetchHistory();
@@ -140,6 +171,10 @@ export default function RxView() {
               loading={historyLoading}
               onView={setViewing}
               onPrint={setPrinting}
+              onSend={isDoctor && hasPharmacy ? sendLater : null}
+              myDoctorId={isDoctor ? user?.doctorId : null}
+              isDoctor={isDoctor}
+              patientName={patient?.name}
               footfallPath={footfallPath}
             />
           </div>
@@ -191,7 +226,24 @@ const defaultDue = (patient, doctor) => {
   return fee != null ? String(fee) : '';
 };
 
-function RxWriter({ patients, patient, doctor, clinicName, onPick, onSaved, toast }) {
+// Starting points for a doctor with no history yet; their own diagnoses rank first.
+const COMMON_DIAGNOSES = [
+  'Viral fever', 'Upper respiratory tract infection', 'Acute pharyngitis', 'Acute bronchitis', 'Allergic rhinitis',
+  'Acute gastritis', 'Acute gastroenteritis', 'Dyspepsia', 'Urinary tract infection', 'Hypertension',
+  'Type 2 diabetes mellitus', 'Hypothyroidism', 'Migraine', 'Vertigo', 'Myalgia', 'Low back pain',
+  'Tinea corporis', 'Contact dermatitis', 'Acne vulgaris', 'Conjunctivitis', 'Acute otitis media', 'Iron deficiency anaemia',
+  'Dengue fever (suspected)', 'Enteric fever (suspected)',
+];
+
+const prefixMatch = (q, text) => {
+  const qw = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const tw = text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  return qw.every((w) => tw.some((t) => t.startsWith(w)));
+};
+
+const shortDate = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '');
+
+function RxWriter({ patients, patient, doctor, clinicName, lastRx, hasPharmacy, onPick, onSaved, toast }) {
   const [symptoms, setSymptoms] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
   const [totalDue, setTotalDue] = useState('');
@@ -199,10 +251,21 @@ function RxWriter({ patients, patient, doctor, clinicName, onPick, onSaved, toas
   const [advice, setAdvice] = useState('');
   const [reviewDate, setReviewDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [lastHeard, setLastHeard] = useState('');
+  // Remembered per browser: a doctor whose patients mostly buy here leaves it on.
+  const [sendRx, setSendRx] = useState(() => storage.get('rx.sendToPharmacy', true));
+  const toggleSend = () => setSendRx((v) => { storage.set('rx.sendToPharmacy', !v); return !v; });
+  const sending = hasPharmacy && sendRx;
+  const { data: patterns, refetch: refetchPatterns } = useApi('/api/prescriptions/patterns');
+
+  const dictation = useDictation({ onPhrase: (text) => handlePhrase(text) });
 
   // A fresh pad for every patient: one patient's medicines must never be
-  // saved or printed under the next one's name.
+  // saved or printed under the next one's name — which is also why the mic
+  // switches off when the patient changes.
   useEffect(() => {
+    dictation.stop();
+    setLastHeard('');
     // Symptoms come straight from the booking; the diagnosis is the doctor's.
     setSymptoms(symptomsOf(patient));
     setDiagnosis('');
@@ -212,25 +275,73 @@ function RxWriter({ patients, patient, doctor, clinicName, onPick, onSaved, toas
     setReviewDate('');
   }, [patient?.tokenId, Boolean(doctor)]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const setMed = (i, patch) => setMeds((m) => m.map((x, j) => (j === i ? { ...x, ...patch } : x)));
-  const filled = meds.filter((m) => m.name.trim());
+  const filled = meds.filter((m) => !isBlank(m));
+  const unchecked = filled.filter((m) => m.check).length;
   const canSave = patient && diagnosis.trim() && filled.length > 0;
+
+  /** Add medicines below what is already on the pad, skipping repeats, keeping one blank row last. */
+  const addMeds = (list) => setMeds((m) => {
+    const have = m.filter((x) => !isBlank(x));
+    const names = new Set(have.map((x) => x.name.trim().toLowerCase()));
+    const fresh = list.filter((x) => !names.has(x.name.trim().toLowerCase()));
+    return [...have, ...fresh, blankMed()].slice(0, 30);
+  });
+
+  async function handlePhrase(text) {
+    setLastHeard(text);
+    for (const action of parseDictation(text)) {
+      if (action.kind === 'diagnosis') setDiagnosis(action.text);
+      else if (action.kind === 'advice') setAdvice((v) => [v.trim(), action.text].filter(Boolean).join('. '));
+      else if (action.kind === 'symptoms') setSymptoms((v) => [v.trim(), action.text].filter(Boolean).join('; '));
+      else if (action.kind === 'stop') dictation.stop();
+      else if (action.kind === 'undo') {
+        setMeds((m) => [...m.filter((x) => !isBlank(x)).slice(0, -1), blankMed()]);
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        addMeds([await resolveSpoken(action.med)]);
+      }
+    }
+  }
+
+  const myDiagnoses = patterns?.diagnoses ?? [];
+  const loadDiagnoses = (q) => {
+    const mine = myDiagnoses.filter((d) => !q.trim() || prefixMatch(q, d.diagnosis));
+    const taken = new Set(mine.map((d) => d.diagnosis.toLowerCase()));
+    const common = q.trim()
+      ? COMMON_DIAGNOSES.filter((d) => !taken.has(d.toLowerCase()) && prefixMatch(q, d)).map((d) => ({ diagnosis: d }))
+      : [];
+    return [...mine, ...common].slice(0, 8);
+  };
+  // The doctor's last pad for this diagnosis, offered while the pad is empty.
+  const usual = myDiagnoses.find((d) => d.medicines?.length && d.diagnosis.trim().toLowerCase() === diagnosis.trim().toLowerCase());
+
+  const repeatLast = () => {
+    addMeds(lastRx.medicines.map(({ name, dosage, duration, instruction }) => ({ name, dosage, duration, instruction })));
+    if (!diagnosis.trim()) setDiagnosis(lastRx.diagnosis);
+  };
 
   const save = async (print) => {
     if (!canSave) return;
+    dictation.stop();
     setSaving(true);
     try {
       const rx = unwrap(await api.post('/api/prescriptions', {
         tokenId: patient.tokenId,
         symptoms: symptoms.trim(),
         diagnosis: diagnosis.trim(),
-        medicines: filled.map((m) => ({ ...m, name: m.name.trim() })),
+        medicines: filled.map(({ name, dosage, duration, instruction }) => ({ name: name.trim(), dosage, duration, instruction })),
         advice: advice.trim(),
         reviewDate: reviewDate || null,
         totalDue: totalDue === '' ? null : Number(totalDue),
+        sendToPharmacy: sending,
       }));
-      toast.success(`Prescription saved to ${patient.name}’s record`);
+      toast.success(sending
+        ? `Saved to ${patient.name}’s record and sent to the pharmacy`
+        : `Prescription saved to ${patient.name}’s record`);
       onSaved(rx, print);
+      // What this doctor "usually" writes has just changed.
+      clearMedicineCache();
+      refetchPatterns();
       setMeds([blankMed()]);
       setAdvice('');
       setReviewDate('');
@@ -262,75 +373,92 @@ function RxWriter({ patients, patient, doctor, clinicName, onPick, onSaved, toas
 
       <PatientSummary patient={patient} />
 
+      <DictationBar
+        listening={dictation.listening}
+        interim={dictation.interim}
+        lastHeard={lastHeard}
+        error={dictation.error}
+        onStart={dictation.start}
+        onStop={dictation.stop}
+      />
+
       <Field label="Clinical symptoms" hint="Filled in automatically from the booking — edit if needed">
         <Input value={symptoms} maxLength={500} onChange={(e) => setSymptoms(e.target.value)} placeholder="e.g. Fever for 3 days, dry cough" />
       </Field>
 
       <Field label="Diagnosis" required>
-        <Input value={diagnosis} maxLength={300} onChange={(e) => setDiagnosis(e.target.value)} placeholder="e.g. Viral fever / Acute gastritis" />
+        <SuggestInput
+          className={INPUT}
+          value={diagnosis}
+          maxLength={300}
+          onChange={setDiagnosis}
+          onPick={(d) => setDiagnosis(d.diagnosis)}
+          load={loadDiagnoses}
+          itemKey={(d) => d.diagnosis}
+          heading={(q) => (q.trim() ? 'Diagnoses' : 'Your frequent diagnoses')}
+          renderItem={(d) => (
+            <span className="flex items-center justify-between gap-3">
+              <span className="text-[13px] text-slate-900 truncate">{d.diagnosis}</span>
+              {d.count && <span className="shrink-0 text-[10px] text-slate-400">{d.count}×</span>}
+            </span>
+          )}
+          placeholder="e.g. Viral fever / Acute gastritis"
+        />
       </Field>
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-[11px] font-medium text-slate-700">
             <i className="fa-solid fa-pills text-mg-teal mr-1.5" aria-hidden="true" />Prescribed medicines
+            {filled.length > 0 && <span className="ml-1 text-slate-400">({filled.length})</span>}
           </span>
-          <button
-            type="button"
-            onClick={() => setMeds((m) => [...m, blankMed()])}
-            disabled={meds.length >= 30}
-            className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-mg-teal text-xs font-medium transition"
-          >
-            <i className="fa-solid fa-plus text-[10px] mr-1" aria-hidden="true" />Add medicine
-          </button>
+          <div className="flex flex-wrap gap-1.5">
+            {lastRx && (
+              <button
+                type="button"
+                onClick={repeatLast}
+                title={`${lastRx.diagnosis}: ${lastRx.medicines.map((m) => m.name).join(', ')}`}
+                className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-mg-blue text-xs font-medium transition"
+              >
+                <i className="fa-solid fa-rotate-left text-[10px] mr-1" aria-hidden="true" />Repeat last Rx ({shortDate(lastRx.date)})
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setMeds((m) => [...m, blankMed()])}
+              disabled={meds.length >= 30}
+              className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-mg-teal text-xs font-medium transition"
+            >
+              <i className="fa-solid fa-plus text-[10px] mr-1" aria-hidden="true" />Add medicine
+            </button>
+          </div>
         </div>
 
-        <div className="border border-slate-200 rounded-lg overflow-hidden">
-          <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-2 bg-mg-surface text-[10px] font-medium uppercase text-slate-500">
-            <span className="col-span-5">Medicine name</span>
-            <span className="col-span-2">Dosage</span>
-            <span className="col-span-2">Duration</span>
-            <span className="col-span-3">Timing / notes</span>
+        {usual && filled.length === 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-teal-200 bg-teal-50/60 px-3 py-2.5">
+            <p className="text-xs text-slate-700 min-w-0">
+              <strong className="font-semibold text-mg-teal">Your usual for {usual.diagnosis}:</strong>{' '}
+              {usual.medicines.map((m) => m.name).join(', ')}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                addMeds(usual.medicines.map(({ name, dosage, duration, instruction }) => ({ name, dosage, duration, instruction })));
+                if (!advice.trim() && usual.advice) setAdvice(usual.advice);
+              }}
+              className="shrink-0 px-3 py-1 rounded-lg bg-mg-teal hover:bg-mg-tealDark text-white text-xs font-medium transition"
+            >
+              Use these
+            </button>
           </div>
-          <div className="divide-y divide-slate-100">
-            {meds.map((m, i) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <div key={i} className="grid grid-cols-12 gap-2 p-2 items-center">
-                <input
-                  className="col-span-12 sm:col-span-5 rx-input font-medium" placeholder="e.g. Tab Paracetamol 650mg"
-                  value={m.name} maxLength={120} list="rx-medicine-hints" aria-label="Medicine name"
-                  onChange={(e) => setMed(i, { name: e.target.value })}
-                />
-                <input
-                  className="col-span-4 sm:col-span-2 rx-input" placeholder="1-0-1" value={m.dosage} maxLength={40}
-                  list="rx-dosage-hints" aria-label="Dosage" onChange={(e) => setMed(i, { dosage: e.target.value })}
-                />
-                <input
-                  className="col-span-4 sm:col-span-2 rx-input" placeholder="5 Days" value={m.duration} maxLength={40}
-                  list="rx-duration-hints" aria-label="Duration" onChange={(e) => setMed(i, { duration: e.target.value })}
-                />
-                <div className="col-span-4 sm:col-span-3 flex items-center gap-1">
-                  <input
-                    className="rx-input min-w-0" placeholder="After meals" value={m.instruction} maxLength={120}
-                    list="rx-timing-hints" aria-label="Timing or notes" onChange={(e) => setMed(i, { instruction: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setMeds((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : [blankMed()]))}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 shrink-0"
-                    aria-label="Remove medicine"
-                  >
-                    <i className="fa-solid fa-trash-can text-xs" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <datalist id="rx-dosage-hints">{['1-0-1', '1-1-1', '1-0-0', '0-0-1', '0-1-0', '1-1-1-1', 'SOS'].map((v) => <option key={v} value={v} />)}</datalist>
-        <datalist id="rx-duration-hints">{['1 Day', '3 Days', '5 Days', '7 Days', '10 Days', '14 Days', '1 Month', 'Continue'].map((v) => <option key={v} value={v} />)}</datalist>
-        <datalist id="rx-timing-hints">{['After meals', 'Before meals', 'Before breakfast', 'At bedtime', 'With food', 'Empty stomach'].map((v) => <option key={v} value={v} />)}</datalist>
-        <datalist id="rx-medicine-hints">{['Tab Paracetamol 650mg', 'Tab Pantoprazole 40mg', 'Tab Cetirizine 10mg', 'Tab Azithromycin 500mg', 'Syr Benadryl 10ml', 'ORS Sachet'].map((v) => <option key={v} value={v} />)}</datalist>
+        )}
+
+        <MedicineRows meds={meds} setMeds={setMeds} />
+        <p className="text-[11px] text-slate-400">
+          {unchecked > 0
+            ? <span className="text-amber-700"><i className="fa-solid fa-circle-exclamation mr-1" aria-hidden="true" />{unchecked} medicine{unchecked === 1 ? '' : 's'} added by voice (highlighted) — check before saving.</span>
+            : 'Pick a suggestion with Enter to fill the row and jump to the next. Tap the chips to change dose, days or timing.'}
+        </p>
       </div>
 
       <Field label="Doctor advice & lab directives">
@@ -345,18 +473,77 @@ function RxWriter({ patients, patient, doctor, clinicName, onPick, onSaved, toas
           <Input inputMode="decimal" value={totalDue} onChange={(e) => setTotalDue(e.target.value.replace(/[^\d.]/g, ''))} placeholder="0" />
         </Field>
       </div>
+      {hasPharmacy && (
+        <label className={clsx(
+          'flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition',
+          sendRx ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200 bg-white',
+        )}
+        >
+          <span className="flex items-center gap-2.5 min-w-0">
+            <i className={clsx('fa-solid fa-prescription-bottle-medical', sendRx ? 'text-emerald-600' : 'text-slate-400')} aria-hidden="true" />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-slate-900">Send to clinic pharmacy</span>
+              <span className="block text-[11px] text-slate-500">
+                {sendRx ? 'The pharmacy gets this pad the moment you save' : 'Off — the patient will buy medicines elsewhere'}
+              </span>
+            </span>
+          </span>
+          <input type="checkbox" role="switch" checked={sendRx} onChange={toggleSend} className="w-4 h-4 accent-[#3E9A92] shrink-0" />
+        </label>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-xs text-slate-500">{totalDue !== '' && <>Patient to pay <strong className="font-semibold text-slate-800">{inr(Number(totalDue) || 0)}</strong></>}</p>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => save(false)} disabled={!canSave || saving} className="flex-1">
-            Save only
-          </Button>
-          <Button onClick={() => save(true)} loading={saving} disabled={!canSave} className="flex-[2]">
-            <i className="fa-solid fa-file-signature" aria-hidden="true" /> Save to EMR &amp; Print
-          </Button>
-        </div>
+        {/* Sent to the pharmacy, the pad needs no paper: saving is the main
+            action and printing is the exception. */}
+        {sending ? (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => save(true)} disabled={!canSave || saving} className="flex-1">
+              <i className="fa-solid fa-print" aria-hidden="true" /> Save &amp; print
+            </Button>
+            <Button onClick={() => save(false)} loading={saving} disabled={!canSave} className="flex-[2]">
+              <i className="fa-solid fa-paper-plane" aria-hidden="true" /> Save &amp; send to pharmacy
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => save(false)} disabled={!canSave || saving} className="flex-1">
+              Save only
+            </Button>
+            <Button onClick={() => save(true)} loading={saving} disabled={!canSave} className="flex-[2]">
+              <i className="fa-solid fa-file-signature" aria-hidden="true" /> Save &amp; print
+            </Button>
+          </div>
+        )}
       </div>
     </DeskCard>
+  );
+}
+
+const PHARMACY_PILL = {
+  [PHARMACY_STATUS.PENDING]: { tone: 'amber', label: 'At pharmacy' },
+  [PHARMACY_STATUS.DISPENSED]: { tone: 'emerald', label: 'Dispensed' },
+  [PHARMACY_STATUS.PARTIAL]: { tone: 'blue', label: 'Partly dispensed' },
+};
+
+/** Where this pad stands at the clinic pharmacy, or a way to send it there. */
+function PharmacyLine({ rx, onSend }) {
+  const p = rx.pharmacy;
+  if (!p) {
+    return onSend ? (
+      <button type="button" onClick={onSend} className="text-[11px] font-medium text-mg-teal hover:underline">
+        <i className="fa-solid fa-paper-plane text-[10px] mr-1" aria-hidden="true" />Send to pharmacy
+      </button>
+    ) : null;
+  }
+  const pill = PHARMACY_PILL[p.status];
+  const at = (d) => new Date(d).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+      <Pill tone={pill.tone}>{pill.label}</Pill>
+      <span>{p.status === PHARMACY_STATUS.PENDING ? `sent ${at(p.sentAt)}` : `${at(p.dispensedAt)}${p.dispensedByName ? ` · ${p.dispensedByName}` : ''}`}</span>
+      {p.unavailable?.length > 0 && <span className="text-rose-700">Not given: {p.unavailable.join(', ')}</span>}
+      {p.note && <span className="text-slate-500">· {p.note}</span>}
+    </div>
   );
 }
 
@@ -392,16 +579,34 @@ function PatientList({ patients, selected, onPick }) {
   );
 }
 
-function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPrint, footfallPath }) {
-  const visits = history?.visits ?? [];
-  const more = history ? history.totalVisits - visits.length : 0;
+/**
+ * The selected patient's history, in the app rather than on paper: every
+ * visit with its prescription readable in place. A doctor sees only the
+ * consultations they gave (the server enforces it); the desk sees the clinic's.
+ * A family sharing one phone is split by name, starting on today's patient.
+ */
+function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPrint, onSend, myDoctorId, isDoctor, patientName, footfallPath }) {
+  const all = history?.visits ?? [];
+  const more = history ? history.totalVisits - all.length : 0;
+  const names = [...new Set(all.map((v) => v.patientName).filter(Boolean))];
+  const [who, setWho] = useState(null);
+  const [openId, setOpenId] = useState(null);
+  // Back to today's patient whenever the number changes.
+  useEffect(() => { setWho(null); setOpenId(null); }, [history?.phone]);
+  const person = who ?? (names.includes(patientName) ? patientName : 'ALL');
+  const visits = person === 'ALL' ? all : all.filter((v) => v.patientName === person);
+  // The newest visit that has a prescription opens by itself.
+  const expanded = openId ?? visits.find((v) => v.prescriptions.length)?.tokenId;
+
   return (
     <DeskCard className="p-4 sm:p-5 space-y-4">
       <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
         <IconTile icon="fa-folder-open" tone="blue" />
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-slate-900">Patient EMR Record</h2>
-          <p className="text-xs text-slate-500">Last 3 visits for a mobile number at this clinic</p>
+          <h2 className="text-base font-semibold text-slate-900">Patient history</h2>
+          <p className="text-xs text-slate-500">
+            {isDoctor ? 'Your previous consultations with this patient' : 'Visits and prescriptions at this clinic'}
+          </p>
         </div>
       </div>
 
@@ -418,6 +623,24 @@ function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPri
         </div>
       </Field>
 
+      {valid && names.length > 1 && (
+        <div className="flex flex-wrap gap-1.5">
+          {['ALL', ...names].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => { setWho(n); setOpenId(null); }}
+              className={clsx(
+                'px-2.5 py-1 rounded-full border text-[11px] font-medium transition',
+                person === n ? 'bg-mg-blue border-mg-blue text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-mg-blue',
+              )}
+            >
+              {n === 'ALL' ? 'Everyone on this number' : n}
+            </button>
+          ))}
+        </div>
+      )}
+
       {!valid ? (
         <div className="bg-mg-surface rounded-lg">
           <EmptyNote icon="fa-magnifying-glass" title="Enter a mobile number" hint="Every visit booked with that number is fetched — family members sharing a phone included." />
@@ -428,44 +651,75 @@ function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPri
         </div>
       ) : !visits.length ? (
         <div className="bg-mg-surface rounded-lg">
-          <EmptyNote icon="fa-notes-medical" title="No visits for this number" hint="Saving a prescription starts this patient’s record." />
+          <EmptyNote
+            icon="fa-notes-medical"
+            title={isDoctor ? 'No earlier consultations with you' : 'No visits for this number'}
+            hint={isDoctor
+              ? 'Only visits you consulted on are shown here. Saving a prescription starts this patient’s record.'
+              : 'Saving a prescription starts this patient’s record.'}
+          />
         </div>
       ) : (
-        <div className="space-y-3 max-h-[620px] overflow-y-auto pr-1 custom-scrollbar">
-          {visits.map((v) => (
-            <article key={v.tokenId} className="rounded-lg border border-slate-200 bg-white p-3.5 space-y-2.5">
-              <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">{visitDate(v.date)} · {token(v.tokenNumber)}</p>
-                  <p className="text-[11px] text-slate-500 truncate">
-                    {[v.patientName, patientLine(v), v.doctorName].filter(Boolean).join(' • ')}
-                  </p>
-                </div>
-                <Pill tone={v.status === 'COMPLETED' ? 'emerald' : 'slate'}>{VISIT_STATUS[v.status] || v.status}</Pill>
-              </div>
-              {v.symptoms && <p className="text-[11px] text-slate-600"><strong className="font-medium">Symptoms:</strong> {v.symptoms}</p>}
-              {v.prescriptions.length ? v.prescriptions.map((rx) => (
-                <div key={rx._id} className="rounded-md bg-mg-surface p-2.5 space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-xs font-semibold text-mg-blue">{rx.diagnosis}</p>
-                    <div className="flex gap-1.5 shrink-0">
-                      <button type="button" onClick={() => onView(rx)} className="px-2 py-0.5 rounded-md border border-mg-teal text-mg-teal hover:bg-mg-teal hover:text-white text-[11px] font-medium transition">
-                        View
-                      </button>
-                      <button type="button" onClick={() => onPrint(rx)} className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 text-[11px]" aria-label="Print prescription">
-                        <i className="fa-solid fa-print" aria-hidden="true" />
-                      </button>
-                    </div>
+        <ol className="relative space-y-3 max-h-[720px] overflow-y-auto pr-1 custom-scrollbar">
+          {visits.map((v) => {
+            const isOpen = v.tokenId === expanded;
+            return (
+              <li key={v.tokenId} className="rounded-lg border border-slate-200 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setOpenId(isOpen ? '' : v.tokenId)}
+                  aria-expanded={isOpen}
+                  className="w-full text-left p-3.5 flex items-start justify-between gap-2"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-slate-900">{visitDate(v.date)} · {token(v.tokenNumber)}</span>
+                    <span className="block text-[11px] text-slate-500 truncate">
+                      {[v.patientName, patientLine(v), !isDoctor && v.doctorName].filter(Boolean).join(' • ')}
+                    </span>
+                    {!isOpen && v.prescriptions[0] && (
+                      <span className="block text-xs font-medium text-mg-blue truncate mt-0.5">{v.prescriptions[0].diagnosis}</span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <Pill tone={v.status === 'COMPLETED' ? 'emerald' : 'slate'}>{VISIT_STATUS[v.status] || v.status}</Pill>
+                    <i className={clsx('fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
+                  </span>
+                </button>
+
+                {isOpen && (
+                  <div className="px-3.5 pb-3.5 space-y-2.5 border-t border-slate-100 pt-2.5">
+                    {v.symptoms && <p className="text-[11px] text-slate-600"><strong className="font-medium">Symptoms:</strong> {v.symptoms}</p>}
+                    {v.prescriptions.length ? v.prescriptions.map((rx) => (
+                      <div key={rx._id} className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs"><span className="text-slate-400">Diagnosis:</span> <strong className="font-semibold text-mg-blue">{rx.diagnosis}</strong></p>
+                          <div className="flex gap-1 shrink-0">
+                            <button type="button" onClick={() => onView(rx)} className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 text-[11px]" aria-label="Open as pad">
+                              <i className="fa-solid fa-up-right-from-square" aria-hidden="true" />
+                            </button>
+                            <button type="button" onClick={() => onPrint(rx)} className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 text-[11px]" aria-label="Print prescription">
+                              <i className="fa-solid fa-print" aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+                        <ul className="rounded-md bg-mg-surface divide-y divide-white">
+                          {rx.medicines.map((m) => (
+                            <li key={m.name} className="px-2.5 py-1.5 text-[11px]">
+                              <span className="font-medium text-slate-900">{m.name}</span>
+                              <span className="text-slate-500"> — {[m.dosage, m.duration, m.instruction].filter(Boolean).join(' · ')}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        {rx.advice && <p className="text-[11px] text-slate-600"><span className="text-slate-400">Advice:</span> {rx.advice}</p>}
+                        <PharmacyLine rx={rx} onSend={onSend && String(rx.doctorId) === String(myDoctorId) ? () => onSend(rx) : null} />
+                      </div>
+                    )) : <p className="text-[11px] italic text-slate-400">No prescription for this visit</p>}
                   </div>
-                  <p className="text-[11px] text-slate-600 truncate">
-                    <i className="fa-solid fa-pills text-mg-teal mr-1" aria-hidden="true" />
-                    {rx.medicines.map((m) => m.name).join(', ')}
-                  </p>
-                </div>
-              )) : <p className="text-[11px] italic text-slate-400">No prescription for this visit</p>}
-            </article>
-          ))}
-        </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
       )}
 
       {valid && history && (
@@ -473,7 +727,7 @@ function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPri
           to={`${footfallPath}?view=FOOTFALL&range=year&q=${encodeURIComponent(history.phone)}`}
           className="block text-center text-xs font-medium text-mg-teal hover:underline"
         >
-          {more > 0 ? `${more} older visit${more === 1 ? '' : 's'} — ` : ''}See full history in the footfall register →
+          {more > 0 ? `${more} older visit${more === 1 ? '' : 's'} — ` : ''}See every visit in the footfall register →
         </Link>
       )}
     </DeskCard>

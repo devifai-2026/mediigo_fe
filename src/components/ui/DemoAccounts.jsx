@@ -8,6 +8,7 @@ const ROLE_CHIP = {
   PATIENT: 'bg-teal-50 text-teal-700 border-teal-200',
   DOCTOR: 'bg-blue-50 text-blue-700 border-blue-200',
   RECEPTIONIST: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  PHARMACIST: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   FIELD_AGENT: 'bg-amber-50 text-amber-700 border-amber-200',
   EXEC_ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
   SUPER_ADMIN: 'bg-slate-900 text-white border-slate-700',
@@ -17,7 +18,7 @@ const ROLE_CHIP = {
 // hunting for it at the bottom of a scroll box is the whole problem here.
 const ROLE_ORDER = [
   ROLES.SUPER_ADMIN, ROLES.EXEC_ADMIN, ROLES.FIELD_AGENT,
-  ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.PATIENT,
+  ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.PHARMACIST, ROLES.PATIENT,
 ];
 
 /**

@@ -3,11 +3,11 @@ import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
 import { phone as fmtPhone } from '../../lib/format.js';
 
-const ROLE_LABEL = { RECEPTIONIST: 'Front desk', DOCTOR: 'Doctor' };
+const ROLE_LABEL = { RECEPTIONIST: 'Front desk', DOCTOR: 'Doctor', PHARMACIST: 'Pharmacy' };
 
 const message = (c, clinicName) => [
   `Your Mediigo login${clinicName ? ` for ${clinicName}` : ''} is ready.`,
-  `Sign in at ${window.location.origin}/login`,
+  `Sign in at ${window.location.origin}/clinic/login`,
   `Mobile: ${c.phone}`,
   `Temporary password: ${c.tempPassword}`,
   'Please change it after your first sign-in.',

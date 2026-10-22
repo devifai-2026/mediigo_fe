@@ -3,7 +3,7 @@ import clsx from 'clsx';
 
 // One input style everywhere. 16px text on phones — anything smaller and iOS
 // Safari zooms the page on focus.
-const INPUT = 'w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-mg-teal focus:ring-2 focus:ring-mg-teal/20 transition disabled:opacity-60 disabled:bg-slate-50';
+export const INPUT = 'w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-mg-teal focus:ring-2 focus:ring-mg-teal/20 transition disabled:opacity-60 disabled:bg-slate-50';
 const useInputClass = () => INPUT;
 
 export function Field({ label, error, hint, required, children, className }) {
