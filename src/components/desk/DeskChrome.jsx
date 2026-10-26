@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useSocket } from '../../context/SocketContext.jsx';
 import { useConfirm } from '../../context/ConfirmContext.jsx';
 import { useApi } from '../../hooks/useApi.js';
-import { ROLES, ROLE_HOME } from '../../lib/constants.js';
+import { ROLES, ROLE_HOME, PROFILE_PATH } from '../../lib/constants.js';
 import { RaiseTicketModal } from '../superadmin/RaiseTicketModal.jsx';
 import { TrialPill } from '../layout/TrialPill.jsx';
 import { Avatar } from './ui.jsx';
@@ -86,11 +86,18 @@ export function DeskHeader({ items, badge }) {
 
             {user && (
               <>
-                <div className="text-right hidden sm:block">
-                  <p className="text-xs font-semibold text-slate-900 leading-tight">{user.name}</p>
-                  {context && <p className="text-[10px] font-medium text-mg-teal leading-tight mt-0.5">{context}</p>}
-                </div>
-                <Avatar name={user.name} src={doctor?.photo?.url} className="w-9 h-9 !rounded-full ring-2 ring-white shadow" tone="teal" />
+                <Link
+                  to={PROFILE_PATH[role] || ROLE_HOME[role] || '/'}
+                  title="My profile"
+                  aria-label="My profile"
+                  className="flex items-center gap-2.5 rounded-full sm:rounded-lg sm:pl-2 hover:bg-slate-100 transition"
+                >
+                  <div className="text-right hidden sm:block">
+                    <p className="text-xs font-semibold text-slate-900 leading-tight">{user.name}</p>
+                    {context && <p className="text-[10px] font-medium text-mg-teal leading-tight mt-0.5">{context}</p>}
+                  </div>
+                  <Avatar name={user.name} src={doctor?.photo?.url ?? user.photo?.url} className="w-9 h-9 !rounded-full ring-2 ring-white shadow" tone="teal" />
+                </Link>
                 <button
                   type="button"
                   onClick={endShift}
@@ -143,7 +150,7 @@ export function DeskDock({ items }) {
             )}
           >
             <i className={clsx('fa-solid text-base', item.fa)} aria-hidden="true" />
-            <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
+            <span className="max-w-full px-0.5 text-[10px] font-medium whitespace-nowrap truncate">{item.short ?? item.label}</span>
           </NavLink>
         ))}
       </div>

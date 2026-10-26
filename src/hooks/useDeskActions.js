@@ -32,8 +32,10 @@ export function useDeskActions(doctorId, refetch) {
 
   const callNext = (payload) => act(async () => {
     const r = await api.post(`/api/queue/${doctorId}/call-next`, payload);
-    const called = r.data?.data?.called;
-    toast.success(called ? `Called ${token(called.tokenNumber)}` : 'No one left waiting');
+    const { called, completed } = r.data?.data ?? {};
+    toast.success(called
+      ? `Called ${token(called.tokenNumber)}`
+      : `${completed ? `${token(completed.tokenNumber)} complete — ` : ''}no one left waiting`);
     return r;
   });
 
@@ -43,9 +45,9 @@ export function useDeskActions(doctorId, refetch) {
     act(() => api.post(`/api/queue/tokens/${t.tokenId}/status`, { status, ...extra }));
 
   /** Finish the patient in the chamber with how the consultation ended. */
-  const complete = (t, outcome = 'DONE') =>
+  const complete = (t, outcome = 'DONE', outcomeNotes) =>
     act(
-      () => api.post(`/api/queue/tokens/${t.tokenId}/status`, { status: 'COMPLETED', outcome }),
+      () => api.post(`/api/queue/tokens/${t.tokenId}/status`, { status: 'COMPLETED', outcome, ...(outcomeNotes ? { outcomeNotes } : {}) }),
       `${token(t.tokenNumber)} — ${outcome === 'DONE' ? 'consultation complete' : OUTCOME_LABEL[outcome].toLowerCase()}`,
     );
 

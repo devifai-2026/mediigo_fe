@@ -31,6 +31,7 @@
   .legal-prose h3 { @apply text-[15px] sm:text-base font-semibold text-slate-900 mt-5 mb-2; }
   .legal-prose p + p { @apply mt-3; }
   .legal-prose ul { @apply list-disc pl-5 space-y-2 my-3 marker:text-mg-teal; }
+  .legal-prose ol { @apply list-decimal pl-5 space-y-2 my-3 marker:text-mg-teal marker:font-medium; }
   .legal-prose a { @apply text-mg-tealDark font-medium underline decoration-mg-teal/40 underline-offset-2 hover:decoration-mg-teal; }
   .legal-prose strong { @apply text-slate-900 font-semibold; }
   .legal-prose code { @apply text-[13px] px-1 py-0.5 rounded bg-mg-surface text-slate-800; }

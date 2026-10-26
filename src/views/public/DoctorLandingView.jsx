@@ -47,7 +47,7 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  ['fa-paper-plane', 'Tell us about your clinic', 'Fill the short form below. It takes a minute.'],
+  ['fa-paper-plane', 'Tell us about your clinic', 'Fill the short form at the top of this page. It takes a minute.'],
   ['fa-user-tie', 'We visit and set you up', 'A Mediigo field agent meets you, adds your doctors, OPD timings and fees, and installs your QR standee.'],
   ['fa-circle-check', 'Go live', 'Once approved, your clinic appears to patients nearby and your front desk starts issuing digital tokens.'],
 ];
@@ -133,6 +133,8 @@ function EnquiryForm({ formRef, prefill }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
   const [failure, setFailure] = useState('');
+  // Phones see the four fields that matter first; the rest is one tap away.
+  const [more, setMore] = useState(false);
 
   useEffect(() => { if (prefill) setF((x) => ({ ...x, message: x.message || prefill })); }, [prefill]);
 
@@ -145,6 +147,7 @@ function EnquiryForm({ formRef, prefill }) {
     if (!/^[6-9]\d{9}$/.test(f.phone)) err.phone = 'Enter a valid 10-digit mobile number';
     if (f.city.trim().length < 2) err.city = 'Which city is your clinic in?';
     if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) err.email = 'Enter a valid email';
+    if (err.email) setMore(true);
     setErrors(err);
     if (Object.keys(err).length) return;
     setBusy(true);
@@ -168,7 +171,7 @@ function EnquiryForm({ formRef, prefill }) {
 
   if (done) {
     return (
-      <div ref={formRef} className="mg-card p-6 sm:p-8 text-center">
+      <div ref={formRef} className="scroll-mt-20 mg-card p-5 sm:p-8 text-center shadow-[0_20px_60px_-24px_rgba(30,63,160,0.35)]">
         <span className="mx-auto w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 grid place-items-center text-xl ring-8 ring-emerald-50/50">
           <i className="fa-solid fa-check" aria-hidden="true" />
         </span>
@@ -185,13 +188,13 @@ function EnquiryForm({ formRef, prefill }) {
   const errorText = (k) => errors[k] && <p className="mt-1 text-xs font-medium text-rose-600">{errors[k]}</p>;
 
   return (
-    <form ref={formRef} onSubmit={submit} noValidate className="mg-card p-5 sm:p-7 space-y-4" aria-labelledby="enquire-title">
+    <form ref={formRef} onSubmit={submit} noValidate className="relative scroll-mt-20 mg-card p-4 sm:p-7 space-y-4 shadow-[0_20px_60px_-24px_rgba(30,63,160,0.35)]" aria-labelledby="enquire-title">
       <div>
-        <h3 id="enquire-title" className="text-lg sm:text-xl font-semibold text-slate-900">Get a free demo for your clinic</h3>
+        <h2 id="enquire-title" className="text-lg sm:text-xl font-semibold text-slate-900">Get a free demo for your clinic</h2>
         <p className="mt-1 text-sm text-slate-500">We will call you back — no obligation.</p>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label htmlFor="enq-name" className={label}>Your name <span className="text-rose-500">*</span></label>
           <input id="enq-name" autoComplete="name" value={f.name} onChange={set('name')} placeholder="Dr. Rajesh Sharma" className={clsx(INPUT, errors.name && 'border-rose-300 bg-rose-50/40')} />
@@ -214,6 +217,21 @@ function EnquiryForm({ formRef, prefill }) {
           <input id="enq-city" autoComplete="address-level2" value={f.city} onChange={set('city')} placeholder="Pune" className={clsx(INPUT, errors.city && 'border-rose-300 bg-rose-50/40')} />
           {errorText('city')}
         </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setMore((m) => !m)}
+        aria-expanded={more}
+        aria-controls="enq-more"
+        className="sm:hidden w-full flex items-center justify-between text-sm font-medium text-mg-teal"
+      >
+        {more ? 'Fewer details' : 'Add more details (optional)'}
+        <i className={clsx('fa-solid fa-chevron-down text-xs transition', more && 'rotate-180')} aria-hidden="true" />
+      </button>
+
+      <div id="enq-more" className={clsx('space-y-4', !more && 'max-sm:hidden')}>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label htmlFor="enq-spec" className={label}>Specialty</label>
           <select id="enq-spec" value={f.specialty} onChange={set('specialty')} className={clsx(INPUT, 'cursor-pointer')}>
@@ -259,6 +277,7 @@ function EnquiryForm({ formRef, prefill }) {
       <div>
         <label htmlFor="enq-msg" className={label}>Anything we should know?</label>
         <textarea id="enq-msg" rows={3} value={f.message} onChange={set('message')} placeholder="e.g. we see 60 patients a day across two shifts" className={clsx(INPUT, 'h-auto py-2.5 resize-none')} />
+      </div>
       </div>
 
       {/* Honeypot: hidden from people and screen readers; bots fill it in. */}
@@ -327,7 +346,10 @@ export default function DoctorLandingView() {
   const toForm = (note) => {
     if (note) setPrefill(note);
     setMenuOpen(false);
-    document.getElementById('enquire')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // The form itself, not the section: on a phone the headline above it
+    // would otherwise fill the screen.
+    (formRef.current ?? document.getElementById('enquire'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    formRef.current?.querySelector('input')?.focus({ preventScroll: true });
   };
 
   const trialDays = pricing?.trialDays ?? 30;
@@ -356,7 +378,7 @@ export default function DoctorLandingView() {
           </nav>
           <div className="flex items-center gap-2">
             <Link to="/clinic/login" className="hidden sm:inline-flex h-10 items-center px-3 rounded-lg text-sm font-medium text-mg-blue hover:bg-blue-50">Sign in</Link>
-            <button type="button" onClick={() => toForm()} className="h-10 px-4 rounded-lg bg-mg-blue hover:bg-mg-navy text-white text-sm font-semibold shadow-sm transition">Get a demo</button>
+            <button type="button" onClick={() => toForm()} className="h-10 px-3 sm:px-4 rounded-lg bg-mg-blue hover:bg-mg-navy text-white text-sm font-semibold shadow-sm transition whitespace-nowrap">Get a demo</button>
             <button type="button" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-label="Menu" className="md:hidden w-10 h-10 grid place-items-center rounded-lg text-slate-600 hover:bg-mg-surface">
               <i className={clsx('fa-solid', menuOpen ? 'fa-xmark' : 'fa-bars')} aria-hidden="true" />
             </button>
@@ -370,52 +392,35 @@ export default function DoctorLandingView() {
         )}
       </header>
 
-      {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
+      {/* ── Hero: the enquiry comes first ─────────────────────────────── */}
+      {/* One grid, three blocks: on a phone the pitch, then the form, then
+          what happens next; on a desktop the form sits beside both. */}
+      <section id="enquire" className="relative overflow-hidden scroll-mt-16">
         <div aria-hidden="true" className="absolute -top-32 right-[-10%] w-[640px] h-[640px] rounded-full bg-gradient-to-br from-mg-mint/30 via-blue-100/40 to-transparent blur-2xl" />
-        <div className="relative max-w-6xl mx-auto px-4 pt-10 sm:pt-16 lg:pt-20 pb-6 grid lg:grid-cols-[1.05fr_1fr] gap-8 lg:gap-6 items-center">
-          <div>
+        <div className="relative max-w-6xl mx-auto px-4 pt-6 sm:pt-12 lg:pt-16 pb-10 sm:pb-16 grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] gap-x-12 gap-y-6 lg:items-start">
+          <div className="lg:col-start-1 lg:row-start-1 lg:pt-4">
             <Eyebrow>Tokens · Live queue · Online bookings</Eyebrow>
-            <h1 className="mt-4 text-[34px] leading-[1.1] sm:text-5xl lg:text-[56px] font-semibold tracking-tight">
+            <h1 className="mt-3 sm:mt-4 text-[28px] leading-[1.15] sm:text-5xl lg:text-[52px] font-semibold tracking-tight">
               <span className="text-mg-blue">Clinic management</span> that keeps your OPD running on time
             </h1>
-            <p className="mt-5 text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
-              Mediigo gives every patient a digital token and a live view of the queue, brings new patients from nearby, and closes your day’s collection — from one simple desk.
+            <p className="hidden sm:block mt-5 text-lg text-slate-600 leading-relaxed max-w-xl">
+              Digital tokens, a live queue for patients, new bookings from nearby and the day’s collection — from one simple desk.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <button type="button" onClick={() => toForm()} className="h-12 px-6 rounded-lg bg-mg-blue hover:bg-mg-navy text-white text-base font-semibold shadow-sm transition">
-                Get a free demo
-              </button>
-              <a href="#product" className="h-12 px-5 rounded-lg border border-slate-300 hover:border-mg-teal hover:text-mg-tealDark text-base font-medium text-slate-700 inline-flex items-center gap-2 transition">
-                <i className="fa-regular fa-circle-play text-mg-teal" aria-hidden="true" /> See how it works
-              </a>
-            </div>
-            <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-              {['No setup fee', `${trialDays}-day free trial`, 'Pay only per token'].map((t) => (
-                <li key={t} className="inline-flex items-center gap-2"><i className="fa-solid fa-circle-check text-mg-teal" aria-hidden="true" /> {t}</li>
-              ))}
-            </ul>
           </div>
 
-          <div className="relative mx-auto w-full max-w-[520px]">
-            <div aria-hidden="true" className="absolute inset-x-[8%] bottom-0 top-[14%] rounded-full bg-gradient-to-b from-blue-50 to-mg-mint/20" />
-            <img
-              src="/landing/hero-doctor.webp"
-              alt="A doctor holding a clipboard"
-              width="1400"
-              height="1559"
-              className="relative w-full h-auto [mask-image:linear-gradient(to_bottom,black_82%,transparent)]"
-            />
-            <div className="absolute left-0 sm:-left-4 top-[12%] mg-card px-3.5 py-3 w-[44%] min-w-[150px] shadow-lg">
-              <p className="text-[11px] text-slate-500">Now serving</p>
-              <p className="mt-0.5 text-xl font-bold text-mg-navy">T-21</p>
-              <p className="mt-1 text-[11px] text-mg-tealDark font-medium"><i className="fa-solid fa-users mr-1" aria-hidden="true" />6 waiting · ~14 min</p>
-            </div>
-            <div className="absolute right-0 sm:-right-2 top-[42%] mg-card px-3.5 py-3 w-[44%] min-w-[150px] shadow-lg">
-              <p className="text-[11px] text-slate-500">Today’s collection</p>
-              <p className="mt-0.5 text-xl font-bold text-slate-900">{inr(18400)}</p>
-              <p className="mt-1 text-[11px] text-emerald-600 font-medium"><i className="fa-solid fa-arrow-trend-up mr-1" aria-hidden="true" />48 tokens issued</p>
-            </div>
+          <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
+            <EnquiryForm formRef={formRef} prefill={prefill} />
+          </div>
+
+          <div className="lg:col-start-1 lg:row-start-2">
+            <ul className="grid gap-2.5 sm:gap-3 text-sm sm:text-base text-slate-700">
+              {['A short call at the time you choose', 'A free demo at your clinic', 'Doctors, timings and fees set up for you', `${trialDays} days free before you pay anything`].map((t) => (
+                <li key={t} className="flex gap-3"><i className="fa-solid fa-circle-check text-mg-teal mt-1" aria-hidden="true" />{t}</li>
+              ))}
+            </ul>
+            <a href="#product" className="mt-6 inline-flex items-center gap-2 text-sm sm:text-base font-medium text-mg-blue hover:text-mg-navy">
+              <i className="fa-regular fa-circle-play text-mg-teal" aria-hidden="true" /> See how it works
+            </a>
           </div>
         </div>
       </section>
@@ -519,20 +524,45 @@ export default function DoctorLandingView() {
         </div>
       </section>
 
-      {/* ── Enquiry ────────────────────────────────────────────────────── */}
-      <section id="enquire" className="scroll-mt-16 bg-mg-surface/60 py-14 sm:py-20">
-        <div className="max-w-6xl mx-auto px-4 grid lg:grid-cols-[1fr_1.1fr] gap-8 lg:gap-12 items-start">
-          <div className="lg:pt-6">
+      {/* ── Why clinics switch (the hero's old picture) ─────────────────── */}
+      <section className="bg-mg-surface/60 py-14 sm:py-20 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-10 lg:gap-12 items-center">
+          <div className="relative mx-auto w-full max-w-[340px] sm:max-w-[440px]">
+            <div aria-hidden="true" className="absolute inset-x-[8%] bottom-0 top-[14%] rounded-full bg-gradient-to-b from-blue-50 to-mg-mint/20" />
+            <img
+              src="/landing/hero-doctor.webp"
+              alt="A doctor holding a clipboard"
+              width="1400"
+              height="1559"
+              loading="lazy"
+              className="relative w-full h-auto [mask-image:linear-gradient(to_bottom,black_82%,transparent)]"
+            />
+            <div className="absolute left-0 top-[12%] mg-card px-3 py-2.5 sm:px-3.5 sm:py-3 w-[46%] shadow-lg">
+              <p className="text-[11px] text-slate-500">Now serving</p>
+              <p className="mt-0.5 text-lg sm:text-xl font-bold text-mg-navy">T-21</p>
+              <p className="mt-1 text-[10px] sm:text-[11px] text-mg-tealDark font-medium"><i className="fa-solid fa-users mr-1" aria-hidden="true" />6 waiting · ~14 min</p>
+            </div>
+            <div className="absolute right-0 top-[44%] mg-card px-3 py-2.5 sm:px-3.5 sm:py-3 w-[46%] shadow-lg">
+              <p className="text-[11px] text-slate-500">Today’s collection</p>
+              <p className="mt-0.5 text-lg sm:text-xl font-bold text-slate-900">{inr(18400)}</p>
+              <p className="mt-1 text-[10px] sm:text-[11px] text-emerald-600 font-medium"><i className="fa-solid fa-arrow-trend-up mr-1" aria-hidden="true" />48 tokens issued</p>
+            </div>
+          </div>
+          <div className="text-center md:text-left">
             <Eyebrow>Get started</Eyebrow>
             <h2 className="mt-3 text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">Bring your clinic on Mediigo</h2>
             <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">Leave your number and a Mediigo team member will call you, answer your questions and set up a visit at your clinic.</p>
-            <ul className="mt-6 space-y-3 text-sm sm:text-base text-slate-700">
-              {['A short call at the time you choose', 'A free demo at your clinic', 'Setup of doctors, timings and fees done for you', `${trialDays} days free before you pay anything`].map((t) => (
+            <ul className="mt-6 inline-flex flex-col gap-2 text-left text-sm sm:text-base text-slate-700">
+              {['No setup fee', `${trialDays}-day free trial`, 'Pay only per token'].map((t) => (
                 <li key={t} className="flex gap-3"><i className="fa-solid fa-circle-check text-mg-teal mt-1" aria-hidden="true" />{t}</li>
               ))}
             </ul>
+            <div className="mt-7">
+              <button type="button" onClick={() => toForm()} className="w-full sm:w-auto h-12 px-7 rounded-lg bg-mg-blue hover:bg-mg-navy text-white text-base font-semibold shadow-sm transition">
+                Get a free demo
+              </button>
+            </div>
           </div>
-          <div className="relative"><EnquiryForm formRef={formRef} prefill={prefill} /></div>
         </div>
       </section>
 
@@ -556,10 +586,10 @@ export default function DoctorLandingView() {
 
       {/* ── CTA band ───────────────────────────────────────────────────── */}
       <section className="px-4 pb-14 sm:pb-20">
-        <div className="mg-hero max-w-6xl mx-auto px-6 py-12 sm:py-16 text-center">
+        <div className="mg-hero max-w-6xl mx-auto px-5 py-10 sm:px-6 sm:py-16 text-center">
           <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight">Ready for a calmer waiting room?</h2>
           <p className="mt-3 text-sm sm:text-lg text-white/90 max-w-2xl mx-auto">Start with a {trialDays}-day free trial. We set everything up for you.</p>
-          <button type="button" onClick={() => toForm()} className="mt-7 h-12 px-7 rounded-lg bg-white text-mg-blue hover:bg-blue-50 text-base font-semibold shadow-sm transition">
+          <button type="button" onClick={() => toForm()} className="mt-7 w-full sm:w-auto h-12 px-7 rounded-lg bg-white text-mg-blue hover:bg-blue-50 text-base font-semibold shadow-sm transition">
             Get a free demo
           </button>
         </div>

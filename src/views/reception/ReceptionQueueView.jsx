@@ -92,7 +92,7 @@ export default function ReceptionQueueView() {
         {/* Disabled while on a break: a break already halts the queue, and
             offering a second, differently-named switch for the same outcome
             is how a desk ends up unsure which one actually did it. */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:shrink-0">
           <Pill dot tone={s?.session?.isOnBreak ? 'amber' : bookingOpen ? 'emerald' : 'slate'}>
             {s?.session?.isOnBreak ? 'On break' : bookingOpen ? 'Online bookings open' : 'Online bookings closed'}
           </Pill>
@@ -102,11 +102,12 @@ export default function ReceptionQueueView() {
             disabled={bookingBusy || !doctorId || s?.session?.isOnBreak}
             title={s?.session?.isOnBreak ? 'Resume the doctor from their break first' : undefined}
             onClick={() => toggleBooking(!bookingOpen)}
+            className="whitespace-nowrap order-last w-full sm:order-none sm:w-auto"
           >
             <i className={clsx('fa-solid', bookingOpen ? 'fa-ban' : 'fa-lock-open')} aria-hidden="true" />
             {bookingOpen ? 'Close online booking' : 'Open online booking'}
           </Button>
-          <RefreshButton onRefresh={refetch} />
+          <span className="ml-auto sm:ml-0"><RefreshButton onRefresh={refetch} /></span>
         </div>
       </DeskCard>
 

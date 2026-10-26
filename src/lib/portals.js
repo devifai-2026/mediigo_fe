@@ -16,7 +16,7 @@ export const PORTALS = {
     // Patients and the clinic side share this port, so its login keeps the
     // Patient / Clinic-Staff tab switcher. They also share one session: signing
     // in as the doctor signs the patient out.
-    roles: [ROLES.PATIENT, ROLES.DOCTOR, ROLES.RECEPTIONIST],
+    roles: [ROLES.PATIENT, ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.PHARMACIST],
   },
   district: {
     key: 'district',

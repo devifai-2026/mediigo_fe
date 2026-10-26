@@ -78,7 +78,8 @@ function ActionButton({ children, tone = 'plain', ...rest }) {
     <button
       type="button"
       className={clsx(
-        'px-2.5 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap disabled:opacity-50',
+        // relative keeps the sr-only label inside the button, not the page.
+        'relative px-2.5 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap disabled:opacity-50',
         tone === 'plain' && 'bg-slate-100 hover:bg-slate-200 text-slate-700',
         tone === 'teal' && 'bg-mg-teal hover:bg-mg-tealDark text-white',
         tone === 'tealSoft' && 'bg-teal-50 hover:bg-teal-100 text-mg-teal',
@@ -88,6 +89,148 @@ function ActionButton({ children, tone = 'plain', ...rest }) {
     >
       {children}
     </button>
+  );
+}
+
+/** Who the patient is and why they came: one row's patient cell, or a card's body. */
+function RosterPatient({ t }) {
+  const urgent = t.isEmergency && t.status !== TOKEN_STATUS.COMPLETED;
+  const fu = t.followUpStatus ? followUpBadge(t.followUpStatus, t.followUpRespondBy) : null;
+  return (
+    <>
+    <div className="flex items-center gap-2 flex-wrap">
+      <p className="text-[13px] font-medium text-slate-900">{t.name}</p>
+      {/* Online = the patient booked it themselves; In-clinic =
+          booked here at the desk. Both are seen in person. */}
+      <span className={clsx(
+        'text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border',
+        t.bookedOnline ? 'bg-blue-50 text-mg-blue border-blue-200' : 'bg-slate-50 text-slate-500 border-slate-200',
+      )}>
+        {t.bookedOnline ? 'Online' : 'In-clinic'}
+      </span>
+      {t.isEmergency && (
+        <span className={clsx(
+          'text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+          urgent ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500',
+        )}>
+          Emergency
+        </span>
+      )}
+      {fu && (
+        <span className={clsx('px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border', fu.className)}>
+          Follow-up · {fu.label}
+        </span>
+      )}
+    </div>
+    <p className="text-[11px] text-slate-500 mt-0.5">
+      {[patientLine(t, { yrs: 'yrs' }), t.complaint].filter(Boolean).join(' • ') || '—'}
+    </p>
+    {t.conditions?.length > 0 && (
+      <div className="flex flex-wrap gap-1 mt-1">
+        {t.conditions.map((c) => (
+          <span key={c} className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">{c}</span>
+        ))}
+      </div>
+    )}
+    {t.skipReason && t.status === TOKEN_STATUS.SKIPPED && (
+      <p className="text-[10px] text-rose-500 mt-0.5">{t.skipReason}</p>
+    )}
+    </>
+  );
+}
+
+function RosterFee({ t }) {
+  return (
+    <>
+    <p className="text-[13px] font-semibold text-mg-blue">{t.fee != null ? inr(t.fee) : '—'}</p>
+    <p className="text-[10px] font-medium uppercase text-slate-400 mt-0.5">
+      {[t.visitType || 'fresh', t.paymentMode || (t.fee == null ? 'Unbilled' : null)].filter(Boolean).join(' • ')}
+    </p>
+    </>
+  );
+}
+
+function RosterStatus({ t }) {
+  const [statusLabel, statusTone] = STATUS_PILL[t.status] ?? [t.status, 'slate'];
+  return (
+    <>
+    <Pill tone={statusTone} className="!text-[10px] !font-semibold uppercase">
+      {t.status === TOKEN_STATUS.IN_CHAMBER && <span className="w-1.5 h-1.5 rounded-full bg-mg-teal animate-pulse" />}
+      {statusLabel}
+    </Pill>
+    {t.status === TOKEN_STATUS.COMPLETED && t.outcome && t.outcome !== 'DONE' && (
+      <p className="text-[10px] font-medium text-mg-blue mt-1">{OUTCOME_LABEL[t.outcome]}</p>
+    )}
+    </>
+  );
+}
+
+/** What can be done with a token in its current state. */
+function RosterActions({ t, onAction, busy, canPrescribe, canCancel, occupiedBy }) {
+  return (
+    <>
+      {t.status === TOKEN_STATUS.WAITING && (
+        <>
+          {t.followUpStatus === FOLLOWUP_STATUS.PENDING && (
+            <ActionButton tone="rose" disabled={busy} title="Patient has not confirmed — free this slot" onClick={() => onAction('RELEASE_FOLLOWUP', t)}>
+              Release
+            </ActionButton>
+          )}
+          <ActionButton disabled={busy} title="Skip this token" onClick={() => onAction('SKIPPED', t)}>
+            <i className="fa-solid fa-forward" aria-hidden="true" />
+            <span className="sr-only">Skip</span>
+          </ActionButton>
+          <ActionButton
+            tone="teal"
+            disabled={busy || Boolean(occupiedBy)}
+            title={occupiedBy ? `${token(occupiedBy.tokenNumber)} is in the chamber — mark them complete first` : 'Call into the chamber'}
+            onClick={() => onAction('IN_CHAMBER', t)}
+          >
+            Call
+          </ActionButton>
+          {canCancel && (
+            <ActionButton tone="rose" disabled={busy} title="Cancel this token" onClick={() => onAction('CANCEL', t)}>
+              <i className="fa-solid fa-ban" aria-hidden="true" />
+              <span className="sr-only">Cancel</span>
+            </ActionButton>
+          )}
+        </>
+      )}
+      {t.status === TOKEN_STATUS.IN_CHAMBER && (
+        <>
+          <ActionButton disabled={busy} title="Re-announce this patient" onClick={() => onAction('RECALL', t)}>
+            Recall
+          </ActionButton>
+          <ActionButton tone="tealSoft" disabled={busy} title="Mark complete" onClick={() => onAction('COMPLETED', t)}>
+            <i className="fa-solid fa-check" aria-hidden="true" />
+            <span className="sr-only">Mark complete</span>
+          </ActionButton>
+        </>
+      )}
+      {t.status === TOKEN_STATUS.SKIPPED && (
+        <>
+          <ActionButton disabled={busy} title="Put back into the queue" onClick={() => onAction('RESTORE', t)}>
+            Recall / Call
+          </ActionButton>
+          {canCancel && (
+            <ActionButton tone="rose" disabled={busy} title="Cancel — the patient is not coming back" onClick={() => onAction('CANCEL', t)}>
+              <i className="fa-solid fa-ban" aria-hidden="true" />
+              <span className="sr-only">Cancel</span>
+            </ActionButton>
+          )}
+        </>
+      )}
+      {canPrescribe && [TOKEN_STATUS.IN_CHAMBER, TOKEN_STATUS.COMPLETED].includes(t.status) && (
+        <ActionButton tone="tealSoft" title="Write a prescription" onClick={() => onAction('RX', t)}>
+          <i className="fa-solid fa-file-prescription" aria-hidden="true" /> Rx
+        </ActionButton>
+      )}
+      {t.status === TOKEN_STATUS.COMPLETED && (
+        <ActionButton disabled={busy} title="Bring this patient back — into the chamber if it is free" onClick={() => onAction('RECALL_COMPLETED', t)}>
+          <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Recall
+        </ActionButton>
+      )}
+    </>
   );
 }
 
@@ -103,6 +246,8 @@ function ActionButton({ children, tone = 'plain', ...rest }) {
 export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh, busy, canPrescribe = false, canCancel = false }) {
   const tokens = s?.tokens ?? [];
   const rows = filter === 'ALL' ? tokens : tokens.filter((t) => t.status === filter);
+  // While someone is inside, nobody else can be called in from the list.
+  const occupiedBy = tokens.find((t) => t.status === TOKEN_STATUS.IN_CHAMBER) ?? null;
   const counts = {
     ALL: tokens.length,
     [TOKEN_STATUS.WAITING]: s?.counts?.waiting ?? 0,
@@ -127,149 +272,66 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh,
       {!rows.length ? (
         <EmptyNote icon="fa-list-check" title="No tokens here" hint="Registered patients will appear in this list." />
       ) : (
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full min-w-[880px] text-left">
-            <thead className="bg-mg-surface/70 border-b border-slate-200 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="py-3 px-5 w-[84px]">Token</th>
-                <th className="py-3 px-4">Patient Name &amp; Disease</th>
-                <th className="py-3 px-4">Assigned Doctor</th>
-                <th className="py-3 px-4">Visit &amp; Fee</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-5 text-right">Queue Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {rows.map((t) => {
-                const [statusLabel, statusTone] = STATUS_PILL[t.status] ?? [t.status, 'slate'];
-                const urgent = t.isEmergency && t.status !== TOKEN_STATUS.COMPLETED;
-                const fu = t.followUpStatus ? followUpBadge(t.followUpStatus, t.followUpRespondBy) : null;
-                return (
-                  <tr key={t.tokenId} className={clsx('transition-colors', urgent ? 'bg-rose-50/60 hover:bg-rose-50' : 'hover:bg-slate-50/70')}>
-                    <td className={clsx('py-3.5 px-5 text-sm font-semibold', urgent ? 'text-rose-700' : 'text-mg-navy')}>
-                      {token(t.tokenNumber)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-[13px] font-medium text-slate-900">{t.name}</p>
-                        {/* Online = the patient booked it themselves; In-clinic =
-                            booked here at the desk. Both are seen in person. */}
-                        <span className={clsx(
-                          'text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border',
-                          t.bookedOnline ? 'bg-blue-50 text-mg-blue border-blue-200' : 'bg-slate-50 text-slate-500 border-slate-200',
-                        )}>
-                          {t.bookedOnline ? 'Online' : 'In-clinic'}
-                        </span>
-                        {t.isEmergency && (
-                          <span className={clsx(
-                            'text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
-                            urgent ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500',
-                          )}>
-                            Emergency
-                          </span>
-                        )}
-                        {fu && (
-                          <span className={clsx('px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border', fu.className)}>
-                            Follow-up · {fu.label}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        {[patientLine(t, { yrs: 'yrs' }), t.complaint].filter(Boolean).join(' • ') || '—'}
-                      </p>
-                      {t.conditions?.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {t.conditions.map((c) => (
-                            <span key={c} className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">{c}</span>
-                          ))}
+        <>
+          {/* Phones: one card per patient, actions within thumb reach. */}
+          <ul className="md:hidden divide-y divide-slate-100">
+            {rows.map((t) => {
+              const urgent = t.isEmergency && t.status !== TOKEN_STATUS.COMPLETED;
+              return (
+                <li key={t.tokenId} className={clsx('p-4 space-y-2.5', urgent && 'bg-rose-50/60')}>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className={clsx('text-lg font-bold leading-none', urgent ? 'text-rose-700' : 'text-mg-navy')}>{token(t.tokenNumber)}</span>
+                    <div className="text-right"><RosterStatus t={t} /></div>
+                  </div>
+                  <div><RosterPatient t={t} /></div>
+                  <div className="flex items-baseline gap-2"><RosterFee t={t} /></div>
+                  <div className="flex flex-wrap items-center gap-1.5 [&>button]:min-h-9">
+                    <RosterActions t={t} onAction={onAction} busy={busy} canPrescribe={canPrescribe} canCancel={canCancel} occupiedBy={occupiedBy} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* relative: the table's sr-only labels are absolutely positioned,
+              and without a positioned box here they escape the scroller and
+              widen the whole page. */}
+          <div className="hidden md:block relative overflow-x-auto custom-scrollbar">
+            <table className="w-full min-w-[880px] text-left">
+              <thead className="bg-mg-surface/70 border-b border-slate-200 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="py-3 px-5 w-[84px]">Token</th>
+                  <th className="py-3 px-4">Patient Name &amp; Disease</th>
+                  <th className="py-3 px-4">Assigned Doctor</th>
+                  <th className="py-3 px-4">Visit &amp; Fee</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-5 text-right">Queue Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {rows.map((t) => {
+                  const urgent = t.isEmergency && t.status !== TOKEN_STATUS.COMPLETED;
+                  return (
+                    <tr key={t.tokenId} className={clsx('transition-colors', urgent ? 'bg-rose-50/60 hover:bg-rose-50' : 'hover:bg-slate-50/70')}>
+                      <td className={clsx('py-3.5 px-5 text-sm font-semibold', urgent ? 'text-rose-700' : 'text-mg-navy')}>
+                        {token(t.tokenNumber)}
+                      </td>
+                      <td className="py-3.5 px-4"><RosterPatient t={t} /></td>
+                      <td className="py-3.5 px-4 text-[13px] text-slate-700">{s?.doctorName || '—'}</td>
+                      <td className="py-3.5 px-4"><RosterFee t={t} /></td>
+                      <td className="py-3.5 px-4"><RosterStatus t={t} /></td>
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <RosterActions t={t} onAction={onAction} busy={busy} canPrescribe={canPrescribe} canCancel={canCancel} occupiedBy={occupiedBy} />
                         </div>
-                      )}
-                      {t.skipReason && t.status === TOKEN_STATUS.SKIPPED && (
-                        <p className="text-[10px] text-rose-500 mt-0.5">{t.skipReason}</p>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-[13px] text-slate-700">{s?.doctorName || '—'}</td>
-                    <td className="py-3.5 px-4">
-                      <p className="text-[13px] font-semibold text-mg-blue">{t.fee != null ? inr(t.fee) : '—'}</p>
-                      <p className="text-[10px] font-medium uppercase text-slate-400 mt-0.5">
-                        {[t.visitType || 'fresh', t.paymentMode || (t.fee == null ? 'Unbilled' : null)].filter(Boolean).join(' • ')}
-                      </p>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <Pill tone={statusTone} className="!text-[10px] !font-semibold uppercase">
-                        {t.status === TOKEN_STATUS.IN_CHAMBER && <span className="w-1.5 h-1.5 rounded-full bg-mg-teal animate-pulse" />}
-                        {statusLabel}
-                      </Pill>
-                      {t.status === TOKEN_STATUS.COMPLETED && t.outcome && t.outcome !== 'DONE' && (
-                        <p className="text-[10px] font-medium text-mg-blue mt-1">{OUTCOME_LABEL[t.outcome]}</p>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-5">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {t.status === TOKEN_STATUS.WAITING && (
-                          <>
-                            {t.followUpStatus === FOLLOWUP_STATUS.PENDING && (
-                              <ActionButton tone="rose" disabled={busy} title="Patient has not confirmed — free this slot" onClick={() => onAction('RELEASE_FOLLOWUP', t)}>
-                                Release
-                              </ActionButton>
-                            )}
-                            <ActionButton disabled={busy} title="Skip this token" onClick={() => onAction('SKIPPED', t)}>
-                              <i className="fa-solid fa-forward" aria-hidden="true" />
-                              <span className="sr-only">Skip</span>
-                            </ActionButton>
-                            <ActionButton tone="teal" disabled={busy} title="Call into the chamber" onClick={() => onAction('IN_CHAMBER', t)}>
-                              Call
-                            </ActionButton>
-                            {canCancel && (
-                              <ActionButton tone="rose" disabled={busy} title="Cancel this token" onClick={() => onAction('CANCEL', t)}>
-                                <i className="fa-solid fa-ban" aria-hidden="true" />
-                                <span className="sr-only">Cancel</span>
-                              </ActionButton>
-                            )}
-                          </>
-                        )}
-                        {t.status === TOKEN_STATUS.IN_CHAMBER && (
-                          <>
-                            <ActionButton disabled={busy} title="Re-announce this patient" onClick={() => onAction('RECALL', t)}>
-                              Recall
-                            </ActionButton>
-                            <ActionButton tone="tealSoft" disabled={busy} title="Mark complete" onClick={() => onAction('COMPLETED', t)}>
-                              <i className="fa-solid fa-check" aria-hidden="true" />
-                              <span className="sr-only">Mark complete</span>
-                            </ActionButton>
-                          </>
-                        )}
-                        {t.status === TOKEN_STATUS.SKIPPED && (
-                          <>
-                            <ActionButton disabled={busy} title="Put back into the queue" onClick={() => onAction('RESTORE', t)}>
-                              Recall / Call
-                            </ActionButton>
-                            {canCancel && (
-                              <ActionButton tone="rose" disabled={busy} title="Cancel — the patient is not coming back" onClick={() => onAction('CANCEL', t)}>
-                                <i className="fa-solid fa-ban" aria-hidden="true" />
-                                <span className="sr-only">Cancel</span>
-                              </ActionButton>
-                            )}
-                          </>
-                        )}
-                        {canPrescribe && [TOKEN_STATUS.IN_CHAMBER, TOKEN_STATUS.COMPLETED].includes(t.status) && (
-                          <ActionButton tone="tealSoft" title="Write a prescription" onClick={() => onAction('RX', t)}>
-                            <i className="fa-solid fa-file-prescription" aria-hidden="true" /> Rx
-                          </ActionButton>
-                        )}
-                        {t.status === TOKEN_STATUS.COMPLETED && (
-                          <ActionButton disabled={busy} title="Bring this patient back — into the chamber if it is free" onClick={() => onAction('RECALL_COMPLETED', t)}>
-                            <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Recall
-                          </ActionButton>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </DeskCard>
   );

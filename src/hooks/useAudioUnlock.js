@@ -20,10 +20,13 @@ export const useAudioUnlock = ({ auto = true } = {}) => {
       const okNow = await unlock();
       if (okNow) setReady(true);
     };
-    window.addEventListener('pointerdown', handler, { once: true });
+    // 'click', not 'pointerdown': unlocking hides the banner above the page,
+    // and on pointerdown the content jumps up mid-tap, so the tap lands on
+    // whatever slid under the finger. A click has already been delivered.
+    window.addEventListener('click', handler, { once: true });
     window.addEventListener('keydown', handler, { once: true });
     return () => {
-      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('click', handler);
       window.removeEventListener('keydown', handler);
     };
   }, [auto, ready]);

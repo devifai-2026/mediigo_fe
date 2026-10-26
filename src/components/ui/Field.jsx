@@ -1,9 +1,10 @@
-import { Children, cloneElement, isValidElement, useId } from 'react';
+import { Children, cloneElement, isValidElement, useId, useState } from 'react';
 import clsx from 'clsx';
+import { Icon } from './Icon.jsx';
 
 // One input style everywhere. 16px text on phones — anything smaller and iOS
 // Safari zooms the page on focus.
-const INPUT = 'w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-mg-teal focus:ring-2 focus:ring-mg-teal/20 transition disabled:opacity-60 disabled:bg-slate-50';
+export const INPUT = 'w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-mg-teal focus:ring-2 focus:ring-mg-teal/20 transition disabled:opacity-60 disabled:bg-slate-50';
 const useInputClass = () => INPUT;
 
 export function Field({ label, error, hint, required, children, className }) {
@@ -30,6 +31,25 @@ export function Field({ label, error, hint, required, children, className }) {
 
 export function Input({ className, error, ...rest }) {
   return <input className={clsx(useInputClass(), error && 'border-rose-300 bg-rose-50/40', className)} {...rest} />;
+}
+
+// A password input with an eye toggle to reveal what was typed.
+export function PasswordInput({ className, ...rest }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="relative">
+      <Input {...rest} type={shown ? 'text' : 'password'} className={clsx('pr-10', className)} />
+      <button
+        type="button"
+        onClick={() => setShown((s) => !s)}
+        aria-label={shown ? 'Hide password' : 'Show password'}
+        aria-pressed={shown}
+        className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:text-mg-teal"
+      >
+        <Icon name={shown ? 'eyeOff' : 'eye'} className="w-4 h-4" />
+      </button>
+    </div>
+  );
 }
 
 export function Select({ className, children, ...rest }) {

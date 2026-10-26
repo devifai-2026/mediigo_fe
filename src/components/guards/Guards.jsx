@@ -22,7 +22,7 @@ export function RequireAuth({ children }) {
   const { status, role } = useAuth();
   const location = useLocation();
   if (status === 'loading') return <AuthSplash />;
-  if (status !== 'authed') return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  if (status !== 'authed') return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   if (!portalAllows(role)) return <WrongPortal role={role} />;
   return children;
 }
@@ -32,7 +32,7 @@ export function RequireRole({ roles, children }) {
   const location = useLocation();
   if (status === 'loading') return <AuthSplash />;
   // Every role-gated tree is a staff area; patients only ever use RequireAuth.
-  if (status !== 'authed') return <Navigate to="/clinic/login" state={{ from: location.pathname }} replace />;
+  if (status !== 'authed') return <Navigate to="/clinic/login" state={{ from: location.pathname + location.search }} replace />;
   // A role this port does not serve gets told where to go, not bounced into a
   // redirect loop against a home route that also isn't served here.
   if (!portalAllows(role)) return <WrongPortal role={role} />;

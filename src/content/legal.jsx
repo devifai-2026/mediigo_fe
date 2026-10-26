@@ -15,6 +15,7 @@ import { SITE } from '../lib/site.js';
 
 const P = ({ children }) => <p>{children}</p>;
 const UL = ({ items }) => <ul>{items.map((t, i) => <li key={i}>{t}</li>)}</ul>;
+const OL = ({ items }) => <ol>{items.map((t, i) => <li key={i}>{t}</li>)}</ol>;
 const Mail = ({ to }) => <a href={`mailto:${to}`}>{to}</a>;
 const L = ({ to, children }) => <Link to={to}>{children}</Link>;
 
@@ -34,131 +35,156 @@ export const LEGAL_DOCS = [
   {
     slug: 'privacy-policy',
     title: 'Privacy Policy',
-    description: 'How Mediigo collects, uses, shares and protects personal and health information of patients, doctors and clinics, and the rights you have under Indian law.',
+    description: 'How Mediigo collects, uses, stores, shares and protects your personal and medical information, and the privacy rights available to you.',
+    effectiveDate: '25 October 2026',
+    lastUpdated: '25 October 2026',
     sections: [
       {
-        id: 'about', heading: 'About this policy',
+        id: 'introduction', heading: 'Introduction',
         body: <>
-          <P>This Privacy Policy explains how {company()} handles personal data when you use the Mediigo website at {SITE.url.replace('https://', '')}, our patient portal, the clinic desk and related services (together, the “Platform”).</P>
-          <P>It is published under the Digital Personal Data Protection Act, 2023 (“DPDP Act”), the Information Technology Act, 2000 and the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011. By using the Platform you agree to this policy. If you do not agree, please do not use the Platform.</P>
+          <P>Mediigo is a healthcare discovery and OPD token-booking platform designed to help patients find doctors and clinics, book OPD tokens, check queue updates, and access digital prescriptions and medical records where these services are available.</P>
+          <P>This Privacy Policy explains how Mediigo collects, uses, stores, shares and protects your personal information when you use our website, application or related services.</P>
+          <div className="legal-card">
+            <p>Company Name: <strong>Mediigo</strong></p>
+            <p>Contact Email: <Mail to={SITE.contactEmail} /></p>
+          </div>
         </>,
       },
       {
-        id: 'roles', heading: 'Who is responsible for your data',
+        id: 'collect', heading: 'Information We Collect',
         body: <>
-          <P><strong>For your Mediigo account</strong> — your profile, bookings, tokens and reviews — Mediigo is the data fiduciary.</P>
-          <P><strong>For clinical records a clinic creates</strong> — such as prescriptions, diagnoses and visit notes written by your doctor — the clinic and doctor treating you are responsible for those records. Mediigo stores and processes them on the clinic’s behalf, and only to provide the Platform to that clinic.</P>
+          <P>Depending on the services you use, Mediigo may collect the following information:</P>
+          <h3>2.1 Personal Information</h3>
+          <UL items={['Name', 'Age or date of birth, where required', 'Mobile number', 'Account and profile information']} />
+          <h3>2.2 Booking Information</h3>
+          <UL items={['Selected doctor and clinic', 'OPD token number', 'Booking status and visit details', 'Appointment or queue-related updates']} />
+          <h3>2.3 Health Information</h3>
+          <P>Depending on the services available, we may collect or store:</P>
+          <UL items={['Medical history provided by you', 'Digital prescriptions', 'Medical reports and documents uploaded by you', 'Consultation-related information recorded through Mediigo']} />
+          <h3>2.4 Payment Information</h3>
+          <UL items={['Transaction reference numbers', 'Payment status', 'Refund details']} />
+          <P>Payment credentials are handled by the relevant payment service provider where applicable.</P>
+          <h3>2.5 Technical Information</h3>
+          <UL items={['Device and application information', 'System logs and security-related information', 'Essential cookies and similar technologies, where applicable']} />
+          <h3>2.6 Communications</h3>
+          <P>We may collect information you provide when contacting customer support, submitting feedback or raising a complaint.</P>
+          <P>We aim to collect only the information reasonably necessary to provide our services and fulfil applicable legal obligations.</P>
         </>,
       },
       {
-        id: 'collect', heading: 'What we collect',
+        id: 'use', heading: 'How We Use Your Information',
         body: <>
-          <h3>If you are a patient</h3>
+          <P>Mediigo may use your information to:</P>
           <UL items={[
-            'Account details: your name, mobile number, and optionally email, date of birth, gender and photo.',
-            'Family members you add: their name, relationship, date of birth, gender and any health conditions you choose to record.',
-            'Bookings and visits: the doctor and clinic, date and sitting, token number, the reason for the visit you tell us, and the visit status.',
-            'Clinical records your doctor writes on Mediigo: symptoms, diagnosis, prescribed medicines, advice and follow-up date.',
-            'Insurance details, only if you choose to add them: insurer, policy number, plan, cover amounts and members covered.',
-            'Aadhaar number, only if you choose to enter it: we keep a one-way cryptographic fingerprint (hash) to recognise you across clinics. We never store your Aadhaar number in readable form.',
-            'Location: with your permission, your device location to show doctors near you. You can also pick a city instead. Your last chosen location is saved to your account so distances stay accurate.',
-            'Reviews and ratings you write about a doctor.',
+            'Create and manage your patient account.',
+            'Help you discover doctors and clinics.',
+            'Facilitate OPD token bookings.',
+            'Provide booking confirmations, token updates, reminders and cancellation notifications.',
+            'Process payments and eligible refunds.',
+            'Store and provide access to digital prescriptions and medical records where these services are available.',
+            'Share relevant consultation information with the doctor you consulted, as described in this policy.',
+            'Respond to your queries and complaints.',
+            'Protect accounts, prevent fraud and maintain platform security.',
+            'Comply with applicable laws and regulatory requirements.',
+            'Improve our services using appropriate safeguards.',
           ]} />
-          <h3>If you are a doctor, clinic owner or clinic staff</h3>
+          <P>Marketing communications will be handled separately from essential service notifications, with applicable consent and opt-out options.</P>
+        </>,
+      },
+      {
+        id: 'share', heading: 'Sharing of Personal and Medical Information',
+        body: <>
+          <P>Your medical privacy is important to Mediigo.</P>
+          <h3>4.1 Sharing Information With Your Consulting Doctor</h3>
+          <P>Mediigo may share relevant booking information, prescription details and other necessary consultation-related information with the doctor you consulted through Mediigo, where required to provide the service and permitted by applicable law.</P>
+          <h3>4.2 No Sharing of Medical Records With Other Doctors</h3>
+          <P>Mediigo does not routinely share your medical records or prescription details with other doctors.</P>
+          <P>Your medical records and prescription details will not be made available to another doctor merely because that doctor is registered on Mediigo.</P>
+          <P>Access is restricted to the doctor you consulted, subject to the applicable service arrangements, your permissions where required, and legal obligations.</P>
+          <P>If you choose to consult another doctor, your information will not automatically be shared with that doctor. Any sharing will be subject to the applicable privacy requirements and permissions.</P>
+          <h3>4.3 Service Providers</h3>
+          <P>We may share the minimum information necessary with authorised service providers that help us operate Mediigo, including providers of:</P>
+          <UL items={['Secure hosting and data storage', 'Payment processing', 'SMS and booking notifications', 'Customer support', 'Information security and technical maintenance']} />
+          <P>These providers may process information only for authorised purposes and subject to applicable contractual and legal safeguards.</P>
+          <h3>4.4 Legal Requirements</h3>
+          <P>We may disclose information when required by applicable law, a valid legal process or a lawful direction from a competent authority.</P>
+          <P>We do not sell your medical records to third parties for advertising.</P>
+        </>,
+      },
+      {
+        id: 'records', heading: 'Medical Records and Digital Prescriptions',
+        body: <>
+          <P>Where Mediigo provides digital prescriptions or medical record storage, we aim to protect the confidentiality and integrity of this information.</P>
           <UL items={[
-            'Name, mobile number, email, photo and login credentials (passwords are stored only as a secure hash).',
-            'Professional details: medical council, registration number and year, qualifications, specialty, designation, experience, fees and OPD schedule.',
-            'Clinic details: name, licence number, address and map location, photos, facilities, contact details and subscription plan.',
-            'Records of the clinic’s use of the Platform: tokens issued, payments recorded at the front desk, petty cash entries and usage-based charges.',
+            'Your records are intended to be accessible only to you and appropriately authorised persons.',
+            'The doctor you consulted may access relevant consultation information for legitimate healthcare purposes.',
+            'Other doctors will not automatically receive access to your records.',
+            'You should check your personal and medical information for accuracy and report any errors.',
+            'Doctors remain responsible for their clinical assessments, diagnoses, treatment decisions and prescriptions.',
           ]} />
-          <h3>If you enquire about Mediigo for your clinic</h3>
-          <UL items={['Your name, mobile number, email, clinic name, city, specialty, number of doctors, preferred time to call and your message, together with the advertisement or link that brought you to us.']} />
-          <h3>From every visitor</h3>
-          <UL items={['Technical data: IP address, device and browser type, pages visited, and error and security logs.', <>Cookies and similar storage — see our <L to="/cookie-policy">Cookie Policy</L>.</>]} />
+          <P>Access to medical information will be governed by applicable privacy requirements, the services you use and any legally required permissions.</P>
         </>,
       },
       {
-        id: 'use', heading: 'How we use it',
+        id: 'security', heading: 'Data Security and Retention',
         body: <>
+          <P>Mediigo will implement reasonable technical and organisational safeguards to protect personal information against unauthorised access, alteration, disclosure, destruction or loss.</P>
+          <P>These measures may include access controls, authentication, secure storage and appropriate monitoring.</P>
+          <P>We retain personal information only for as long as reasonably necessary for the purposes described in this policy, subject to applicable legal, regulatory, medical-record and dispute-resolution requirements.</P>
+          <P>Where information is no longer required, it will be deleted or handled in accordance with applicable law and our retention procedures.</P>
+          <P>No electronic system can be guaranteed to be completely secure.</P>
+        </>,
+      },
+      {
+        id: 'rights', heading: 'Your Privacy Rights',
+        body: <>
+          <P>Subject to applicable law, you may have the right to:</P>
           <UL items={[
-            'To create and secure your account, including sending one-time passwords (OTPs).',
-            'To show doctors and clinics near you, book tokens and show the live queue.',
-            'To send booking confirmations, queue alerts and reminders, including by WhatsApp and SMS.',
-            'To let the clinic and doctor you book see your booking and the details they need to treat you, and to keep your visit history with them.',
-            'To verify and onboard clinics and doctors, and to bill clinics for their use of the Platform.',
-            'To respond to enquiries, support requests and complaints.',
-            'To keep the Platform safe: preventing fraud and misuse, and keeping audit logs of sensitive actions.',
-            'To meet legal obligations and respond to lawful requests from authorities.',
-            'To understand and improve the Platform using aggregated information that does not identify you.',
+            'Request information about the personal data we process.',
+            'Request correction or updating of inaccurate information.',
+            'Request deletion of personal data where legally permitted.',
+            'Withdraw consent where processing relies on your consent.',
+            'Raise concerns about the handling of your personal information.',
+            'Submit a privacy complaint or grievance.',
+            'Exercise applicable rights through an authorised representative.',
           ]} />
-          <P><strong>We do not sell your personal data.</strong> We do not use your health information for advertising, and we do not share it with advertisers.</P>
+          <P>Withdrawing consent may affect services that depend on that consent. It does not invalidate processing that was lawful before the withdrawal.</P>
+          <P>To submit a privacy request, contact:</P>
+          <P>Email: <Mail to={SITE.contactEmail} /></P>
+          <P>We will review and respond to requests in accordance with applicable law.</P>
         </>,
       },
       {
-        id: 'basis', heading: 'Consent and your choices',
+        id: 'children', heading: 'Children and Authorised Representatives',
         body: <>
-          <P>We process your personal data with your consent, which you give when you create an account, book a token or submit a form, and for the legitimate uses the DPDP Act allows (for example, a booking you asked for, or a legal requirement). Optional information — insurance details, Aadhaar, family members, location — is collected only if you provide it.</P>
-          <P>You can withdraw consent at any time by deleting the information, deleting your account, or writing to us. Withdrawal does not affect processing that already took place, and some records may have to be kept by law (see “How long we keep it”).</P>
+          <P>Where our services involve children or individuals who require a lawful representative, Mediigo will apply the consent, verification and other requirements applicable under Indian law.</P>
+          <P>Additional safeguards will be implemented where legally required.</P>
         </>,
       },
       {
-        id: 'share', heading: 'Who we share it with',
+        id: 'cookies', heading: 'Cookies and Similar Technologies',
         body: <>
-          <UL items={[
-            <><strong>The clinic and doctor you book</strong>, including their front-desk staff, to manage your visit.</>,
-            <><strong>Service providers</strong> who run parts of the Platform for us under contract and confidentiality obligations: cloud hosting and file storage (including Google Cloud), messaging providers for WhatsApp and SMS, and Google Maps for addresses, maps and distances.</>,
-            <><strong>Mediigo staff</strong> — field agents and district administrators — when they onboard, verify or support a clinic.</>,
-            <><strong>Authorities</strong> when required by law, court order or to protect someone’s life or safety.</>,
-            <><strong>A successor business</strong>, if Mediigo is merged or acquired, under the same protections as this policy.</>,
-          ]} />
-          <P>Doctor and clinic profiles (name, photo, qualifications, specialty, registration number, fees, timings, address, photos and published reviews) are public on the Platform, because that is how patients choose a doctor.</P>
+          <P>Mediigo may use essential cookies or similar technologies to maintain sessions, support account security and enable core website functionality.</P>
+          <P>If analytics, advertising or other non-essential tracking technologies are introduced, we will provide the notices and consent mechanisms required by applicable law.</P>
+          <P>You may also manage cookies through your browser settings, although disabling essential cookies may affect certain features.</P>
         </>,
       },
       {
-        id: 'security', heading: 'How we protect it',
+        id: 'changes', heading: 'Changes to This Privacy Policy',
         body: <>
-          <P>We use reasonable security practices consistent with IS/ISO/IEC 27001, including encryption of data in transit (HTTPS), password hashing, one-way hashing of Aadhaar numbers, role-based access so staff see only what their role needs, and audit logs of sensitive actions. No system is completely secure; if a personal data breach affects you, we will inform you and the Data Protection Board of India as the law requires.</P>
-          <P>Our service providers may store data on servers in or outside India. Any transfer outside India is made only to countries not restricted by the Government of India, with safeguards no weaker than this policy.</P>
+          <P>We may update this Privacy Policy to reflect changes in our services, technology or legal obligations.</P>
+          <P>The latest version will be published on the Mediigo website or application with an updated revision date. Material changes will be communicated through appropriate channels where required.</P>
         </>,
       },
       {
-        id: 'retention', heading: 'How long we keep it',
-        body: <UL items={[
-          'Account data: for as long as your account is active. When you delete your account we remove or anonymise your personal data, except what we must keep by law.',
-          'Clinical records created by a clinic: for the period the clinic is required to keep medical records (for example, at least three years under the Indian Medical Council (Professional Conduct, Etiquette and Ethics) Regulations, 2002), or longer where another law requires it.',
-          'Billing and tax records: for the period required by tax laws (generally eight years).',
-          'Clinic enquiries: up to 24 months after our last contact, unless you become a customer.',
-          'Security logs: up to 180 days, or longer where needed to investigate an incident.',
-        ]} />,
-      },
-      {
-        id: 'rights', heading: 'Your rights',
+        id: 'contact', heading: 'Contact Us',
         body: <>
-          <P>Under the DPDP Act you may:</P>
-          <UL items={[
-            'ask for a summary of the personal data we hold about you and how we process it;',
-            'correct, complete or update it — most of it directly in your Profile;',
-            'erase it — you can delete your account from Profile → Delete account;',
-            'withdraw consent;',
-            'nominate a person to exercise your rights if you die or become unable to;',
-            'raise a grievance with us, and then with the Data Protection Board of India.',
-          ]} />
-          <P>To exercise a right, write to <Mail to={SITE.privacyEmail} /> from your registered email or mention your registered mobile number. We may need to verify your identity. We respond within the time the law requires.</P>
-        </>,
-      },
-      {
-        id: 'children', heading: 'Children',
-        body: <P>Mediigo accounts are for adults. A parent or lawful guardian may add a child as a family member and book on the child’s behalf, and in doing so gives verifiable consent for that child’s data. We do not knowingly track or advertise to children.</P>,
-      },
-      {
-        id: 'changes', heading: 'Changes to this policy',
-        body: <P>We may update this policy. The date at the top shows when it last changed. For significant changes we will notify you on the Platform or by message before they take effect.</P>,
-      },
-      {
-        id: 'contact', heading: 'Contact and Grievance Officer',
-        body: <>
-          <P>For privacy questions write to <Mail to={SITE.privacyEmail} />. For complaints, contact our Grievance Officer:</P>
-          {grievanceBlock()}
+          <P>For privacy-related questions, requests or complaints, contact:</P>
+          <div className="legal-card">
+            <p>Company Name: <strong>Mediigo</strong></p>
+            <p>Email: <Mail to={SITE.contactEmail} /></p>
+          </div>
+          <P>Please include a brief description of your request. Avoid sending passwords, payment PINs or unnecessary sensitive medical information by email.</P>
         </>,
       },
     ],
@@ -168,89 +194,261 @@ export const LEGAL_DOCS = [
   {
     slug: 'terms',
     title: 'Terms of Use',
-    description: 'The terms that apply when you use Mediigo to find doctors, book OPD tokens and follow the live queue.',
+    description: 'The terms that apply when patients use Mediigo to find doctors and clinics, book OPD tokens, follow the queue and access digital prescriptions.',
+    effectiveDate: '25 October 2026',
+    lastUpdated: '25 October 2026',
     sections: [
       {
-        id: 'agreement', heading: 'Agreement',
+        id: 'acceptance', heading: 'Acceptance of Terms',
         body: <>
-          <P>These Terms of Use (“Terms”) are an agreement between you and {company()} for your use of the Platform. They are an electronic record under the Information Technology Act, 2000 and need no physical signature. By using the Platform you accept these Terms and our <L to="/privacy-policy">Privacy Policy</L>.</P>
-          <P>Clinics, doctors and their staff are also bound by the <L to="/clinic-terms">Clinic & Doctor Terms</L>.</P>
+          <P>Welcome to Mediigo.</P>
+          <P>These Terms of Use (“Terms”) govern your access to and use of Mediigo’s website, mobile application and related patient services.</P>
+          <P>Mediigo is a healthcare discovery and OPD token-booking platform that helps patients find doctors and clinics, book OPD tokens, check queue updates and access supported digital prescriptions and medical records.</P>
+          <P>By creating an account, booking a token or using our services, you acknowledge that you have read and understood these Terms and agree to the provisions applicable to your use of Mediigo.</P>
+          <P>If you do not agree with these Terms, please do not use the relevant services.</P>
+          <div className="legal-card">
+            <p>Platform operator: <strong>Mediigo</strong></p>
+            <p>Contact email: <Mail to={SITE.contactEmail} /></p>
+          </div>
         </>,
       },
       {
-        id: 'what', heading: 'What Mediigo is — and is not',
+        id: 'services', heading: 'Services Provided by Mediigo',
         body: <>
-          <P>Mediigo is a technology platform that helps you find clinics and doctors, book an OPD token, and follow the queue. <strong>Mediigo is not a hospital, clinic or healthcare provider and does not give medical advice.</strong> Consultations, diagnosis, treatment and prescriptions are provided solely by the independent doctors and clinics you choose, who are responsible for them.</P>
-          <P>Mediigo is not for emergencies. In a medical emergency call <strong>112</strong> or <strong>108</strong>, or go to the nearest hospital. See our <L to="/medical-disclaimer">Medical Disclaimer</L>.</P>
-        </>,
-      },
-      {
-        id: 'account', heading: 'Your account',
-        body: <UL items={[
-          'You must be 18 or older to create an account. You may book for family members, including children, for whom you are responsible.',
-          'Give accurate details, and keep your mobile number up to date — it is how you sign in.',
-          'You are responsible for activity on your account. Do not share OTPs with anyone; Mediigo will never ask for them.',
-          'You can delete your account at any time from your Profile.',
-        ]} />,
-      },
-      {
-        id: 'bookings', heading: 'Bookings and tokens',
-        body: <UL items={[
-          'A token reserves your place in a doctor’s queue for a sitting. It is not a fixed appointment time: waiting times shown are estimates based on the live queue and can change.',
-          'Clinics set their own timings, fees and capacity. A clinic may change or cancel a sitting — for example, if the doctor is called to an emergency — and we will try to tell you as soon as the clinic does.',
-          'Please arrive in time for your turn. A clinic may skip or cancel a token if you are not present when called, following its own policy.',
-          'You can cancel a booking from My Bookings before your turn. Cancelling does not refund any fee you have already paid to the clinic.',
-          'Mediigo does not charge patients a booking fee today. Consultation fees are set by the clinic and paid directly to the clinic. See our Refund Policy.',
-        ]} />,
-      },
-      {
-        id: 'info', heading: 'Doctor and clinic information',
-        body: <P>Doctor and clinic details — qualifications, registration numbers, fees, timings and photos — are provided by the clinics. We check registration details during onboarding, but we do not guarantee that every detail is complete, current or accurate, and we do not endorse any doctor. Please use your own judgment when choosing a doctor.</P>,
-      },
-      {
-        id: 'reviews', heading: 'Reviews',
-        body: <>
-          <P>Reviews must be your genuine experience of a visit you made. Do not post anything false, abusive, defamatory, or that includes someone else’s personal or health information. Reviews are moderated before they appear and we may edit out personal details or decline to publish a review that breaks these rules.</P>
-          <P>By posting a review you allow Mediigo to display it on the Platform with your first name.</P>
-        </>,
-      },
-      {
-        id: 'conduct', heading: 'Acceptable use',
-        body: <>
-          <P>You agree not to:</P>
+          <P>Mediigo provides technology-based services intended to help patients connect with participating doctors and clinics.</P>
+          <P>Depending on the features available, our services may include:</P>
           <UL items={[
-            'book tokens you do not intend to use, or book in someone else’s name without their permission;',
-            'misuse, harass or threaten clinic staff, doctors or other users;',
-            'copy, scrape or resell data from the Platform, or use bots to book tokens;',
-            'attempt to access accounts, data or systems you are not authorised to;',
-            'upload anything unlawful, or that infringes others’ rights, or contains malware;',
-            'use the Platform in breach of any law, including the IT Rules, 2021.',
+            'Discovering doctors and clinics.',
+            'Viewing doctor profiles, specialities, clinic locations and consultation fees.',
+            'Booking OPD tokens online.',
+            'Viewing token status and estimated waiting times.',
+            'Receiving booking confirmations and queue notifications.',
+            'Making payments for eligible bookings.',
+            'Accessing digital prescriptions and medical records where supported.',
+            'Contacting customer support for booking-related assistance.',
           ]} />
-          <P>We may suspend or close accounts that break these Terms.</P>
+          <P>The availability of individual features may vary by doctor, clinic and location.</P>
+          <P>Mediigo facilitates access to participating healthcare providers. Unless a particular service is expressly stated to be provided by Mediigo, the platform does not itself provide medical diagnosis, treatment or consultations.</P>
         </>,
       },
       {
-        id: 'ip', heading: 'Intellectual property',
-        body: <P>The Platform, its software, design, logo and content (other than content provided by clinics and users) belong to Mediigo or its licensors. You may use the Platform for its intended purpose only.</P>,
-      },
-      {
-        id: 'liability', heading: 'Liability',
+        id: 'account', heading: 'Patient Account and Responsibilities',
         body: <>
-          <P>The Platform is provided “as is”. We work to keep it available and accurate but cannot promise it will be uninterrupted or error-free, or that a clinic will honour a booking.</P>
-          <P>To the extent permitted by law, Mediigo is not liable for the medical services, advice, treatment or conduct of any doctor or clinic, or for indirect or consequential loss. Where we are liable, our total liability to you is limited to ₹1,000 or the amount you paid Mediigo in the previous twelve months, whichever is higher. Nothing in these Terms limits liability that cannot be limited by law, or your rights under the Consumer Protection Act, 2019.</P>
+          <P>When using Mediigo, you agree to:</P>
+          <OL items={[
+            'Provide accurate and current information when creating an account or making a booking.',
+            'Provide a valid mobile number and complete the required verification process.',
+            'Keep your login credentials and verification codes confidential.',
+            'Use your account responsibly and promptly report suspected unauthorised access.',
+            'Book tokens only for genuine healthcare visits.',
+            'Review the selected doctor, clinic, consultation fee, platform fee and booking details before confirming a booking.',
+            'Follow the applicable booking, cancellation and clinic instructions.',
+            'Avoid submitting false information, impersonating another person or misusing another patient’s information.',
+          ]} />
+          <P>You may make a booking for another person where you have the appropriate authority to do so. You must provide accurate information and comply with applicable consent and privacy requirements.</P>
+          <P>Mediigo may request additional information when reasonably necessary to verify an account or prevent fraud.</P>
         </>,
       },
       {
-        id: 'law', heading: 'Governing law and disputes',
-        body: <P>These Terms are governed by the laws of India. Please raise any complaint first with our Grievance Officer (see <L to="/grievance-redressal">Grievance Redressal</L>). Subject to that, the courts at {SITE.jurisdictionCity} have jurisdiction, without affecting your right to approach a consumer commission.</P>,
+        id: 'tokens', heading: 'OPD Token Booking and Queue Management',
+        body: <>
+          <h3>4.1 Token Booking</h3>
+          <P>An OPD token is a digital record of your place in the applicable clinic queue, subject to the clinic’s queue-management process.</P>
+          <P>A token does not necessarily represent a fixed appointment time.</P>
+          <P>The booking confirmation will indicate the booking status and other relevant details available for that service.</P>
+          <h3>4.2 Waiting Times and Queue Updates</h3>
+          <P>Mediigo may display your token number, current queue position or estimated waiting time where the clinic supports these features.</P>
+          <P>Queue positions and waiting-time estimates are indicative and may change due to:</P>
+          <UL items={[
+            'Consultation duration.',
+            'Emergency or priority cases.',
+            'Walk-in patients.',
+            'Doctor availability.',
+            'Changes in clinic operations.',
+            'Technical delays or incomplete queue updates.',
+          ]} />
+          <P>Mediigo does not guarantee consultation at an exact time based on an estimated waiting time.</P>
+          <h3>4.3 Online and Walk-in Patients</h3>
+          <P>Some participating clinics may accept both online token bookings and walk-in patients.</P>
+          <P>The clinic manages its actual OPD queue according to its applicable process. Your position may be affected by the clinic’s queue rules and clinical priorities.</P>
+          <P>Please follow the clinic’s instructions when you arrive.</P>
+          <h3>4.4 Doctor or Clinic Unavailability</h3>
+          <P>If a doctor becomes unavailable or a clinic changes its operating arrangements, Mediigo or the clinic will take reasonable steps to communicate relevant changes where contact information and system functionality permit.</P>
+          <P>Rescheduling and refund options will be handled according to the applicable booking conditions and <L to="/refund-policy">Refund Policy</L>.</P>
+        </>,
       },
       {
-        id: 'changes', heading: 'Changes',
-        body: <P>We may update these Terms. Continuing to use the Platform after an update means you accept the new Terms; for significant changes we will notify you in advance.</P>,
+        id: 'info', heading: 'Doctor and Clinic Information',
+        body: <>
+          <P>Mediigo may display information such as:</P>
+          <UL items={[
+            'Doctor’s name and speciality.',
+            'Qualifications and professional registration details, where available.',
+            'Clinic address and operating information.',
+            'Consultation fees.',
+            'Available booking services.',
+            'Other information supplied by the doctor or clinic.',
+          ]} />
+          <P>Information may be provided by participating healthcare providers and may change over time.</P>
+          <P>Mediigo may perform identity, registration or clinic verification checks where applicable. Any claim that a doctor or clinic has been verified will reflect the checks actually completed.</P>
+          <P>Patients should review available information and contact the clinic when clarification is necessary.</P>
+          <P>Mediigo will take reasonable steps to address reports of inaccurate listings or suspected impersonation.</P>
+        </>,
       },
       {
-        id: 'contact', heading: 'Contact',
-        body: <P>Questions about these Terms: <Mail to={SITE.supportEmail} />.</P>,
+        id: 'fees', heading: 'Consultation Fees, Platform Fees and Payments',
+        body: <>
+          <h3>6.1 Fee Disclosure</h3>
+          <P>Before you confirm a paid booking, Mediigo will display the applicable charges, including the consultation fee and any separate platform or service fee.</P>
+          <P>The amount payable should be reviewed before payment is authorised.</P>
+          <h3>6.2 Consultation Fees</h3>
+          <P>The consultation fee is set by the relevant doctor or clinic, subject to applicable law and the terms of the service.</P>
+          <P>Payment of a consultation fee does not guarantee a particular diagnosis, treatment outcome or prescription.</P>
+          <h3>6.3 Platform Fees</h3>
+          <P>Mediigo may charge a separate platform or booking fee for eligible services.</P>
+          <P>Any applicable platform fee will be disclosed before you complete the booking.</P>
+          <h3>6.4 Payment Processing</h3>
+          <P>Payments may be processed through third-party payment service providers.</P>
+          <P>You must provide accurate payment information and must not share your payment PIN, password or one-time verification code with anyone claiming to represent Mediigo.</P>
+          <P>A successful payment does not necessarily mean that a booking has been confirmed. Please check the booking status displayed by Mediigo.</P>
+          <P>If payment is deducted but the booking is not confirmed, contact customer support with your booking reference and transaction details.</P>
+          <h3>6.5 Refunds</h3>
+          <P>Refund eligibility depends on the circumstances and the terms disclosed at booking.</P>
+          <P>Cancellations, doctor or clinic unavailability, duplicate payments and failed bookings will be handled in accordance with Mediigo’s <L to="/refund-policy">Refund Policy</L> and applicable law.</P>
+          <P>Nothing in this section removes any refund or consumer right available to you under applicable law.</P>
+        </>,
+      },
+      {
+        id: 'records', heading: 'Medical Information, Prescriptions and Records',
+        body: <>
+          <h3>7.1 Digital Prescriptions</h3>
+          <P>Where supported, Mediigo may enable patients to access digital prescriptions issued by their consulting doctor.</P>
+          <P>The doctor is responsible for the clinical content of the prescription and the medical decisions associated with it.</P>
+          <P>Patients should contact the prescribing doctor or clinic if a prescription appears incorrect, incomplete or unclear.</P>
+          <P>Patients must not alter prescriptions or use another person’s prescription as their own.</P>
+          <h3>7.2 Medical Records and Privacy</h3>
+          <P>Mediigo may store or display medical information where the relevant service is available and applicable privacy requirements are satisfied.</P>
+          <P>Access to medical information is subject to Mediigo’s <L to="/privacy-policy">Privacy Policy</L> and the permissions and safeguards applicable to the service.</P>
+          <P>Mediigo does not routinely share your medical records or prescription details with other doctors merely because they are registered on the platform.</P>
+          <P>Relevant information may be made available to the doctor you consulted for legitimate consultation-related purposes, subject to applicable law and the relevant privacy arrangements.</P>
+          <P>Information may also be processed by authorised service providers where necessary to operate Mediigo, subject to appropriate safeguards.</P>
+          <h3>7.3 Patient Responsibility</h3>
+          <P>You are responsible for providing accurate information about yourself when using the platform.</P>
+          <P>You should review your records and notify the relevant doctor, clinic or Mediigo support team if you identify an error.</P>
+          <P>You should not use Mediigo as a substitute for professional medical advice or urgent medical care.</P>
+        </>,
+      },
+      {
+        id: 'emergencies', heading: 'Medical Emergencies and Clinical Responsibility',
+        body: <>
+          <P><strong>Mediigo is not an emergency medical service.</strong></P>
+          <P>If you experience a medical emergency, call India’s emergency number <strong>112</strong> or seek immediate emergency medical care. Do not wait for a token, queue update or response from customer support.</P>
+          <P>Doctors and other healthcare professionals are responsible for their clinical assessments, diagnoses, prescriptions and treatment decisions.</P>
+          <P>Mediigo facilitates access to participating providers but does not independently determine the medical treatment appropriate for an individual patient.</P>
+          <P>This provision does not exclude any responsibility Mediigo may have for its own services under applicable law.</P>
+        </>,
+      },
+      {
+        id: 'availability', heading: 'Service Availability and Technical Issues',
+        body: <>
+          <P>Mediigo aims to provide reliable access to its services but does not guarantee that the platform will always be available, uninterrupted or error-free.</P>
+          <P>Services may occasionally be unavailable because of maintenance, technical failures, connectivity issues, security incidents or circumstances beyond our reasonable control.</P>
+          <P>Mediigo may update, modify, suspend or discontinue features where reasonably necessary, subject to applicable law and any obligations relating to existing bookings or payments.</P>
+          <P>Where a technical issue affects a confirmed booking or payment, patients may contact support for assistance.</P>
+        </>,
+      },
+      {
+        id: 'cancellations', heading: 'Cancellations and Changes',
+        body: <>
+          <P>Patients should follow the cancellation process displayed in Mediigo or communicated by the clinic.</P>
+          <P>Cancellation eligibility, refund amounts and processing arrangements are governed by the applicable <L to="/refund-policy">Refund Policy</L> and booking conditions.</P>
+          <P>If a doctor or clinic cancels a confirmed booking or cannot provide the booked service, Mediigo will communicate available options where reasonably possible.</P>
+          <P>Depending on the circumstances, these may include rescheduling or a refund in accordance with the applicable terms and law.</P>
+        </>,
+      },
+      {
+        id: 'prohibited', heading: 'Prohibited Activities',
+        body: <>
+          <P>You must not:</P>
+          <UL items={[
+            'Create fraudulent or abusive bookings.',
+            'Impersonate a patient, doctor or clinic.',
+            'Access another person’s account or medical records without authority.',
+            'Upload unlawful, misleading or malicious content.',
+            'Attempt to bypass platform security or access controls.',
+            'Interfere with the operation or security of Mediigo.',
+            'Use Mediigo for unlawful activities or to violate another person’s privacy.',
+          ]} />
+          <P>Where reasonably necessary, Mediigo may investigate suspected misuse and take proportionate action, subject to applicable law.</P>
+        </>,
+      },
+      {
+        id: 'termination', heading: 'Account Suspension and Termination',
+        body: <>
+          <P>You may stop using Mediigo and request account closure through the available account settings or by contacting customer support.</P>
+          <P>Mediigo may restrict, suspend or terminate access where reasonably necessary to address fraud, security risks, unlawful activity or material violations of these Terms.</P>
+          <P>Where appropriate and legally permitted, we will notify the affected user and provide information about available review or complaint channels.</P>
+          <P>Account closure does not automatically mean that all associated information will be deleted immediately. Certain information may need to be retained in accordance with applicable law, legitimate retention requirements and the <L to="/privacy-policy">Privacy Policy</L>.</P>
+        </>,
+      },
+      {
+        id: 'liability', heading: 'Limitation of Liability',
+        body: <>
+          <P>Mediigo will provide its services subject to applicable law and the terms described in these policies.</P>
+          <P>To the extent permitted by law, Mediigo is not responsible for independent clinical decisions made by doctors or for outcomes resulting solely from such decisions.</P>
+          <P>Mediigo does not guarantee that every doctor listing, queue estimate or item of third-party information will always be complete, current or error-free.</P>
+          <P>Nothing in these Terms excludes or restricts liability that cannot lawfully be excluded or restricted, or limits your statutory consumer rights.</P>
+          <P>Mediigo remains responsible for its own obligations and conduct as required under applicable law.</P>
+        </>,
+      },
+      {
+        id: 'privacy', heading: 'Privacy and Personal Data',
+        body: <>
+          <P>Your use of Mediigo is also governed by the Mediigo <L to="/privacy-policy">Privacy Policy</L>.</P>
+          <P>That policy explains how personal information is collected, used, stored, protected and shared, including the handling of prescriptions and medical records.</P>
+          <P>By using a feature that requires personal information, you acknowledge the applicable privacy notice. Where consent is legally required, Mediigo will seek that consent through the appropriate process.</P>
+          <P>For privacy-related questions, contact <Mail to={SITE.contactEmail} />.</P>
+        </>,
+      },
+      {
+        id: 'grievance', heading: 'Complaints and Grievance Redressal',
+        body: <>
+          <P>If you experience a booking issue, payment problem, inaccurate listing, privacy concern or other platform-related problem, you may contact Mediigo through the support and grievance channels published on our website or application.</P>
+          <div className="legal-card">
+            <p>Company: <strong>Mediigo</strong></p>
+            <p>Email: <Mail to={SITE.contactEmail} /></p>
+          </div>
+          <P>Please include your booking reference, if applicable, and a clear description of your complaint. Avoid sending passwords, payment PINs or unnecessary medical details.</P>
+          <P>Mediigo will acknowledge and address complaints within the timelines required by applicable law.</P>
+          <P>If the matter remains unresolved, you may pursue any remedies available under Indian law.</P>
+        </>,
+      },
+      {
+        id: 'changes', heading: 'Changes to These Terms',
+        body: <>
+          <P>Mediigo may update these Terms to reflect changes in the platform, its services or applicable legal requirements.</P>
+          <P>The updated version will be published on the website or application with a revised date.</P>
+          <P>Where required by law, we will provide notice of material changes or obtain any necessary consent.</P>
+          <P>Continued use of the relevant services after an update will be subject to applicable law and any acceptance requirements presented to you.</P>
+        </>,
+      },
+      {
+        id: 'law', heading: 'Governing Law and Disputes',
+        body: <>
+          <P>These Terms are governed by the laws of India.</P>
+          <P>Any dispute will be handled by a court or other competent forum having jurisdiction under applicable law.</P>
+          <P>Nothing in these Terms prevents you from exercising statutory consumer rights or approaching an appropriate consumer dispute-resolution authority.</P>
+        </>,
+      },
+      {
+        id: 'contact', heading: 'Contact Information',
+        body: <>
+          <P>For questions regarding these Terms, bookings or patient services, contact:</P>
+          <div className="legal-card">
+            <p><strong>Mediigo</strong></p>
+            <p>Email: <Mail to={SITE.contactEmail} /></p>
+          </div>
+        </>,
       },
     ],
   },
