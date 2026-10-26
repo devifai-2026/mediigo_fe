@@ -3,7 +3,6 @@ import clsx from 'clsx';
 import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
 import { MoneyInput } from '../ui/MoneyInput.jsx';
-import { Field, Input } from '../ui/Field.jsx';
 import { Icon } from '../ui/Icon.jsx';
 import { inr } from '../../lib/format.js';
 
@@ -21,20 +20,22 @@ const num = (v) => (v === '' || v == null ? 0 : Number(v));
  *    single-tender case stays one tap and the split UI costs nothing.
  *  - When submit is disabled the button says WHY ("₹340 short") rather than
  *    sitting there as an inert grey rectangle.
+ *
+ * No UPI reference or card digits are asked for: the desk confirms the money
+ * arrived on its own phone or terminal, and typing a UTR at a busy counter
+ * slowed every UPI patient down.
  */
 export function SplitPaymentModal({ open, onClose, totalFee, patientName, onConfirm, submitting }) {
   const [cash, setCash] = useState('');
   const [upi, setUpi] = useState('');
   const [card, setCard] = useState('');
-  const [upiRef, setUpiRef] = useState('');
-  const [cardLast4, setCardLast4] = useState('');
   // Held for the modal's lifetime so a double-tap or a retry-after-timeout can
   // never bill the patient twice.
   const idempotencyKey = useRef(null);
 
   useEffect(() => {
     if (open) {
-      setCash(''); setUpi(''); setCard(''); setUpiRef(''); setCardLast4('');
+      setCash(''); setUpi(''); setCard('');
       idempotencyKey.current = `pos-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     }
   }, [open]);
@@ -44,9 +45,7 @@ export function SplitPaymentModal({ open, onClose, totalFee, patientName, onConf
     return { tendered: t, remaining: totalFee - t, balanced: t === totalFee };
   }, [cash, upi, card, totalFee]);
 
-  const needsUpiRef = num(upi) > 0 && !upiRef.trim();
-  const needsCardLast4 = num(card) > 0 && !/^\d{4}$/.test(cardLast4);
-  const canSubmit = balanced && !needsUpiRef && !needsCardLast4 && !submitting;
+  const canSubmit = balanced && !submitting;
 
   const fillExact = (setter, currentValue) => () => {
     // Give this row whatever is still outstanding, on top of what it already holds.
@@ -63,8 +62,6 @@ export function SplitPaymentModal({ open, onClose, totalFee, patientName, onConf
     if (!canSubmit) return;
     onConfirm({
       tender: { cash: num(cash), upi: num(upi), card: num(card) },
-      upiRef: upiRef.trim() || undefined,
-      cardLast4: cardLast4 || undefined,
       idempotencyKey: idempotencyKey.current,
     });
   };
@@ -97,17 +94,6 @@ export function SplitPaymentModal({ open, onClose, totalFee, patientName, onConf
             </div>
           ))}
         </div>
-
-        {num(upi) > 0 && (
-          <Field label="UPI reference" required error={needsUpiRef ? 'Required when UPI is tendered' : undefined}>
-            <Input value={upiRef} onChange={(e) => setUpiRef(e.target.value)} placeholder="UTR / transaction id" />
-          </Field>
-        )}
-        {num(card) > 0 && (
-          <Field label="Card last 4 digits" required error={needsCardLast4 ? 'Enter exactly 4 digits' : undefined}>
-            <Input inputMode="numeric" maxLength={4} value={cardLast4} onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, ''))} placeholder="4242" />
-          </Field>
-        )}
 
         {/* Running tally, always visible above the CTA. */}
         <div

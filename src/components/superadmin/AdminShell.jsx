@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useConfirm } from '../../context/ConfirmContext.jsx';
@@ -160,13 +160,15 @@ export function AdminShell({ badges, headerStats, onAddClinic }) {
               <span className="hidden sm:inline">Add Clinic</span>
             </button>
             <div className="h-8 w-px bg-slate-200" />
-            <div className="hidden sm:block text-right">
-              <p className="text-xs font-semibold text-slate-900 leading-tight">{user?.name || 'Super Administrator'}</p>
-              <p className="text-[10px] font-medium text-mg-teal">Global system control</p>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-mg-teal text-white grid place-items-center text-xs font-semibold ring-2 ring-white shadow">
-              SA
-            </div>
+            <Link to="/super/account" title="My profile" aria-label="My profile" className="flex items-center gap-2.5 rounded-full sm:rounded-lg sm:pl-2 hover:bg-slate-100 transition">
+              <div className="hidden sm:block text-right">
+                <p className="text-xs font-semibold text-slate-900 leading-tight">{user?.name || 'Super Administrator'}</p>
+                <p className="text-[10px] font-medium text-mg-teal">Global system control</p>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-mg-teal text-white grid place-items-center text-xs font-semibold ring-2 ring-white shadow">
+                SA
+              </div>
+            </Link>
             <button
               type="button"
               onClick={signOut}

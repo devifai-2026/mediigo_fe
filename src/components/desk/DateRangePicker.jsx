@@ -17,6 +17,8 @@ export const shiftIso = (iso, delta) => {
 };
 
 const monthStart = (iso) => `${iso.slice(0, 7)}-01`;
+// Weeks start on Monday, as Indian clinic rosters do.
+const weekStart = (iso) => shiftIso(iso, -((new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7));
 const prevMonth = (iso) => {
   const d = new Date(`${monthStart(iso)}T00:00:00Z`);
   d.setUTCMonth(d.getUTCMonth() - 1);
@@ -45,6 +47,7 @@ export const PRESETS = [
   { key: 'today', label: 'Today', range: (t) => ({ from: t, to: t }) },
   { key: 'yesterday', label: 'Yesterday', range: (t) => ({ from: shiftIso(t, -1), to: shiftIso(t, -1) }) },
   { key: 'week', label: 'Last 7 days', range: (t) => ({ from: shiftIso(t, -6), to: t }) },
+  { key: 'thisWeek', label: 'This week', range: (t) => ({ from: weekStart(t), to: t }) },
   { key: 'month', label: 'Last 30 days', range: (t) => ({ from: shiftIso(t, -29), to: t }) },
   { key: 'thisMonth', label: 'This month', range: (t) => ({ from: monthStart(t), to: t }) },
   { key: 'lastMonth', label: 'Last month', range: (t) => prevMonth(t) },

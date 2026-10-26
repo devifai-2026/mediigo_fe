@@ -351,7 +351,8 @@ export default function ExploreView() {
     setSheet(null);
     if (!isAuthed) {
       toast.push('Sign in to book a token');
-      navigate('/login', { state: { from: '/p/explore' } });
+      // Back to this doctor with the booking sheet open, not to the search.
+      navigate('/login', { state: { from: `/p/doctors/${doctor.doctorId}?book=1` } });
       return;
     }
     setBooking(doctor);

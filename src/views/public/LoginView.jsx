@@ -5,12 +5,11 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { Field, Input } from '../../components/ui/Field.jsx';
+import { Field, Input, PasswordInput } from '../../components/ui/Field.jsx';
 import { OtpInput } from '../../components/ui/OtpInput.jsx';
 import { LivePill } from '../../components/layout/DarkHero.jsx';
 import { ROLE_HOME, ROLES } from '../../lib/constants.js';
 import { ACTIVE_PORTAL } from '../../lib/portals.js';
-import { DemoAccounts } from '../../components/ui/DemoAccounts.jsx';
 import { useNoIndex } from '../../lib/seo.js';
 
 /**
@@ -43,6 +42,8 @@ export default function LoginView({ audience }) {
   const [otpPurpose, setOtpPurpose] = useState(undefined);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  // Clinic logins created for OTP sign-in have no password to type.
+  const [staffByOtp, setStaffByOtp] = useState(false);
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState(null);
 
@@ -62,7 +63,9 @@ export default function LoginView({ audience }) {
     e?.preventDefault();
     setBusy(true);
     try {
-      const res = await requestOtp(phone);
+      const purpose = mode === 'staff' ? 'STAFF_LOGIN' : undefined;
+      const res = await requestOtp(phone, purpose);
+      setOtpPurpose(purpose);
       setStep('otp');
       // The server returns the code only in development demo mode.
       setHint(res?.debugCode ? `Demo mode — your code is ${res.debugCode}` : `Sent to ${phone} on WhatsApp`);
@@ -220,29 +223,43 @@ export default function LoginView({ audience }) {
                 <Link to="/p/explore" className="block text-center text-xs font-medium text-mg-teal hover:text-mg-tealDark pt-1">
                   Browse clinics without signing in →
                 </Link>
-                {!servesStaff && (
-                  <p className="text-center text-xs text-slate-500">
-                    Doctor or clinic staff? <Link to="/clinic/login" className="font-medium text-mg-blue hover:underline">Sign in here</Link>
-                  </p>
-                )}
-
-                <DemoAccounts
-                  roles={ACTIVE_PORTAL?.roles}
-                  kind="otp"
-                  onPick={(a) => { setPhone(a.phone); setName(a.name); }}
-                />
+                
               </form>
             ) : (
+              staffByOtp ? (
+              <form onSubmit={sendOtp} className="space-y-4">
+                <Field label="Registered mobile number" required>
+                  <Input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                    placeholder="9876543210"
+                  />
+                </Field>
+                <Button type="submit" loading={busy} className="w-full" size="lg">
+                  Send OTP on WhatsApp
+                </Button>
+                <button type="button" onClick={() => setStaffByOtp(false)} className="w-full text-xs font-medium text-mg-teal hover:text-mg-tealDark">
+                  ← Sign in with password
+                </button>
+              </form>
+              ) : (
               <form onSubmit={submitStaff} className="space-y-4">
                 <Field label="Phone or email" required>
-                  <Input required value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="9000000101" />
+                  <Input required value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Phone number or email" />
                 </Field>
                 <Field label="Password" required>
-                  <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                  <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
                 </Field>
                 <Button type="submit" loading={busy} className="w-full" size="lg">
                   <Icon name="shield" className="w-4 h-4" /> Sign in
                 </Button>
+                <button type="button" onClick={() => setStaffByOtp(true)} className="w-full text-xs font-medium text-mg-teal hover:text-mg-tealDark">
+                  Sign in with WhatsApp OTP instead
+                </button>
                 <p className="text-[11px] text-slate-500 text-center leading-relaxed">
                   Use of the clinic desk is subject to the <Link to="/clinic-terms" className="underline hover:text-mg-blue">Clinic &amp; Doctor Terms</Link> and <Link to="/privacy-policy" className="underline hover:text-mg-blue">Privacy Policy</Link>.
                 </p>
@@ -253,13 +270,8 @@ export default function LoginView({ audience }) {
                     <Link to="/p/explore" className="font-medium text-mg-teal hover:underline">Book a doctor</Link>
                   </p>
                 )}
-
-                <DemoAccounts
-                  roles={ACTIVE_PORTAL?.roles}
-                  kind="password"
-                  onPick={(a) => { setIdentifier(a.phone); setPassword('Mediigo@123'); }}
-                />
               </form>
+              )
             )}
           </>
         )}

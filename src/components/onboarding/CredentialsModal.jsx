@@ -5,13 +5,26 @@ import { phone as fmtPhone } from '../../lib/format.js';
 
 const ROLE_LABEL = { RECEPTIONIST: 'Front desk', DOCTOR: 'Doctor', PHARMACIST: 'Pharmacy' };
 
+// How each login signs in: a password only this approver has seen, the one
+// the field agent set with the clinic, or a WhatsApp code.
+const SIGN_IN_LINES = {
+  AGENT_PASSWORD: ['Password: the one set with your Mediigo field agent', 'You can change it from your profile after signing in.'],
+  OTP: ['Sign in with the code sent to this number on WhatsApp.'],
+};
+
 const message = (c, clinicName) => [
   `Your Mediigo login${clinicName ? ` for ${clinicName}` : ''} is ready.`,
   `Sign in at ${window.location.origin}/clinic/login`,
   `Mobile: ${c.phone}`,
-  `Temporary password: ${c.tempPassword}`,
-  'Please change it after your first sign-in.',
+  ...(c.tempPassword
+    ? [`Temporary password: ${c.tempPassword}`, 'Please change it after your first sign-in.']
+    : SIGN_IN_LINES[c.signIn] ?? []),
 ].join('\n');
+
+const signInText = (c) => {
+  if (c.tempPassword) return <>password <span className="font-mono font-semibold text-slate-900">{c.tempPassword}</span></>;
+  return c.signIn === 'OTP' ? 'signs in with WhatsApp OTP' : 'password set by field agent';
+};
 
 /**
  * Every login an approval just created, with its one-time password. Shown
@@ -23,6 +36,7 @@ export function CredentialsModal({ result, onClose }) {
   const creds = result?.credentials ?? [];
   if (!result || !creds.length) return null;
   const clinicName = result.hospital?.name || '';
+  const anyTemp = creds.some((c) => c.tempPassword);
 
   const copy = async (c, i) => {
     try { await navigator.clipboard.writeText(message(c, clinicName)); setCopied(i); } catch { /* clipboard blocked */ }
@@ -31,10 +45,17 @@ export function CredentialsModal({ result, onClose }) {
   return (
     <Modal open onClose={onClose} title="Logins created" subtitle={clinicName} size="lg" closeOnBackdrop={false}>
       <div className="space-y-4">
-        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <i className="fa-solid fa-triangle-exclamation mr-1.5" aria-hidden="true" />
-          These temporary passwords are shown only now. Send each one to its owner before closing.
-        </p>
+        {anyTemp ? (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <i className="fa-solid fa-triangle-exclamation mr-1.5" aria-hidden="true" />
+            These temporary passwords are shown only now. Send each one to its owner before closing.
+          </p>
+        ) : (
+          <p className="text-xs text-slate-600 bg-mg-surface border border-slate-200 rounded-lg p-3">
+            <i className="fa-solid fa-circle-info mr-1.5" aria-hidden="true" />
+            The clinic already knows how to sign in. Send each login its link so they know it is live.
+          </p>
+        )}
         <ul className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
           {creds.map((c, i) => (
             <li key={c.phone} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -44,7 +65,7 @@ export function CredentialsModal({ result, onClose }) {
                   <span className="ml-2 text-[10px] font-semibold uppercase text-slate-500">{ROLE_LABEL[c.role] || c.role}{c.isClinicAdmin ? ' · clinic admin' : ''}</span>
                 </p>
                 <p className="text-xs text-slate-500">
-                  +91 {fmtPhone(c.phone)} · password <span className="font-mono font-semibold text-slate-900">{c.tempPassword}</span>
+                  +91 {fmtPhone(c.phone)} · {signInText(c)}
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">

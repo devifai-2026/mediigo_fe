@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
 import { api, unwrap } from '../../lib/api.js';
 import { useApi } from '../../hooks/useApi.js';
@@ -202,10 +202,18 @@ function Faq({ q, a }) {
 
 export default function DoctorDetailView() {
   const { doctorId } = useParams();
-  const { isAuthed } = useAuth();
+  const { isAuthed, status: authStatus } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  // A guest who tapped Book was sent to sign in and comes back here with
+  // ?book=1 and the sitting they had picked, so booking carries on from where
+  // they left it instead of from the search page.
+  const resumeRef = useRef(searchParams.get('book')
+    ? { date: searchParams.get('date'), shift: searchParams.get('shift') }
+    : null);
+  const [daysReady, setDaysReady] = useState(false);
 
   // The /nearby row the card handed over, if we came from one.
   const row = location.state?.doctor?.doctorId === doctorId ? location.state.doctor : null;
@@ -272,6 +280,7 @@ export default function DoctorDetailView() {
   useEffect(() => {
     let alive = true;
     setReviews(null);
+    setDaysReady(false);
     api.get(`/api/doctors/${doctorId}/reviews`)
       .then((res) => { if (alive) setReviews(unwrap(res)); })
       .catch(() => {});
@@ -282,9 +291,15 @@ export default function DoctorDetailView() {
         setDays(week);
         const firstOpen = week.find((x) => x.shifts.some((sh) => sh.isBookable));
         const firstShift = firstOpen?.shifts.find((sh) => sh.isBookable);
-        setSlot(firstOpen && firstShift ? { date: firstOpen.date, shift: firstShift.shift } : null);
+        // The sitting picked before signing in, while it still has room.
+        const wanted = resumeRef.current;
+        const stillOpen = wanted?.date && week.some((x) => x.date === wanted.date
+          && x.shifts.some((sh) => sh.shift === wanted.shift && sh.isBookable));
+        if (stillOpen) setSlot({ date: wanted.date, shift: wanted.shift });
+        else setSlot(firstOpen && firstShift ? { date: firstOpen.date, shift: firstShift.shift } : null);
       })
-      .catch(() => { if (alive) setDays([]); });
+      .catch(() => { if (alive) setDays([]); })
+      .finally(() => { if (alive) setDaysReady(true); });
     return () => { alive = false; };
   }, [doctorId]);
 
@@ -295,6 +310,15 @@ export default function DoctorDetailView() {
     merged.photoUrl = detail?.photo?.url ?? detail?.photoUrl ?? row?.photoUrl ?? null;
     return merged;
   }, [detail, row]);
+
+  // Open the booking sheet once the profile and the sitting are known. The
+  // params are dropped first, so a reload or Back does not open it again.
+  useEffect(() => {
+    if (!resumeRef.current || !d || !daysReady || authStatus === 'loading') return;
+    resumeRef.current = null;
+    navigate(location.pathname, { replace: true, state: location.state });
+    if (isAuthed) setBooking({ ...d, doctorId, queue: row?.queue ?? {} });
+  }, [d, daysReady, authStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const demo = useMemo(
     () => (d && demoProfilesEnabled() ? demoProfileFor(d, doctorId) : null),
@@ -494,7 +518,8 @@ export default function DoctorDetailView() {
   const onBook = () => {
     if (!isAuthed) {
       toast.push('Sign in to book a token');
-      navigate('/login', { state: { from: location.pathname } });
+      const picked = slot ? `&date=${slot.date}&shift=${slot.shift}` : '';
+      navigate('/login', { state: { from: `${location.pathname}?book=1${picked}` } });
       return;
     }
     // BookingSheet expects the shape /api/doctors/nearby returns.

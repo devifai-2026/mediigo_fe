@@ -13,6 +13,7 @@ import {
   Avatar, DeskCard, EmptyNote, IconTile, LoadError, PageHeader, Pill, PrintPortal, RefreshButton, SectionHead, Segmented, StatTile,
 } from '../../components/desk/ui.jsx';
 import { RxPrint, RxViewModal } from '../../components/desk/RxPrint.jsx';
+import { AddVisitPhotosModal, PhotoGallery, PhotoGroups } from '../../components/desk/rx/VisitPhotos.jsx';
 import { PettyExpenseModal, VoidExpenseModal, ShiftReport } from '../../components/desk/CashTools.jsx';
 import { pad2, patientLine } from '../../components/desk/deskFormat.js';
 import {
@@ -24,6 +25,12 @@ const QUICK = [
   { value: 'today', label: 'Today' },
   { value: 'week', label: 'Last 7 Days' },
   { value: 'month', label: 'Last 30 Days' },
+];
+// The front desk sees recent days only; the server enforces the same limit.
+const DESK_QUICK = [
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'thisWeek', label: 'This Week' },
 ];
 
 /** The window in a sentence: "today", "11 Oct 2026", "1 Oct – 12 Oct 2026". */
@@ -70,14 +77,18 @@ export default function AnalyticsView() {
   const { user, role } = useAuth();
   const toast = useToast();
   const isDoctor = role === ROLES.DOCTOR;
+  const isDesk = role === ROLES.RECEPTIONIST;
   // The clinic's admin doctor sees every doctor's numbers, like the desk does.
   const ownNumbersOnly = isDoctor && !user?.isClinicAdmin;
   // Deep links (the EMR's "full history") arrive as ?view=FOOTFALL&range=year&q=<phone>.
   const [params] = useSearchParams();
   const [view, setView] = useState(() => (['COMBINED', 'REVENUE', 'FOOTFALL'].includes(params.get('view')) ? params.get('view') : 'COMBINED'));
-  const [range, setRange] = useState(() => (params.get('range') === 'year'
-    ? { from: shiftIso(isoToday(), -364), to: isoToday() }
-    : { from: isoToday(), to: isoToday() }));
+  const [range, setRange] = useState(() => {
+    if (params.get('range') !== 'year') return { from: isoToday(), to: isoToday() };
+    return isDesk
+      ? PRESETS.find((p) => p.key === 'thisWeek').range(isoToday())
+      : { from: shiftIso(isoToday(), -364), to: isoToday() };
+  });
   const initialSearch = params.get('q') || '';
   const single = range.from === range.to;
   const viewingToday = single && range.from === isoToday();
@@ -139,9 +150,9 @@ export default function AnalyticsView() {
         <Segmented
           value={preset ?? ''}
           onChange={(k) => setRange(PRESETS.find((p) => p.key === k).range(isoToday()))}
-          options={QUICK}
+          options={isDesk ? DESK_QUICK : QUICK}
         />
-        <DateRangePicker value={range} onChange={setRange} />
+        {!isDesk && <DateRangePicker value={range} onChange={setRange} />}
         {!ownNumbersOnly && doctors?.length > 1 && (
           <Select value={doctorId} onChange={(e) => setDoctorId(e.target.value)} className="!w-auto !py-1.5" aria-label="Doctor">
             <option value="">All doctors</option>
@@ -176,6 +187,7 @@ export default function AnalyticsView() {
           analytics={analytics} footfall={footfall} range={range}
           analyticsError={analyticsError} footfallError={footfallError}
           onRetry={() => { refetchAnalytics(); refetchFootfall(); }}
+          onPhotosChanged={refetchFootfall}
         />
       ) : (
         <RevenueSection
@@ -527,7 +539,7 @@ function Reconciliation({ dayClose }) {
 
 const hourLabel = (h) => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'AM' : 'PM'}`;
 
-function FootfallSection({ analytics, footfall, range, analyticsError, footfallError, onRetry, initialSearch }) {
+function FootfallSection({ analytics, footfall, range, analyticsError, footfallError, onRetry, initialSearch, onPhotosChanged }) {
   const rows = footfall?.rows ?? [];
   const single = range.from === range.to;
 
@@ -561,7 +573,7 @@ function FootfallSection({ analytics, footfall, range, analyticsError, footfallE
     return (
       <div className="space-y-5">
         <LoadError error={analyticsError} onRetry={onRetry} what="footfall analytics" />
-        {footfallError ? <LoadError error={footfallError} onRetry={onRetry} what="the footfall register" /> : <FootfallRegister footfall={footfall} range={range} initialSearch={initialSearch} />}
+        {footfallError ? <LoadError error={footfallError} onRetry={onRetry} what="the footfall register" /> : <FootfallRegister footfall={footfall} range={range} initialSearch={initialSearch} onPhotosChanged={onPhotosChanged} />}
       </div>
     );
   }
@@ -655,25 +667,34 @@ function FootfallSection({ analytics, footfall, range, analyticsError, footfallE
 
       {footfallError
         ? <LoadError error={footfallError} onRetry={onRetry} what="the footfall register" />
-        : <FootfallRegister footfall={footfall} range={range} initialSearch={initialSearch} />}
+        : <FootfallRegister footfall={footfall} range={range} initialSearch={initialSearch} onPhotosChanged={onPhotosChanged} />}
     </div>
   );
 }
 
 const STATUS_TONE = { WAITING: 'amber', IN_CHAMBER: 'teal', COMPLETED: 'emerald', SKIPPED: 'rose', CANCELLED: 'slate', RESCHEDULE_NEEDED: 'slate' };
 
-function FootfallRegister({ footfall, range, initialSearch = '' }) {
+function FootfallRegister({ footfall, range, initialSearch = '', onPhotosChanged }) {
+  const { user, role } = useAuth();
   const multiDay = range.from !== range.to;
   const [search, setSearch] = useState(initialSearch);
   const [viewing, setViewing] = useState(null);
   const [printing, setPrinting] = useState(null);
+  const [gallery, setGallery] = useState(null); // { tokenId, id }
+  const [adding, setAdding] = useState(null); // tokenId of the visit taking photos
   const rows = footfall?.rows ?? [];
+  // Mirrors the server: a doctor adds photos to their own patients' visits,
+  // the desk to any visit at the clinic; never to a cancelled one.
+  const mayAddPhoto = (r) => r.status !== 'CANCELLED'
+    && (role === ROLES.DOCTOR ? String(r.doctorId) === String(user?.doctorId) : true);
+  const rowOf = (tokenId) => rows.find((r) => r.tokenId === tokenId);
   const shown = useMemo(() => {
     const s = search.trim().toLowerCase();
     if (!s) return rows;
     return rows.filter((r) => [
       r.patientName, r.phone, token(r.tokenNumber), r.complaint, r.doctorName,
       ...r.prescriptions.flatMap((x) => [x.diagnosis, ...x.medicines.map((m) => m.name)]),
+      ...(r.photos ?? []).map((ph) => ph.caption),
     ].some((v) => String(v || '').toLowerCase().includes(s)));
   }, [rows, search]);
 
@@ -730,7 +751,7 @@ function FootfallRegister({ footfall, range, initialSearch = '' }) {
                   <td className="py-3 px-4"><Pill tone={r.visitType === 'emergency' ? 'rose' : 'teal'}>{VISIT_LABEL[r.visitType] || r.visitType}</Pill></td>
                   <td className="py-3 px-4"><Pill tone={STATUS_TONE[r.status] || 'slate'}>{r.status.replace('_', ' ').toLowerCase()}</Pill></td>
                   <td className="py-3 px-5">
-                    {r.prescriptions.length ? r.prescriptions.map((x) => (
+                    {r.prescriptions.map((x) => (
                       <button
                         key={x.id}
                         type="button"
@@ -751,7 +772,18 @@ function FootfallRegister({ footfall, range, initialSearch = '' }) {
                           ))}
                         </div>
                       </button>
-                    )) : <span className="text-[11px] italic text-slate-400">No prescription yet</span>}
+                    ))}
+                    {r.photos?.length > 0 && (
+                      <div className={clsx(r.prescriptions.length && 'mt-2')}>
+                        <PhotoGroups photos={r.photos} onOpen={(ph) => setGallery({ tokenId: r.tokenId, id: ph.id })} size="sm" />
+                      </div>
+                    )}
+                    {!r.prescriptions.length && !r.photos?.length && <span className="text-[11px] italic text-slate-400">No prescription yet</span>}
+                    {mayAddPhoto(r) && (
+                      <button type="button" onClick={() => setAdding(r.tokenId)} className="block mt-1.5 text-[11px] font-medium text-mg-teal hover:underline">
+                        <i className="fa-solid fa-camera text-[10px] mr-1" aria-hidden="true" />Add prescription photo
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -763,6 +795,23 @@ function FootfallRegister({ footfall, range, initialSearch = '' }) {
       <PrintPortal active={Boolean(printing)} onDone={() => setPrinting(null)}>
         <RxPrint rx={printing} />
       </PrintPortal>
+      {/* Both fed from the live register, so an upload or removal shows at once. */}
+      {gallery && (
+        <PhotoGallery
+          photos={rowOf(gallery.tokenId)?.photos ?? []}
+          startId={gallery.id}
+          onClose={() => setGallery(null)}
+          onRemoved={onPhotosChanged}
+        />
+      )}
+      {adding && rowOf(adding) && (
+        <AddVisitPhotosModal
+          visit={{ tokenId: adding, tokenNumber: rowOf(adding).tokenNumber, name: rowOf(adding).patientName, date: rowOf(adding).date }}
+          photos={rowOf(adding).photos ?? []}
+          onClose={() => setAdding(null)}
+          onChanged={onPhotosChanged}
+        />
+      )}
     </DeskCard>
   );
 }

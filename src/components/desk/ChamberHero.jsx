@@ -147,13 +147,27 @@ export function ChamberHero({
             </span>
           </div>
 
-          <PanelButton
-            tone="green" icon="fa-volume-high" className="w-full py-3.5 text-[15px]"
-            onClick={onCallNext} disabled={busy || onBreak}
-            title={onBreak ? 'End the break to resume calling' : undefined}
-          >
-            Call Next (Voice Announcement)
-          </PanelButton>
+          {/* One main action at a time: finish the patient inside, then call
+              the next. Never both live at once, so the desk cannot call a
+              second patient into an occupied chamber. */}
+          {current ? (
+            <PanelButton tone="green" icon="fa-check-double" className="w-full py-3.5 text-[15px]" onClick={onComplete} disabled={busy}>
+              Mark {token(current.tokenNumber)} Complete
+            </PanelButton>
+          ) : (
+            <PanelButton
+              tone="green" icon="fa-volume-high" className="w-full py-3.5 text-[15px]"
+              onClick={onCallNext} disabled={busy || onBreak || !nextUp}
+              title={onBreak ? 'End the break to resume calling' : !nextUp ? 'No one is waiting' : undefined}
+            >
+              {nextUp ? `Call Next ${token(nextUp.tokenNumber)} (Voice Announcement)` : 'No one waiting'}
+            </PanelButton>
+          )}
+          {current && (
+            <p className="-mt-1 text-center text-[11px] text-white/60">
+              {nextUp ? `Then call ${token(nextUp.tokenNumber)} ${nextUp.name}` : 'No one waiting after this patient'}
+            </p>
+          )}
 
           {onWriteRx && (
             <PanelButton tone="outline" icon="fa-file-prescription" className="w-full py-2.5" onClick={onWriteRx} disabled={noOne}>
@@ -162,8 +176,8 @@ export function ChamberHero({
           )}
 
           <div className="grid grid-cols-2 gap-2.5">
-            <PanelButton tone="greenDark" icon="fa-check-double" className="py-2.5" onClick={onComplete} disabled={noOne || busy}>
-              Mark Complete
+            <PanelButton icon="fa-bullhorn" className="py-2.5" onClick={onRecall} disabled={noOne || busy}>
+              Re-announce
             </PanelButton>
             <PanelButton icon="fa-forward" className="py-2.5" onClick={onSkip} disabled={noOne || busy}>
               Skip Token
@@ -176,14 +190,7 @@ export function ChamberHero({
             </PanelButton>
           </div>
 
-          {/* The break card is taller than a button, so while on a break it
-              takes the full row instead of squeezing in beside Re-announce. */}
-          <div className={clsx('gap-2.5 pt-1', onBreak ? 'flex flex-col' : 'grid grid-cols-2')}>
-            <PanelButton icon="fa-bullhorn" className="py-2.5" onClick={onRecall} disabled={noOne || busy}>
-              Re-announce
-            </PanelButton>
-            {footer && <div className="min-w-0">{footer}</div>}
-          </div>
+          {footer && <div className="min-w-0 pt-1">{footer}</div>}
         </div>
       </div>
     </section>

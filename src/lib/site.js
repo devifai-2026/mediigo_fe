@@ -19,6 +19,8 @@ export const SITE = {
   address: '[Registered office address, City, State, PIN]',
   jurisdictionCity: '[City]',
 
+  // The address the patient Terms of Use and Privacy Policy name.
+  contactEmail: 'mediigoindia@gmail.com',
   supportEmail: 'support@mediigo.com',
   privacyEmail: 'privacy@mediigo.com',
   grievanceEmail: 'grievance@mediigo.com',
@@ -30,13 +32,14 @@ export const SITE = {
     designation: 'Grievance Officer',
   },
 
-  // Shown on every legal page; change it whenever a policy changes.
+  // Shown on legal pages that do not set their own dates; change it whenever
+  // such a policy changes.
   effectiveDate: '20 October 2026',
 
   social: {
-    instagram: '', // e.g. https://www.instagram.com/mediigo
+    instagram: 'https://www.instagram.com/mediigoindia',
     facebook: '',
-    linkedin: '',
+    linkedin: 'https://www.linkedin.com/in/mediigo-india-938836444',
     x: '',
   },
 };

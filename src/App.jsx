@@ -30,6 +30,7 @@ import RosterView from './views/desk/RosterView.jsx';
 import AnalyticsView from './views/desk/AnalyticsView.jsx';
 import DeskProfileView from './views/desk/DeskProfileView.jsx';
 import PettyCashView from './views/desk/PettyCashView.jsx';
+import AccountView from './views/shared/AccountView.jsx';
 
 import PharmacyView from './views/pharmacy/PharmacyView.jsx';
 
@@ -81,13 +82,14 @@ const PATIENT_LEGACY = ['explore', 'tracker', 'bookings', 'profile'];
 
 // The OPD Desk: the same six tabs for doctors and the front desk. What each
 // role may DO on a tab is still decided by the server. `fa` is the
-// FontAwesome glyph the desk navigation uses.
+// FontAwesome glyph the desk navigation uses; `short` is the phone dock's
+// label, where seven tabs share 360px.
 const deskNav = (base) => [
   { to: `${base}/${base === '/d' ? 'chamber' : 'queue'}`, label: 'Queue', icon: 'list', fa: 'fa-list-check' },
-  { to: `${base}/rx`, label: 'Rx / EMR', icon: 'doc', fa: 'fa-file-prescription' },
+  { to: `${base}/rx`, label: 'Rx / EMR', short: 'Rx', icon: 'doc', fa: 'fa-file-prescription' },
   { to: `${base}/walkin`, label: 'Walk-In', icon: 'plus', fa: 'fa-user-plus' },
   { to: `${base}/roster`, label: 'Roster', icon: 'clock', fa: 'fa-calendar-days' },
-  { to: `${base}/analytics`, label: 'Analytics', icon: 'revenue', fa: 'fa-chart-line' },
+  { to: `${base}/analytics`, label: 'Analytics', short: 'Reports', icon: 'revenue', fa: 'fa-chart-line' },
   { to: `${base}/profile`, label: 'Profile', icon: 'user', fa: 'fa-user-doctor' },
 ];
 const DOCTOR_NAV = deskNav('/d');
@@ -95,7 +97,7 @@ const DOCTOR_NAV = deskNav('/d');
 // server allows only receptionists to record it).
 const RECEPTION_NAV = [
   ...deskNav('/r').slice(0, 5),
-  { to: '/r/petty', label: 'Petty Cash', icon: 'revenue', fa: 'fa-wallet' },
+  { to: '/r/petty', label: 'Petty Cash', short: 'Petty', icon: 'revenue', fa: 'fa-wallet' },
   ...deskNav('/r').slice(5),
 ];
 
@@ -246,6 +248,7 @@ export default function App() {
       >
         <Route path="/ph/queue" element={<PharmacyView key="queue" view="PENDING" />} />
         <Route path="/ph/history" element={<PharmacyView key="history" view="DONE" />} />
+        <Route path="/ph/account" element={<AccountView />} />
       </Route>
 
       <Route
@@ -259,6 +262,7 @@ export default function App() {
         <Route path="/a/onboard" element={<AgentOnboardView />} />
         <Route path="/a/performance" element={<AgentPerformanceView />} />
         <Route path="/a/submissions" element={<AgentSubmissionsView />} />
+        <Route path="/a/account" element={<AccountView />} />
       </Route>
 
       {/* Exec Admin and Super Admin share this tree; the server enforces the
@@ -274,6 +278,7 @@ export default function App() {
         <Route path="/admin/clinics" element={<ClinicsView />} />
         <Route path="/admin/approvals" element={<ApprovalsView />} />
         <Route path="/admin/audit" element={<AuditView />} />
+        <Route path="/admin/account" element={<AccountView />} />
       </Route>
 
       {/* Super Admin console — its own dark-sidebar shell, matching the
@@ -297,6 +302,7 @@ export default function App() {
         <Route path="/super/agents" element={<AgentsView />} />
         <Route path="/super/executives" element={<ExecutivesView />} />
         <Route path="/super/staff" element={<StaffView />} />
+        <Route path="/super/account" element={<AccountView />} />
         <Route path="/super/staff/:id" element={<StaffProfileView />} />
         <Route path="/super/approvals" element={<MasterApprovalsView />} />
         <Route path="/super/financials" element={<FinancialAuditView />} />

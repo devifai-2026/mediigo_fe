@@ -47,6 +47,9 @@ const BLANK = {
   },
   reception: { name: '', phone: '', email: '' },
   doctors: [blankDoctor('', true)],
+  // How every login below signs in. OTP needs WhatsApp messaging to be live,
+  // so a password the agent agrees with the clinic is the default.
+  login: { method: 'PASSWORD', password: '' },
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,6 +84,7 @@ const demoForm = (specialties) => {
     lat: 18.5204, lng: 73.8567, placeId: '', formatted: 'Camp, Pune, Maharashtra 411001', pinSource: 'MAP_PIN',
     consultationRooms: '4', facilities: FACILITIES.filter((f) => f !== 'Ambulance Service'), photos: [], standeeSerial: '',
     reception: { name: 'Priya Sharma', phone: mobile(), email: `reception@sunrise${tag}.com` },
+    login: { method: 'PASSWORD', password: 'Mediigo@2026' },
     doctors: [
       doc('Dr. Rajesh Sharma', /cardio/i, 'MBBS, MD (Cardiology)', 'Chief Cardiologist', 14, true),
       doc('Dr. Amit Patil', /general|medicine/i, 'MBBS, DNB', 'General Physician', 8, false),
@@ -138,6 +142,7 @@ const validate = (step, f) => {
       ['fresh', 'followup', 'emergency'].forEach((fee) => { if (d.fees[fee] === '') e[k(`fees.${fee}`)] = 'Required'; });
     });
     if (!f.doctors.length) e.doctors = 'Add at least one doctor';
+    if (f.login.method === 'PASSWORD' && f.login.password.length < 8) e['login.password'] = 'Set a password of at least 8 characters';
   }
   return e;
 };
@@ -159,7 +164,8 @@ export default function AgentOnboardView() {
   const lead = leads?.find((l) => l._id === leadId) ?? null;
 
   const [draft] = useState(() => (leadId ? null : readDraft()));
-  const [form, setForm] = useState(() => draft?.form ?? BLANK);
+  // Spread over BLANK so a draft saved before a field existed still has it.
+  const [form, setForm] = useState(() => (draft?.form ? { ...BLANK, ...draft.form } : BLANK));
   const [step, setStep] = useState(() => Math.min(draft?.step ?? 0, 2));
   const [reached, setReached] = useState(() => Math.min(draft?.reached ?? 0, 2));
   const [attempted, setAttempted] = useState({});
@@ -184,7 +190,9 @@ export default function AgentOnboardView() {
   // Autosave, so a dead battery or a dropped tab does not cost the visit.
   useEffect(() => {
     if (submitted) return;
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, step, reached, at: Date.now() })); } catch { /* private mode */ }
+    // The password stays out of the draft: this device may be shared.
+    const kept = { ...form, login: { ...form.login, password: '' } };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ form: kept, step, reached, at: Date.now() })); } catch { /* private mode */ }
   }, [form, step, reached, submitted]);
 
   const errors = useMemo(() => (attempted[step] ? validate(step, form) : {}), [attempted, step, form]);
@@ -248,6 +256,9 @@ export default function AgentOnboardView() {
       const created = unwrap(await api.post('/api/onboarding/submissions', {
         kind: 'HOSPITAL',
         ...(lead ? { leadId: lead._id } : {}),
+        credentials: form.login.method === 'OTP'
+          ? { method: 'OTP' }
+          : { method: 'PASSWORD', password: form.login.password },
         payload: {
           name: form.name.trim(),
           code: form.code.trim().toUpperCase(),
@@ -568,6 +579,12 @@ export default function AgentOnboardView() {
               <i className="fa-solid fa-plus mr-1.5" aria-hidden="true" /> Add another doctor
             </button>
 
+            <LoginMethodSection
+              login={form.login}
+              error={errors['login.password']}
+              onChange={(login) => setForm((f) => ({ ...f, login }))}
+            />
+
             <Footer
               onBack={() => go(1)}
               onNext={submit}
@@ -584,6 +601,69 @@ export default function AgentOnboardView() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * How the clinic's logins sign in. A password works today; OTP waits on
+ * WhatsApp messaging being live, so it is offered but not the default.
+ */
+function LoginMethodSection({ login, error, onChange }) {
+  const [shown, setShown] = useState(false);
+  const options = [
+    ['PASSWORD', 'fa-key', 'Password', 'You set one password now for every login above. Each person can change it after signing in.'],
+    ['OTP', 'fa-brands fa-whatsapp', 'WhatsApp OTP', 'No password — each login signs in with a code sent to its mobile. Needs WhatsApp messaging to be live.'],
+  ];
+  return (
+    <WSection tone="muted" className="space-y-4">
+      <h3 className="text-[13px] sm:text-sm font-semibold uppercase tracking-wide text-slate-900">
+        <i className="fa-solid fa-lock text-mg-blue mr-2" aria-hidden="true" />How these logins sign in
+      </h3>
+      <div role="radiogroup" aria-label="Sign-in method" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {options.map(([value, icon, label, hint]) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={login.method === value}
+            onClick={() => onChange({ ...login, method: value })}
+            className={clsx(
+              'text-left p-3 rounded-lg border transition',
+              login.method === value ? 'border-mg-teal bg-teal-50/60 ring-2 ring-mg-teal/20' : 'border-slate-200 bg-white hover:border-slate-300',
+            )}
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <i className={clsx(icon.startsWith('fa-brands') ? icon : `fa-solid ${icon}`, 'text-mg-teal')} aria-hidden="true" />{label}
+            </span>
+            <span className="block mt-1 text-xs text-slate-500">{hint}</span>
+          </button>
+        ))}
+      </div>
+      {login.method === 'PASSWORD' && (
+        <WField label="Password for every login" required error={error} hint="At least 8 characters. Not saved on this device." className="sm:max-w-sm">
+          {(id) => (
+            <div className="relative">
+              <input
+                id={id}
+                type={shown ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={login.password}
+                onChange={(e) => onChange({ ...login, password: e.target.value })}
+                className={clsx(W_INPUT, 'pr-10 font-mono', error && 'border-rose-300 bg-rose-50/40')}
+              />
+              <button
+                type="button"
+                onClick={() => setShown((v) => !v)}
+                aria-label={shown ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 px-3 text-slate-400 hover:text-slate-600"
+              >
+                <i className={shown ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye'} aria-hidden="true" />
+              </button>
+            </div>
+          )}
+        </WField>
+      )}
+    </WSection>
   );
 }
 
@@ -696,7 +776,9 @@ function SuccessPanel({ submitted, onRestart }) {
         <p className="text-sm text-slate-500 mt-2 max-w-lg">
           <strong className="text-slate-800">{form.name}</strong> ({code}) and {form.doctors.length} doctor
           {form.doctors.length === 1 ? '' : 's'} are with your district admin for approval. Every login below is created the
-          moment it is approved, and the approver shares each temporary password.
+          moment it is approved{form.login.method === 'OTP'
+            ? ' and signs in with a WhatsApp code sent to its mobile.'
+            : ' and signs in with the password you set. Share it with the clinic — each person can change it from their profile.'}
         </p>
       </div>
 

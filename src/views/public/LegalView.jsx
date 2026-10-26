@@ -78,7 +78,11 @@ export default function LegalView() {
             </div>
           )}
           <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">{doc.title}</h1>
-          {!isCompany && <p className="mt-2 text-sm text-slate-500">Last updated: {SITE.effectiveDate}</p>}
+          {!isCompany && (
+            <p className="mt-2 text-sm text-slate-500">
+              {doc.effectiveDate && <>Effective date: {doc.effectiveDate} · </>}Last updated: {doc.lastUpdated || SITE.effectiveDate}
+            </p>
+          )}
 
           {doc.sections.length > 3 && (
             <nav aria-label="On this page" className="mt-6 rounded-xl border border-slate-200 bg-mg-surface/60 p-4">

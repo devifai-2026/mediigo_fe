@@ -12,8 +12,8 @@ import { longDate, SHIFT_LABEL } from '../../lib/followUps.js';
  * common case is the common case and a doctor seeing forty patients should
  * not be made to answer a question thirty-eight of them do not need.
  *
- * The queue advances either way: a patient sent for tests has finished with
- * the doctor, whatever happens next.
+ * The doctor chooses whether the next patient is called in the same tap;
+ * either way a patient sent for tests has finished with the doctor.
  */
 const OPTIONS = [
   { value: 'DONE', label: 'Consultation done', hint: 'Nothing further needed today', icon: 'M5 13l4 4L19 7' },
@@ -21,7 +21,7 @@ const OPTIONS = [
   { value: 'ADMITTED', label: 'Admitted', hint: 'Taken in as an inpatient', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h6M9 13h6M9 17h6' },
 ];
 
-export function OutcomeDialog({ open, doctorId, patientName, tokenNumber, hasFollowUp = false, onConfirm, onClose, busy }) {
+export function OutcomeDialog({ open, doctorId, patientName, tokenNumber, hasFollowUp = false, nextLabel = '', onConfirm, onClose, busy }) {
   const [outcome, setOutcome] = useState('DONE');
   const [notes, setNotes] = useState('');
   // Follow-up is opt-in per patient and must never carry over to the next
@@ -40,6 +40,12 @@ export function OutcomeDialog({ open, doctorId, patientName, tokenNumber, hasFol
   if (!open) return null;
 
   const needsSlot = followUpOn && !slot;
+  const confirm = (andCallNext) => onConfirm({
+    outcome,
+    outcomeNotes: notes,
+    followUp: followUpOn && slot ? { ...slot, note: followUpNote.trim() } : null,
+    andCallNext,
+  });
 
   return (
     <Modal open onClose={onClose} title="Finish this consultation" subtitle={`${tokenNumber} · ${patientName || 'Patient'}`}>
@@ -128,19 +134,27 @@ export function OutcomeDialog({ open, doctorId, patientName, tokenNumber, hasFol
           </div>
         )}
 
-        <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose} disabled={busy}>Back</Button>
+        {/* Finish only, or finish and call the next patient in the same tap.
+            Either way this patient is complete before anyone else goes in. */}
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Back</Button>
           <Button
-            onClick={() => onConfirm({
-              outcome,
-              outcomeNotes: notes,
-              followUp: followUpOn && slot ? { ...slot, note: followUpNote.trim() } : null,
-            })}
+            variant={nextLabel ? 'secondary' : 'primary'}
+            onClick={() => confirm(false)}
             disabled={busy || needsSlot}
             title={needsSlot ? 'Pick a follow-up date first' : undefined}
           >
-            {busy ? 'Saving…' : followUpOn ? 'Book follow-up & call next' : 'Finish & call next'}
+            {followUpOn ? 'Book follow-up & complete' : 'Complete'}
           </Button>
+          {nextLabel && (
+            <Button
+              onClick={() => confirm(true)}
+              disabled={busy || needsSlot}
+              title={needsSlot ? 'Pick a follow-up date first' : undefined}
+            >
+              {busy ? 'Saving…' : `Complete & call ${nextLabel}`}
+            </Button>
+          )}
         </div>
       </div>
     </Modal>

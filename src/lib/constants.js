@@ -18,6 +18,19 @@ export const ROLE_HOME = {
   [ROLES.SUPER_ADMIN]: '/super',
 };
 
+// Where the profile icon in each portal's header leads: the signed-in
+// person's own details. Doctors and the front desk keep theirs on the
+// existing Profile tab.
+export const PROFILE_PATH = {
+  [ROLES.PATIENT]: '/p/profile',
+  [ROLES.DOCTOR]: '/d/profile',
+  [ROLES.RECEPTIONIST]: '/r/profile',
+  [ROLES.PHARMACIST]: '/ph/account',
+  [ROLES.FIELD_AGENT]: '/a/account',
+  [ROLES.EXEC_ADMIN]: '/admin/account',
+  [ROLES.SUPER_ADMIN]: '/super/account',
+};
+
 export const ROLE_LABEL = {
   [ROLES.PATIENT]: 'Patient',
   [ROLES.DOCTOR]: 'Doctor',

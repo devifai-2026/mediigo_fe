@@ -47,13 +47,15 @@ export default function DoctorChamberView() {
   // it from an absent IN_CHAMBER row.
   const hasCalled = s?.chamberState === 'DONE';
 
+  const nextUp = s?.tokens?.find((t) => t.status === 'WAITING');
+
   /**
-   * Finishing a patient and calling the next is one step for the doctor, so
-   * the outcome is asked here rather than as a separate action they would
-   * have to remember. With nobody in the chamber there is nothing to record
-   * an outcome for, so the dialog is skipped entirely.
+   * Finish the patient inside: the outcome (and any follow-up) is asked in
+   * one dialog, which also offers to call the next patient in the same tap.
+   * With nobody in the chamber there is nothing to finish, so "Call next"
+   * goes straight to the call.
    */
-  const callNext = async ({ followUp, ...payload } = {}) => {
+  const finish = async ({ followUp, andCallNext, ...payload } = {}) => {
     // Booked BEFORE finishing: if the follow-up cannot be booked (the sitting
     // just filled), the doctor is still with the patient and can pick another
     // date, instead of discovering it after they have left the room.
@@ -66,7 +68,8 @@ export default function DoctorChamberView() {
         return;
       }
     }
-    await desk.callNext(payload);
+    if (andCallNext || !current) await desk.callNext(payload);
+    else await desk.complete(current, payload.outcome, payload.outcomeNotes);
     setOutcomeOpen(false);
   };
 
@@ -86,9 +89,9 @@ export default function DoctorChamberView() {
         current={current}
         hasCalled={hasCalled}
         busy={desk.busy}
-        onCallNext={() => (current ? setOutcomeOpen(true) : callNext())}
+        onCallNext={() => (current ? setOutcomeOpen(true) : finish())}
         onRecall={desk.recall}
-        onComplete={() => current && desk.complete(current)}
+        onComplete={() => current && setOutcomeOpen(true)}
         onSkip={() => current && desk.skip(current)}
         onOutcome={(o) => current && desk.complete(current, o)}
         onWriteRx={() => current && navigate(`/d/rx?token=${current.tokenId}`)}
@@ -108,7 +111,12 @@ export default function DoctorChamberView() {
         busy={desk.busy}
         onRefresh={refetch}
         canPrescribe
-        onAction={(action, t) => (action === 'RX' ? navigate(`/d/rx?token=${t.tokenId}`) : desk.onRowAction(action, t))}
+        onAction={(action, t) => {
+          if (action === 'RX') navigate(`/d/rx?token=${t.tokenId}`);
+          // Finishing from the list asks the same outcome as the main button.
+          else if (action === 'COMPLETED') setOutcomeOpen(true);
+          else desk.onRowAction(action, t);
+        }}
       />
 
       <OutcomeDialog
@@ -117,9 +125,10 @@ export default function DoctorChamberView() {
         hasFollowUp={Boolean(current?.hasFollowUp)}
         patientName={current?.name}
         tokenNumber={current ? token(current.tokenNumber) : ''}
+        nextLabel={nextUp ? token(nextUp.tokenNumber) : ''}
         busy={desk.busy}
         onClose={() => setOutcomeOpen(false)}
-        onConfirm={(payload) => callNext(payload)}
+        onConfirm={finish}
       />
     </div>
   );

@@ -19,6 +19,8 @@ import { SpecialtyPicker } from '../../components/ui/SpecialtyPicker.jsx';
 import { toProfileForm, toProfilePayload } from '../../lib/doctorProfile.js';
 import { StandeePanel } from '../../components/doctor/StandeePanel.jsx';
 import { ClinicPharmacyCard } from '../../components/desk/ClinicPharmacyCard.jsx';
+import { ChangePasswordCard } from '../../components/desk/ChangePasswordCard.jsx';
+import { AccountSummary } from '../../components/desk/AccountSummary.jsx';
 import { Avatar, DeskCard, DoctorPicker, EmptyNote, PageHeader, Pill, RefreshButton, SectionHead } from '../../components/desk/ui.jsx';
 
 const errMsg = (e) => e?.response?.data?.error?.message || e.message;
@@ -50,6 +52,8 @@ export default function DeskProfileView() {
 
   return (
     <div className="space-y-5">
+      {/* The profile icon leads here, so the desk's own account comes first. */}
+      {!isDoctor && <AccountSummary />}
       {!isDoctor && (
         <>
           <PageHeader
@@ -69,6 +73,7 @@ export default function DeskProfileView() {
         ? <DoctorSettings key={doctorId} doctorId={doctorId} />
         : doctors && <DeskCard><EmptyNote icon="fa-user-doctor" title="No doctors at this clinic yet" /></DeskCard>}
       {isDoctor && <ClinicPharmacyCard />}
+      <ChangePasswordCard />
     </div>
   );
 }
