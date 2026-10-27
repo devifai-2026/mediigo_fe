@@ -10,6 +10,7 @@ import { initials, phone as fmtPhone, ageOf, shortDate } from '../../lib/format.
 import { useGeolocation } from '../../hooks/useGeolocation.js';
 import { AvatarEditor, EditDetailsModal, ChangePhoneModal, DeleteAccountModal } from '../../components/patient/AccountSettings.jsx';
 import { useNoIndex } from '../../lib/seo.js';
+import { PasswordSection } from '../../components/patient/PasswordSection.jsx';
 
 export default function ProfileView() {
   useNoIndex('My profile');
@@ -197,6 +198,9 @@ export default function ProfileView() {
       >
         <Icon name="logout" className="w-4 h-4" /> Log out
       </button>
+
+      {/* Optional: patients signed in by code only until now, and may still. */}
+      <PasswordSection />
 
       {/* Deleting the account is in the app itself — no email to support. */}
       <section className="rounded-xl border border-rose-200 bg-rose-50/40 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
