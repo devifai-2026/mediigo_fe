@@ -11,6 +11,7 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { directionsUrl } from '../../lib/maps.js';
 import { CredentialsModal } from '../../components/onboarding/CredentialsModal.jsx';
 import { ApproveDialog } from '../../components/onboarding/ApproveDialog.jsx';
+import { SubmissionDetails } from '../../components/onboarding/SubmissionDetails.jsx';
 import { openPrivateDocument } from '../../lib/documents.js';
 import { asList } from '../../lib/list.js';
 
@@ -25,6 +26,7 @@ export default function ApprovalsView() {
   const [issued, setIssued] = useState(null);
 
   const [approving, setApproving] = useState(null);
+  const [viewing, setViewing] = useState(null);
 
   const approve = async ({ trialDays, password }) => {
     setBusy(true);
@@ -130,6 +132,9 @@ export default function ApprovalsView() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                <Button variant="secondary" onClick={() => setViewing(s)}>
+                  <i className="fa-solid fa-eye" aria-hidden="true" /> View details
+                </Button>
                 <Button variant="outline" onClick={() => { setRejecting(s); setReason(''); }} className="text-rose-600 hover:bg-rose-50">
                   Reject
                 </Button>
@@ -156,6 +161,15 @@ export default function ApprovalsView() {
           </div>
         </div>
       </Modal>
+      {viewing && (
+        <SubmissionDetails
+          submissionId={viewing._id}
+          busy={busy}
+          onClose={() => setViewing(null)}
+          onApprove={() => { const s = viewing; setViewing(null); setApproving(s); }}
+          onReject={() => { const s = viewing; setViewing(null); setRejecting(s); setReason(''); }}
+        />
+      )}
       <ApproveDialog submission={approving} busy={busy} onCancel={() => setApproving(null)} onApprove={approve} />
       <CredentialsModal result={issued} onClose={() => setIssued(null)} />
     </div>

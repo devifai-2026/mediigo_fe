@@ -7,6 +7,7 @@ import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 import { inr } from '../../lib/format.js';
 import { CredentialsModal } from '../../components/onboarding/CredentialsModal.jsx';
 import { ApproveDialog } from '../../components/onboarding/ApproveDialog.jsx';
+import { SubmissionDetails } from '../../components/onboarding/SubmissionDetails.jsx';
 
 export default function MasterApprovalsView() {
   const { approvals, refetch } = useConsole();
@@ -15,6 +16,8 @@ export default function MasterApprovalsView() {
   const [busy, setBusy] = useState(null);
   const [issued, setIssued] = useState(null);
   const [approving, setApproving] = useState(null);
+  // The submission whose full details are open.
+  const [viewing, setViewing] = useState(null);
 
   const approve = async ({ trialDays, password }) => {
     const c = approving;
@@ -107,6 +110,13 @@ export default function MasterApprovalsView() {
             <div className="flex gap-2 w-full sm:w-auto">
               <button
                 type="button"
+                onClick={() => setViewing(c)}
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-lg transition"
+              >
+                <i className="fa-solid fa-eye mr-1.5" aria-hidden="true" />View details
+              </button>
+              <button
+                type="button"
                 disabled={busy === c.id || !c.hasGeocode}
                 onClick={() => setApproving(c)}
                 className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow transition disabled:opacity-50"
@@ -125,6 +135,15 @@ export default function MasterApprovalsView() {
           </div>
         ))}
       </div>
+      {viewing && (
+        <SubmissionDetails
+          submissionId={viewing.id}
+          busy={busy === viewing.id}
+          onClose={() => setViewing(null)}
+          onApprove={() => { const c = viewing; setViewing(null); setApproving(c); }}
+          onReject={() => { const c = viewing; setViewing(null); reject(c); }}
+        />
+      )}
       <ApproveDialog
         submission={approving ? { ...approving, payload: { name: approving.clinicName } } : null}
         busy={Boolean(busy)}
