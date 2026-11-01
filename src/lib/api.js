@@ -4,6 +4,11 @@ export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '',
   withCredentials: true, // carries the httpOnly refresh cookie
   headers: { 'Content-Type': 'application/json' },
+  // fetch with cache: 'no-store', so the browser never revalidates an API
+  // answer from its HTTP cache. A revalidation came back as a bare 304 that
+  // the page saw as a failure (the onboarding specialty list never loaded).
+  adapter: 'fetch',
+  fetchOptions: { cache: 'no-store' },
 });
 
 // Access token lives in memory only — never localStorage, where XSS could read it.

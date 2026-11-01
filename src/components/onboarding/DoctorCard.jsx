@@ -72,6 +72,7 @@ export function DoctorCard({ index, doctor, errors = {}, specialties, specialtie
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_2fr_auto] gap-3 lg:gap-4 items-end">
+        <div>
         <WField
           label="Specialty"
           required
@@ -83,12 +84,15 @@ export function DoctorCard({ index, doctor, errors = {}, specialties, specialtie
               {specialtyOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           )}
-          {specialtiesFailed && (
-            <button type="button" onClick={onRetrySpecialties} className="mt-1 text-[11px] font-semibold text-mg-teal hover:underline">
-              <i className="fa-solid fa-rotate-right mr-1" aria-hidden="true" /> Try again
-            </button>
-          )}
         </WField>
+        {/* Outside WField on purpose: it renders its children as a function
+            only when the function is the sole child. */}
+        {specialtiesFailed && (
+          <button type="button" onClick={onRetrySpecialties} className="mt-1 text-[11px] font-semibold text-mg-teal hover:underline">
+            <i className="fa-solid fa-rotate-right mr-1" aria-hidden="true" /> Try again
+          </button>
+        )}
+        </div>
         <div>
           <p className="text-xs font-medium text-slate-700 mb-1.5">Consultation fees (₹) <span className="text-rose-500">*</span></p>
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
