@@ -31,7 +31,9 @@ const toMin = (hhmm) => {
 };
 
 /** Where a sitting is in the day, for its badge. */
-const shiftPhase = (s) => {
+const shiftPhase = (s, isToday = true) => {
+  // Another day's sittings have not begun, whatever the clock says now.
+  if (!isToday) return 'upcoming';
   const now = minutesNow();
   if (now < toMin(s.startTime)) return 'upcoming';
   if (now > toMin(s.endTime)) return 'ended';
@@ -42,12 +44,12 @@ const shiftPhase = (s) => {
  * One headline for a doctor, in order of what matters to the desk: are they
  * here today, are they on a break, and can a patient still get a token.
  */
-const doctorState = (d) => {
-  if (!d.shifts.length) return { label: d.offReason ? `Off · ${d.offReason}` : 'No sitting today', tone: 'slate' };
-  if (d.session.isOnBreak) return { label: `On break${d.session.breakReason ? ` · ${d.session.breakReason}` : ''}`, tone: 'amber' };
-  const live = d.shifts.find((s) => shiftPhase(s) === 'live');
+const doctorState = (d, isToday = true) => {
+  if (!d.shifts.length) return { label: d.offReason ? `Off · ${d.offReason}` : `No sitting ${isToday ? 'today' : 'this day'}`, tone: 'slate' };
+  if (isToday && d.session.isOnBreak) return { label: `On break${d.session.breakReason ? ` · ${d.session.breakReason}` : ''}`, tone: 'amber' };
+  const live = d.shifts.find((s) => shiftPhase(s, isToday) === 'live');
   if (live) return { label: 'Active shift', tone: 'emerald' };
-  const next = d.shifts.find((s) => shiftPhase(s) === 'upcoming');
+  const next = d.shifts.find((s) => shiftPhase(s, isToday) === 'upcoming');
   if (next) return { label: `Starting ${t12(next.startTime)}`, tone: 'amber' };
   return { label: 'Shifts ended', tone: 'slate' };
 };
@@ -57,7 +59,12 @@ export default function RosterView() {
   const toast = useToast();
   const confirm = useConfirm();
   const isDoctor = role === ROLES.DOCTOR;
-  const { data, loading, error, refetch } = useApi('/api/queue/roster/today');
+  // Which day the board shows: today by default, or any day patients can
+  // already book into — so tomorrow's list can be read the evening before.
+  const [day, setDay] = useState(null);
+  const { data, loading, error, refetch } = useApi(`/api/queue/roster/today${day ? `?date=${day}` : ''}`);
+  const days = asList(data?.dates);
+  const isToday = !day || day === days[0];
   const [busyId, setBusyId] = useState(null);
 
   // Occupancy moves all day; a quiet refresh keeps the board honest without
@@ -94,6 +101,8 @@ export default function RosterView() {
   const today = data?.date
     ? new Date(`${data.date}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
     : '';
+  const dayLabel = (iso, i) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow'
+    : new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }));
 
   return (
     <div className="space-y-5">
@@ -101,8 +110,8 @@ export default function RosterView() {
         icon="fa-calendar-days"
         tone="blue"
         title="Doctor Roster & OPD Slots"
-        subtitle="Today’s sittings, slot capacity and who is taking bookings"
-        badge={today && <Pill tone="slate">Today: {today}</Pill>}
+        subtitle="Sittings, slot capacity and who is booked — today and the days ahead"
+        badge={today && <Pill tone="slate">{isToday ? 'Today' : 'Showing'}: {today}</Pill>}
       >
         {isDoctor && (
           <Link to="/d/followups" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-mg-teal text-mg-teal hover:bg-teal-50 text-xs font-medium transition">
@@ -113,6 +122,25 @@ export default function RosterView() {
           <i className={clsx('fa-solid fa-rotate-right', loading && 'animate-spin')} aria-hidden="true" /> Refresh
         </Button>
       </PageHeader>
+
+      {days.length > 1 && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar" role="group" aria-label="Day">
+          {days.map((iso, i) => (
+            <button
+              key={iso}
+              type="button"
+              onClick={() => setDay(i === 0 ? null : iso)}
+              aria-pressed={(data?.date ?? days[0]) === iso}
+              className={clsx(
+                'shrink-0 h-9 px-4 rounded-full border text-xs font-semibold transition',
+                (data?.date ?? days[0]) === iso ? 'bg-mg-navy border-mg-navy text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300',
+              )}
+            >
+              {dayLabel(iso, i)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && !data ? (
         <LoadError error={error} onRetry={refetch} what="today’s roster" />
@@ -125,7 +153,7 @@ export default function RosterView() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {doctors.map((d) => {
-            const state = doctorState(d);
+            const state = doctorState(d, isToday);
             const canToggle = !isDoctor || d.doctorId === user?.doctorId;
             const booked = d.shifts.reduce((a, s) => a + s.booked, 0);
             return (
@@ -146,7 +174,7 @@ export default function RosterView() {
                 {d.shifts.length ? (
                   <div className="space-y-2.5">
                     {d.shifts.map((s) => {
-                      const phase = shiftPhase(s);
+                      const phase = shiftPhase(s, isToday);
                       const pct = s.maxTokens ? Math.min(100, Math.round((s.booked / s.maxTokens) * 100)) : null;
                       const full = s.maxTokens != null && s.booked >= s.maxTokens;
                       return (
@@ -214,6 +242,101 @@ export default function RosterView() {
           })}
         </div>
       )}
+
+      {doctors.length > 0 && (
+        <BookedPatients
+          date={data?.date}
+          doctors={isDoctor ? doctors.filter((d) => d.doctorId === user?.doctorId) : doctors}
+          fixedDoctor={isDoctor}
+        />
+      )}
     </div>
+  );
+}
+
+const STATUS_TONE = {
+  WAITING: 'bg-amber-50 text-amber-700 border-amber-200',
+  IN_CHAMBER: 'bg-teal-50 text-mg-tealDark border-teal-200',
+  COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  SKIPPED: 'bg-rose-50 text-rose-700 border-rose-200',
+};
+const STATUS_TEXT = { WAITING: 'Booked', IN_CHAMBER: 'In chamber', COMPLETED: 'Seen', SKIPPED: 'Skipped' };
+const VISIT_TEXT = { fresh: 'Fresh', followup: 'Follow-up', emergency: 'Emergency' };
+
+/**
+ * Who is booked with a doctor on the chosen day — today's live list, or
+ * tomorrow's (and later) bookings read ahead of time. A doctor sees their
+ * own; the front desk picks the doctor.
+ */
+function BookedPatients({ date, doctors, fixedDoctor }) {
+  const [doctorId, setDoctorId] = useState(doctors[0]?.doctorId ?? '');
+  useEffect(() => {
+    if (!doctors.some((d) => d.doctorId === doctorId)) setDoctorId(doctors[0]?.doctorId ?? '');
+  }, [doctors, doctorId]);
+  const { data, loading } = useApi(doctorId && date ? `/api/queue/${doctorId}?date=${date}` : null, { skip: !doctorId || !date });
+  const tokens = asList(data?.tokens);
+  const doctor = doctors.find((d) => d.doctorId === doctorId);
+
+  // Split by sitting, in the order the day runs.
+  const order = { MORNING: 0, AFTERNOON: 1, EVENING: 2 };
+  const groups = tokens.reduce((acc, t) => {
+    const key = t.shift || 'NONE';
+    (acc[key] ||= []).push(t);
+    return acc;
+  }, {});
+  const keys = Object.keys(groups).sort((a, b) => (order[a] ?? 9) - (order[b] ?? 9));
+
+  return (
+    <DeskCard className="p-4 sm:p-5 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">
+            <i className="fa-solid fa-list-ol text-mg-teal mr-2" aria-hidden="true" />Booked patients
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {doctor ? `${doctor.name} · ` : ''}{tokens.length} booked
+          </p>
+        </div>
+        {!fixedDoctor && doctors.length > 1 && (
+          <select
+            value={doctorId}
+            onChange={(e) => setDoctorId(e.target.value)}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-mg-teal"
+          >
+            {doctors.map((d) => <option key={d.doctorId} value={d.doctorId}>{d.name}</option>)}
+          </select>
+        )}
+      </div>
+
+      {loading && !data ? (
+        <div className="h-24 rounded-lg bg-slate-100 animate-pulse" />
+      ) : !tokens.length ? (
+        <EmptyNote icon="fa-calendar-check" title="No bookings for this day yet" />
+      ) : keys.map((k) => (
+        <div key={k} className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            {k === 'NONE' ? 'In arrival order' : `${SHIFT_LABEL[k] ?? k} sitting`}
+            {groups[k][0]?.startTime ? ` · ${t12(groups[k][0].startTime)} – ${t12(groups[k][0].endTime)}` : ''}
+            <span className="text-slate-400 font-medium"> · {groups[k].length}</span>
+          </p>
+          <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
+            {groups[k].map((t) => (
+              <li key={t.tokenId} className="flex items-center gap-3 px-3 py-2.5 bg-white">
+                <span className="w-11 shrink-0 text-center text-sm font-bold text-mg-navy">#{pad2(t.tokenNumber)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium text-slate-900 truncate">{t.name || 'Patient'}</span>
+                  <span className="block text-[11px] text-slate-500 truncate">
+                    {[VISIT_TEXT[t.visitType] ?? 'Visit', t.bookedOnline ? 'Booked online' : 'At the desk', t.age != null ? `${t.age} yrs` : null, t.complaint || null].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
+                <span className={clsx('shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-semibold', STATUS_TONE[t.status] ?? 'bg-slate-50 text-slate-600 border-slate-200')}>
+                  {STATUS_TEXT[t.status] ?? t.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </DeskCard>
   );
 }
