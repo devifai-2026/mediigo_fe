@@ -198,9 +198,28 @@ export default function WalkInView() {
           <Input error={errors.complaint} maxLength={200} value={form.complaint} onChange={(e) => setField('complaint', e.target.value)} placeholder="e.g. Viral fever, body ache, joint pain" />
         </Field>
 
-        {sittings.some((x) => x.shift) && (
+        {/* Always shown, so the desk knows where the sitting choice lives. */}
+        {!doctorId ? (
           <div>
-            <p className="text-[11px] font-medium text-slate-700 mb-2">Sitting</p>
+            <p className="text-[11px] font-medium text-slate-700 mb-2">Sitting &amp; token</p>
+            <p className="text-xs text-slate-500 rounded-lg border border-dashed border-slate-300 px-3 py-3">
+              <i className="fa-solid fa-user-doctor mr-1.5 text-slate-400" aria-hidden="true" />
+              Choose a doctor above to see their sittings (Morning / Afternoon / Evening) and the token number.
+            </p>
+          </div>
+        ) : !sittings.some((x) => x.shift) ? (
+          sittings[0] && (
+            <div>
+              <p className="text-[11px] font-medium text-slate-700 mb-2">Sitting &amp; token</p>
+              <p className="text-sm rounded-lg border border-slate-200 px-3 py-3 flex items-center justify-between">
+                <span className="text-slate-600">No weekly timings — patients are seen in arrival order</span>
+                <span className="font-semibold text-mg-blue">Token #{String(sittings[0].nextToken).padStart(2, '0')}</span>
+              </p>
+            </div>
+          )
+        ) : (
+          <div>
+            <p className="text-[11px] font-medium text-slate-700 mb-2">Sitting &amp; token</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Sitting">
               {sittings.filter((x) => x.shift).map((x) => (
                 <button
