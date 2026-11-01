@@ -4,7 +4,7 @@ import { api, unwrap } from '../../lib/api.js';
 import { initialsOf } from '../../lib/format.js';
 import { Badge, W_INPUT, WField, WInput, WSection } from './WizardUi.jsx';
 
-const digits = (v, n) => v.replace(/\D/g, '').slice(0, n);
+const digits = (v, n) => String(v ?? '').replace(/\D/g, '').slice(0, n);
 
 /**
  * One doctor in the clinic's onboarding — the details a patient sees, the
@@ -14,7 +14,10 @@ const digits = (v, n) => v.replace(/\D/g, '').slice(0, n);
  */
 export function DoctorCard({ index, doctor, errors = {}, specialties, onChange, onRemove, onMakeAdmin, canRemove, onError }) {
   const set = (k) => (e) => onChange({ ...doctor, [k]: e.target.value });
-  const setFee = (k) => (e) => onChange({ ...doctor, fees: { ...doctor.fees, [k]: digits(e.target.value, 5) } });
+  const setFee = (k) => (e) => onChange({ ...doctor, fees: { ...(doctor.fees ?? {}), [k]: digits(e.target.value, 5) } });
+  // Tolerate a draft or a server reply in an unexpected shape rather than
+  // taking the whole wizard down with it.
+  const specialtyOptions = Array.isArray(specialties) ? specialties : [];
   const photoInput = useRef(null);
   const [uploading, setUploading] = useState(false);
   const admin = doctor.isClinicAdmin;
@@ -73,7 +76,7 @@ export function DoctorCard({ index, doctor, errors = {}, specialties, onChange, 
           {(id) => (
             <select id={id} value={doctor.specialtyId} onChange={set('specialtyId')} className={clsx(W_INPUT, 'cursor-pointer', errors.specialtyId && 'border-rose-300 bg-rose-50/40')}>
               <option value="">Select specialty…</option>
-              {specialties.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {specialtyOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           )}
         </WField>
@@ -83,7 +86,7 @@ export function DoctorCard({ index, doctor, errors = {}, specialties, onChange, 
             {[['fresh', 'New'], ['followup', 'Follow-up'], ['emergency', 'Emergency']].map(([k, label]) => (
               <label key={k} className="block">
                 <span className="block text-[11px] text-slate-500 mb-1">{label}</span>
-                <input inputMode="numeric" value={doctor.fees[k]} onChange={setFee(k)} className={clsx(W_INPUT, errors[`fees.${k}`] && 'border-rose-300')} />
+                <input inputMode="numeric" value={doctor.fees?.[k] ?? ''} onChange={setFee(k)} className={clsx(W_INPUT, errors[`fees.${k}`] && 'border-rose-300')} />
               </label>
             ))}
           </div>

@@ -5,6 +5,7 @@ import { PortalShell } from './components/layout/PortalShell.jsx';
 import { ImpersonationBanner } from './components/guards/ImpersonationBanner.jsx';
 import { ForcePasswordChange } from './components/guards/ForcePasswordChange.jsx';
 import { SubmissionStatusToasts } from './components/agent/SubmissionStatusToasts.jsx';
+import { ErrorBoundary } from './components/guards/ErrorBoundary.jsx';
 import { ROLES } from './lib/constants.js';
 
 import LoginView from './views/public/LoginView.jsx';
@@ -132,6 +133,7 @@ function ToClinicLanding() {
 
 export default function App() {
   const { user } = useAuth();
+  const location = useLocation();
 
   /**
    * Remount the whole routed tree when the signed-in identity changes.
@@ -152,6 +154,7 @@ export default function App() {
     <ImpersonationBanner />
     <ForcePasswordChange />
     <SubmissionStatusToasts />
+    <ErrorBoundary resetKey={location.pathname}>
     <Routes key={identity}>
       {/* Legal and company pages, each at its own address: /privacy-policy,
           /terms, /cookie-policy, /clinic-terms, /refund-policy,
@@ -319,6 +322,7 @@ export default function App() {
 
       <Route path="*" element={<NotFoundView />} />
     </Routes>
+    </ErrorBoundary>
     </>
   );
 }

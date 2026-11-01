@@ -160,12 +160,24 @@ export default function AgentOnboardView() {
   const leadId = params.get('lead');
   const { data: leads } = useApi(leadId ? '/api/onboarding/leads' : null, { skip: !leadId });
   const { data: specialtyList } = useApi('/api/specialties');
-  const specialties = specialtyList ?? [];
+  const specialties = Array.isArray(specialtyList) ? specialtyList : [];
   const lead = leads?.find((l) => l._id === leadId) ?? null;
 
   const [draft] = useState(() => (leadId ? null : readDraft()));
   // Spread over BLANK so a draft saved before a field existed still has it.
-  const [form, setForm] = useState(() => (draft?.form ? { ...BLANK, ...draft.form } : BLANK));
+  // Each doctor is merged over a blank one too: the spread above is shallow,
+  // and a doctor saved without `fees` used to crash the doctors step.
+  const [form, setForm] = useState(() => (draft?.form
+    ? {
+      ...BLANK,
+      ...draft.form,
+      opd: { ...BLANK.opd, ...draft.form.opd },
+      reception: { ...BLANK.reception, ...draft.form.reception },
+      login: { ...BLANK.login, ...draft.form.login },
+      doctors: (Array.isArray(draft.form.doctors) && draft.form.doctors.length ? draft.form.doctors : BLANK.doctors)
+        .map((d) => ({ ...blankDoctor(), ...d, fees: { ...blankDoctor().fees, ...(d?.fees ?? {}) } })),
+    }
+    : BLANK));
   const [step, setStep] = useState(() => Math.min(draft?.step ?? 0, 2));
   const [reached, setReached] = useState(() => Math.min(draft?.reached ?? 0, 2));
   const [attempted, setAttempted] = useState({});
