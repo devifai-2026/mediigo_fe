@@ -294,7 +294,7 @@ export default function LoginView({ audience }) {
                   <Input error={errors.identifier} value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Phone number or email" />
                 </Field>
                 <Field label="Password" required error={errors.password}>
-                  <PasswordInput error={errors.password} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" />
+                  <PasswordInput error={errors.password} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
                 </Field>
                 <div className="-mt-2 text-right">
                   <button type="button" onClick={startForgot} className="text-xs font-medium text-mg-blue hover:underline">
@@ -338,7 +338,7 @@ export default function LoginView({ audience }) {
                   Send OTP on WhatsApp
                 </Button>
                 <button type="button" onClick={() => setMethod('password')} className="w-full text-xs font-medium text-mg-teal hover:text-mg-tealDark">
-                  \u2190 Sign in with password
+                  ← Sign in with password
                 </button>
                 <p className="text-[11px] text-slate-500 text-center leading-relaxed">
                   By continuing you agree to our <Link to="/terms" className="underline hover:text-mg-blue">Terms of Use</Link> and <Link to="/privacy-policy" className="underline hover:text-mg-blue">Privacy Policy</Link>.
@@ -348,12 +348,12 @@ export default function LoginView({ audience }) {
 
             <div className="pt-3 mt-1 border-t border-slate-100 text-center text-xs text-slate-500">
               {servesPatient && (
-                <Link to="/p/explore" className="font-medium text-mg-teal hover:underline">Browse clinics without signing in \u2192</Link>
+                <Link to="/p/explore" className="font-medium text-mg-teal hover:underline">Browse clinics without signing in →</Link>
               )}
               {!servesPatient && (
                 <>
                   New to Mediigo? <Link to="/clinic#enquire" className="font-medium text-mg-blue hover:underline">Get your clinic on board</Link>
-                  <span className="mx-1.5 text-slate-300">\u00b7</span>
+                  <span className="mx-1.5 text-slate-300">·</span>
                   <Link to="/p/explore" className="font-medium text-mg-teal hover:underline">Book a doctor</Link>
                 </>
               )}
