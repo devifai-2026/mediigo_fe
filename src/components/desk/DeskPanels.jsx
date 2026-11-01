@@ -253,8 +253,14 @@ function RosterActions({ t, onAction, busy, canPrescribe, canCancel, canCollect,
  * follow-up slot nobody confirmed) and RX (open the
  * prescription pad for that patient — doctors only).
  */
+const SITTING = { MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Evening' };
+
 export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh, busy, canPrescribe = false, canCancel = false, canCollect = false }) {
   const tokens = asList(s?.tokens);
+  // Numbers restart each sitting, so a day with two sittings has two #01s.
+  // Say which sitting each token is in whenever that can happen.
+  const multiSitting = new Set(tokens.map((t) => t.shift || '')).size > 1;
+  const sittingOf = (t) => (multiSitting && t.shift ? <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400 mt-0.5">{SITTING[t.shift] ?? t.shift}</span> : null);
   const rows = filter === 'ALL' ? tokens : tokens.filter((t) => t.status === filter);
   // While someone is inside, nobody else can be called in from the list.
   const occupiedBy = tokens.find((t) => t.status === TOKEN_STATUS.IN_CHAMBER) ?? null;
@@ -290,7 +296,7 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh,
               return (
                 <li key={t.tokenId} className={clsx('p-4 space-y-2.5', urgent && 'bg-rose-50/60')}>
                   <div className="flex items-start justify-between gap-3">
-                    <span className={clsx('text-lg font-bold leading-none', urgent ? 'text-rose-700' : 'text-mg-navy')}>{token(t.tokenNumber)}</span>
+                    <span className={clsx('text-lg font-bold leading-none', urgent ? 'text-rose-700' : 'text-mg-navy')}>{token(t.tokenNumber)}{sittingOf(t)}</span>
                     <div className="text-right"><RosterStatus t={t} /></div>
                   </div>
                   <div><RosterPatient t={t} /></div>
@@ -325,6 +331,7 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh,
                     <tr key={t.tokenId} className={clsx('transition-colors', urgent ? 'bg-rose-50/60 hover:bg-rose-50' : 'hover:bg-slate-50/70')}>
                       <td className={clsx('py-3.5 px-5 text-sm font-semibold', urgent ? 'text-rose-700' : 'text-mg-navy')}>
                         {token(t.tokenNumber)}
+                        {sittingOf(t)}
                       </td>
                       <td className="py-3.5 px-4"><RosterPatient t={t} /></td>
                       <td className="py-3.5 px-4 text-[13px] text-slate-700">{s?.doctorName || '—'}</td>

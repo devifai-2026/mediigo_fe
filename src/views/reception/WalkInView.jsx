@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input, Select } from '../../components/ui/Field.jsx';
 import { SplitPaymentModal } from '../../components/payment/SplitPaymentModal.jsx';
 import { ReceiptPrintable } from '../../components/payment/ReceiptPrintable.jsx';
-import { inr, token } from '../../lib/format.js';
+import { inr, token, time12 } from '../../lib/format.js';
 import { ROLES, VISIT_LABEL } from '../../lib/constants.js';
 import { DeskCard, PageHeader, Pill } from '../../components/desk/ui.jsx';
 import { WalkInTokenCard } from '../../components/desk/WalkInTokenCard.jsx';
@@ -29,6 +29,17 @@ export default function WalkInView() {
   const setField = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setErrors(({ [k]: _, ...rest }) => rest); };
   const [doctorId, setDoctorId] = useState('');
   const [visitType, setVisitType] = useState('fresh');
+  // Today's sittings for the chosen doctor, each with the token it would
+  // issue now; the desk picks one (the sitting under way by default).
+  const { data: sittingData, refetch: refetchSittings } = useApi(doctorId ? `/api/pos/walkin/sittings?doctorId=${doctorId}` : null, { skip: !doctorId });
+  const sittings = asList(sittingData?.sittings);
+  const [shift, setShift] = useState(null);
+  useEffect(() => {
+    const open = sittings.filter((x) => !x.ended);
+    const pick = open.find((x) => x.current) ?? open[0] ?? null;
+    setShift((cur) => (open.some((x) => x.shift === cur) ? cur : pick?.shift ?? null));
+  }, [sittingData]); // eslint-disable-line react-hooks/exhaustive-deps
+  const chosenSitting = sittings.find((x) => x.shift === shift) ?? sittings.find((x) => x.shift == null) ?? null;
   const [payOpen, setPayOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   // `issued` stays on screen as the token card; `receipt` is only set while printing.
@@ -96,6 +107,7 @@ export default function WalkInView() {
         },
         visitType,
         discount: 0,
+        ...(shift ? { shift } : {}),
         // The changed charge goes to the server as such; it records it against
         // the listed fee and checks the payment against this amount.
         ...(overrideOn && fee !== listedFee ? { overrideFee: fee } : {}),
@@ -103,6 +115,7 @@ export default function WalkInView() {
       }));
 
       toast.success(`Token ${token(result.token.tokenNumber)} issued · ${result.transaction.receiptNumber}`);
+      refetchSittings();
       setPayOpen(false);
       const slip = {
         transaction: result.transaction,
@@ -185,6 +198,37 @@ export default function WalkInView() {
           <Input error={errors.complaint} maxLength={200} value={form.complaint} onChange={(e) => setField('complaint', e.target.value)} placeholder="e.g. Viral fever, body ache, joint pain" />
         </Field>
 
+        {sittings.some((x) => x.shift) && (
+          <div>
+            <p className="text-[11px] font-medium text-slate-700 mb-2">Sitting</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Sitting">
+              {sittings.filter((x) => x.shift).map((x) => (
+                <button
+                  key={x.shift}
+                  type="button"
+                  role="radio"
+                  aria-checked={shift === x.shift}
+                  disabled={x.ended}
+                  onClick={() => setShift(x.shift)}
+                  className={clsx('p-3.5 rounded-lg border text-left transition disabled:opacity-50 disabled:cursor-not-allowed',
+                    shift === x.shift ? 'border-mg-teal bg-teal-50/60 ring-1 ring-mg-teal' : 'border-slate-200 bg-white hover:border-slate-300')}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className={clsx('text-xs font-semibold', shift === x.shift ? 'text-mg-teal' : 'text-slate-900')}>
+                      {{ MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Evening' }[x.shift] ?? x.shift}
+                    </span>
+                    {x.current && !x.ended && <span className="text-[10px] font-semibold text-emerald-700">Now</span>}
+                  </span>
+                  <span className="block text-[11px] text-slate-500 mt-0.5">{time12(x.startTime)} – {time12(x.endTime)}</span>
+                  <span className="block text-sm font-semibold text-mg-blue mt-2">
+                    {x.ended ? 'Ended' : x.nextToken != null ? `Token #${String(x.nextToken).padStart(2, '0')}` : 'Full'}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div>
           <p className="text-[11px] font-medium text-slate-700 mb-2">Visit type</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -251,7 +295,7 @@ export default function WalkInView() {
           </div>
 
           <Button onClick={openPay} disabled={!ready} size="lg">
-            <i className="fa-solid fa-print" aria-hidden="true" /> Collect payment &amp; issue token
+            <i className="fa-solid fa-print" aria-hidden="true" /> Collect payment &amp; issue token{chosenSitting?.nextToken != null ? ` #${String(chosenSitting.nextToken).padStart(2, '0')}` : ''}
           </Button>
         </div>
       </DeskCard>
