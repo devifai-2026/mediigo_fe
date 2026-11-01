@@ -73,6 +73,27 @@ export function AuthProvider({ children }) {
     return data.user;
   }, [applySession]);
 
+  /**
+   * Patient sign-up: the same OTP verify (which creates the account), then an
+   * optional first password. isNew is false when the number was already
+   * registered — the page says so instead of claiming it made an account.
+   */
+  const signUp = useCallback(async ({ phone, otp, name, password }) => {
+    const data = unwrap(await api.post('/api/auth/otp/verify', { phone, otp, name }));
+    applySession(data.accessToken, data.user);
+    let passwordSet = false;
+    if (password) {
+      try {
+        await api.post('/api/auth/password', { newPassword: password });
+        passwordSet = true;
+      } catch {
+        // An existing account that already has a password: keep it. The page
+        // tells the person to use it or change it from their account.
+      }
+    }
+    return { user: data.user, isNew: Boolean(data.isNew), passwordSet };
+  }, [applySession]);
+
   const staffLogin = useCallback(async ({ identifier, password }) => {
     const data = unwrap(await api.post('/api/auth/staff/login', { identifier, password }));
     // The server decides whether 2FA applies, from the Super Admin's role
@@ -138,6 +159,7 @@ export function AuthProvider({ children }) {
         isAuthed: status === 'authed',
         requestOtp,
         verifyOtp,
+        signUp,
         staffLogin,
         logout,
         refreshUser,

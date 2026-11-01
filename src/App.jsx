@@ -9,6 +9,7 @@ import { ErrorBoundary } from './components/guards/ErrorBoundary.jsx';
 import { ROLES } from './lib/constants.js';
 
 import LoginView from './views/public/LoginView.jsx';
+import SignupView from './views/public/SignupView.jsx';
 import NotFoundView from './views/public/NotFoundView.jsx';
 import ForbiddenView from './views/public/ForbiddenView.jsx';
 import DoctorLandingView from './views/public/DoctorLandingView.jsx';
@@ -170,6 +171,8 @@ export default function App() {
       {/* Keyed: without it React reuses the /login instance on /clinic/login
           and carries over its "patient" tab, OTP step and typed number. */}
       <Route path="/login" element={<LoginView key="patient" audience="patient" />} />
+      {/* Patient sign-up: name, number, and password or OTP-only sign-in. */}
+      <Route path="/signup" element={<SignupView />} />
 
       {/* Mediigo for clinics, on the same domain like a partner site:
           /clinic is the public landing page doctors reach from ads, and

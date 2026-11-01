@@ -348,7 +348,10 @@ export default function LoginView({ audience }) {
 
             <div className="pt-3 mt-1 border-t border-slate-100 text-center text-xs text-slate-500">
               {servesPatient && (
-                <Link to="/p/explore" className="font-medium text-mg-teal hover:underline">Browse clinics without signing in →</Link>
+                <>
+                  <p className="mb-2">New to Mediigo? <Link to="/signup" className="font-medium text-mg-blue hover:underline">Create an account</Link></p>
+                  <Link to="/p/explore" className="font-medium text-mg-teal hover:underline">Browse clinics without signing in →</Link>
+                </>
               )}
               {!servesPatient && (
                 <>
