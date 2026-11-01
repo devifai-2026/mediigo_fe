@@ -18,6 +18,7 @@ import { BookingPass } from '../../components/patient/BookingPass.jsx';
 import { RatingDialog } from '../../components/patient/RatingDialog.jsx';
 import { FollowUpPrompt } from '../../components/patient/FollowUpPrompt.jsx';
 import { useNoIndex } from '../../lib/seo.js';
+import { asList } from '../../lib/list.js';
 
 /**
  * The bookings list the prototype declared but never implemented — its
@@ -35,7 +36,7 @@ export default function BookingsView() {
   const [rating, setRating] = useState(null);
   const { data: myReviews, refetch: refetchReviews } = useApi('/api/reviews/mine');
   const reviewByToken = useMemo(
-    () => new Map((myReviews || []).map((r) => [r.tokenId, r])),
+    () => new Map((asList(myReviews)).map((r) => [r.tokenId, r])),
     [myReviews],
   );
   // Ask once per consultation, and only for the most recent unrated one:
@@ -46,7 +47,7 @@ export default function BookingsView() {
   const confirm = useConfirm();
 
   const groups = useMemo(() => {
-    const all = tokens || [];
+    const all = asList(tokens);
     return {
       // RESCHEDULE_NEEDED sits in Upcoming: the booking is still alive and
       // needs the patient to act, which they will not do if it is filed away.
@@ -94,7 +95,7 @@ export default function BookingsView() {
    */
   useEffect(() => {
     if (!tokens || !myReviews || rating) return;
-    const candidate = (tokens || [])
+    const candidate = (asList(tokens))
       .filter((t) => t.status === TOKEN_STATUS.COMPLETED)
       .filter((t) => !reviewByToken.has(t._id) && !dismissed.has(t._id))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
@@ -110,8 +111,8 @@ export default function BookingsView() {
   // the filter chips — counted on the tab being viewed.
   const personOf = (t) => t.patientSnapshot?.name || 'You';
   const doctorOf = (t) => String(t.doctorId?._id ?? t.doctorId ?? '');
-  const people = [...new Set((tokens || []).map(personOf))];
-  const doctors = [...new Map((tokens || []).map((t) => [doctorOf(t), t.doctorId?.name || 'Doctor'])).entries()];
+  const people = [...new Set((asList(tokens)).map(personOf))];
+  const doctors = [...new Map((asList(tokens)).map((t) => [doctorOf(t), t.doctorId?.name || 'Doctor'])).entries()];
 
   const rows = groups[tab]
     .filter((t) => person === 'all' || personOf(t) === person)

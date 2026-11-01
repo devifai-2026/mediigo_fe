@@ -12,6 +12,7 @@ import { PhotoField } from '../../components/ui/PhotoCropper.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { PhotoOrFallback } from '../../components/ui/PhotoOrFallback.jsx';
+import { asList } from '../../lib/list.js';
 
 /**
  * Specialties Master.
@@ -34,7 +35,7 @@ export default function SpecialtiesView() {
   const [busy, setBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(null);
 
-  const rows = data ?? [];
+  const rows = asList(data);
   const visible = rows.filter((r) => r.isActive).length;
   const withoutArt = rows.filter((r) => !r.photoUrl).length;
   const orphaned = rows.filter((r) => r.doctorCount === 0).length;

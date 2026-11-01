@@ -5,6 +5,7 @@ import { api } from '../../lib/api.js';
 import { Button } from '../ui/Button.jsx';
 import { Select } from '../ui/Field.jsx';
 import { Icon } from '../ui/Icon.jsx';
+import { asList } from '../../lib/list.js';
 
 /**
  * The QR standee on this doctor's door.
@@ -21,7 +22,7 @@ export function StandeePanel({ doctorId }) {
   const toast = useToast();
 
   if (loading) return null;
-  const rows = standees || [];
+  const rows = asList(standees);
 
   const reassign = async (serialId, nextDoctorId) => {
     setBusy(serialId);
@@ -70,7 +71,7 @@ export function StandeePanel({ doctorId }) {
                   className="w-auto min-w-[180px] text-xs"
                 >
                   <option value="">Whole clinic</option>
-                  {(doctors || []).map((d) => (
+                  {(asList(doctors)).map((d) => (
                     <option key={d._id} value={d._id}>{d.name}</option>
                   ))}
                 </Select>

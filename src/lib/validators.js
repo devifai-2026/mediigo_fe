@@ -1,3 +1,4 @@
+import { asList } from './list.js';
 /**
  * Field checks shared by every form. Each returns an error message, or '' when
  * the value is fine, so a form builds its errors map as
@@ -92,4 +93,4 @@ export const collect = (map) => Object.fromEntries(Object.entries(map).filter(([
  * field → message map, keyed by the last path segment.
  */
 export const serverFieldErrors = (err) =>
-  Object.fromEntries((err?.details?.issues ?? []).map((d) => [String(d.path ?? '').split('.').pop(), d.message]));
+  Object.fromEntries((asList(err?.details?.issues)).map((d) => [String(d.path ?? '').split('.').pop(), d.message]));

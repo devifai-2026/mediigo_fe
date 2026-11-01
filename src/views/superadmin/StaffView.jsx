@@ -17,6 +17,7 @@ import { ROLES, ROLE_LABEL } from '../../lib/constants.js';
 import { phone as fmtPhone, shortDate } from '../../lib/format.js';
 import { ResetPasswordModal } from '../../components/superadmin/ResetPasswordModal.jsx';
 import { useLoginAs } from '../../hooks/useLoginAs.js';
+import { asList } from '../../lib/list.js';
 
 const ROLE_CHIP = {
   EXEC_ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -52,9 +53,9 @@ export default function StaffView() {
     skip: !(dialog?.mode === 'create' && form.role === ROLES.RECEPTIONIST),
   });
 
-  const rows = (staff || []).filter((u) => filter === 'ALL' || u.role === filter);
+  const rows = (asList(staff)).filter((u) => filter === 'ALL' || u.role === filter);
   // A successor must hold no district of their own, or theirs would be orphaned.
-  const freeAdmins = (staff || []).filter(
+  const freeAdmins = (asList(staff)).filter(
     (u) => u.role === ROLES.EXEC_ADMIN && u.isActive && !u.districtId && u.id !== dialog?.user?.id,
   );
 
@@ -322,7 +323,7 @@ export default function StaffView() {
             >
               <Select value={form.districtId ?? ''} onChange={(e) => setForm({ ...form, districtId: e.target.value })}>
                 <option value="">Unassigned</option>
-                {(districts || []).map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
+                {(asList(districts)).map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
               </Select>
             </Field>
           )}
@@ -331,7 +332,7 @@ export default function StaffView() {
             <Field label="Clinic" required error={errors.hospitalId}>
               <Select value={form.hospitalId ?? ''} onChange={(e) => setForm({ ...form, hospitalId: e.target.value })}>
                 <option value="">Pick a clinic</option>
-                {(clinics || []).map((h) => <option key={h._id} value={h._id}>{h.name} ({h.code})</option>)}
+                {(asList(clinics)).map((h) => <option key={h._id} value={h._id}>{h.name} ({h.code})</option>)}
               </Select>
             </Field>
           )}

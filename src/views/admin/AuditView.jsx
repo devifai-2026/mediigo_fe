@@ -2,6 +2,7 @@ import { useApi } from '../../hooks/useApi.js';
 import { DataTable } from '../../components/ui/DataTable.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { timeOf, shortDate } from '../../lib/format.js';
+import { asList } from '../../lib/list.js';
 
 const TONE = {
   HOSPITAL_DEBOARDED: 'text-rose-700 bg-rose-50 border-rose-200',
@@ -40,7 +41,7 @@ export default function AuditView() {
         <p className="text-xs text-slate-500">Every lifecycle action, retained for two years</p>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-        <DataTable columns={columns} rows={data || []} exportName="mediigo-audit" pageSize={20} />
+        <DataTable columns={columns} rows={asList(data)} exportName="mediigo-audit" pageSize={20} />
       </div>
     </div>
   );

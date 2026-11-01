@@ -14,6 +14,7 @@ import { DeskCard, PageHeader, Pill } from '../../components/desk/ui.jsx';
 import { WalkInTokenCard } from '../../components/desk/WalkInTokenCard.jsx';
 import clsx from 'clsx';
 import { nameError, phoneError, intRangeError, lengthError, moneyError, collect as collectErrors } from '../../lib/validators.js';
+import { asList } from '../../lib/list.js';
 
 const VISIT_HINT = { fresh: 'Standard first visit', followup: 'Returning patient', emergency: 'Priority token' };
 
@@ -42,7 +43,7 @@ export default function WalkInView() {
     }
   }, [doctors, doctorId, role, user?.doctorId]);
 
-  const doctor = (doctors || []).find((d) => d._id === doctorId);
+  const doctor = (asList(doctors)).find((d) => d._id === doctorId);
   // "Close booking" stops app bookings only; the desk can always register.
   const onlineClosed = doctor && !doctor.session?.isBookingOpen;
   const listedFee = doctor?.fees?.[visitType] ?? 0;
@@ -171,7 +172,7 @@ export default function WalkInView() {
           <Field label="Assign doctor" required error={errors.doctorId}>
             <Select value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
               <option value="">Select a doctor…</option>
-              {(doctors || []).map((d) => (
+              {(asList(doctors)).map((d) => (
                 <option key={d._id} value={d._id}>
                   {d.name}{d.specialty ? ` (${d.specialty})` : ''}{d.session?.isBookingOpen ? '' : ' — online closed'}
                 </option>

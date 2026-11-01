@@ -19,6 +19,7 @@ import clsx from 'clsx';
 import { PhotoOrFallback } from '../../components/ui/PhotoOrFallback.jsx';
 import { useSeo } from '../../lib/seo.js';
 import { SITE } from '../../lib/site.js';
+import { asList } from '../../lib/list.js';
 
 // "All Clinics" is not a specialty — it is the absence of a filter — so it
 // stays in code rather than the admin-managed list, where it could be hidden
@@ -111,7 +112,7 @@ export default function ExploreView() {
     api.get('/api/specialties')
       .then((res) => {
         if (!alive) return;
-        setTiles((res.data?.data ?? []).map((t) => ({
+        setTiles((asList(res.data?.data)).map((t) => ({
           label: t.tileLabel || t.name,
           value: t.name,
           img: t.photoUrl,
@@ -125,7 +126,7 @@ export default function ExploreView() {
   useEffect(() => {
     let alive = true;
     api.get('/api/doctors/cities')
-      .then((res) => { if (alive) setCities(res.data?.data ?? []); })
+      .then((res) => { if (alive) setCities(asList(res.data?.data)); })
       .catch(() => { /* the GPS option still works without this */ });
     return () => { alive = false; };
   }, []);
@@ -150,7 +151,7 @@ export default function ExploreView() {
       if (specialty) params.set('specialty', specialty);
       if (search.trim()) params.set('search', search.trim());
       const res = await api.get(`/api/doctors/nearby?${params}`);
-      const found = res.data.data || [];
+      const found = asList(res.data.data);
       // Searching from here means this is where they are now. persist()
       // ignores a point that has not meaningfully moved, so the debounce does
       // not turn this into one write per keystroke.
@@ -226,7 +227,7 @@ export default function ExploreView() {
       try {
         const res = await api.get(`/api/doctors/suggest?q=${encodeURIComponent(term)}`);
         if (!alive) return;
-        setSuggestions(res.data.data || []);
+        setSuggestions(asList(res.data.data));
         setSuggestOpen(true);
       } catch {
         // A failed suggestion is not worth a toast — the search itself still
@@ -341,7 +342,7 @@ export default function ExploreView() {
         // Biased towards where the patient is, so "Sector 5" means the nearby one.
         const near = coords?.lat != null ? `&lat=${coords.lat}&lng=${coords.lng}` : '';
         const res = await api.get(`/api/doctors/places?q=${encodeURIComponent(term)}${near}`);
-        if (alive) setPlaces(res.data.data || []);
+        if (alive) setPlaces(asList(res.data.data));
       } catch {
         if (alive) setPlaces([]);
       } finally {

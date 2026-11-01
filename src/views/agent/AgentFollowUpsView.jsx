@@ -8,6 +8,7 @@ import { DeskCard, EmptyNote, PageHeader, Pill, Segmented, StatTile } from '../.
 import { AddLeadModal, LogVisitModal, OUTCOMES } from '../../components/agent/LeadModals.jsx';
 import { DayAgenda, FollowUpCalendar, dayKey, followUpEvents } from '../../components/agent/FollowUpCalendar.jsx';
 import { APPROVAL } from './approvalStatus.js';
+import { asList } from '../../lib/list.js';
 
 const STAGE = {
   NEW: { label: 'New', tone: 'slate' },
@@ -171,7 +172,7 @@ export default function AgentFollowUpsView() {
   const [month, setMonth] = useState(() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), 1); });
   const [day, setDay] = useState(() => dayKey(new Date()));
 
-  const leads = data ?? [];
+  const leads = asList(data);
   const now = new Date();
   const tomorrow = addDays(dayStart(), 1);
   const weekOut = addDays(dayStart(), 8);
@@ -195,7 +196,7 @@ export default function AgentFollowUpsView() {
 
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
-    const list = groups[filter] ?? [];
+    const list = asList(groups[filter]);
     const filtered = s ? list.filter((l) => [l.clinicName, l.contactName, l.contactPhone, l.address?.city, l.address?.line1].some((v) => String(v || '').toLowerCase().includes(s))) : list;
     // Overdue first, then soonest; clinics with no date at the end.
     return [...filtered].sort((a, b) => (a.nextVisitAt ? new Date(a.nextVisitAt) : Infinity) - (b.nextVisitAt ? new Date(b.nextVisitAt) : Infinity));
@@ -212,7 +213,7 @@ export default function AgentFollowUpsView() {
   const [dy, dm, dd] = day.split('-').map(Number);
 
   const replace = (lead) => setData((rows) => {
-    const list = rows ?? [];
+    const list = asList(rows);
     return list.some((r) => r._id === lead._id) ? list.map((r) => (r._id === lead._id ? lead : r)) : [lead, ...list];
   });
 

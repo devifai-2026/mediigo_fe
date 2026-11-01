@@ -4,6 +4,7 @@ import { TOKEN_STATUS } from '../../lib/constants.js';
 import { followUpBadge, FOLLOWUP_STATUS } from '../../lib/followUps.js';
 import { OUTCOME_LABEL, pad2, patientLine } from './deskFormat.js';
 import { DeskCard, Pill, Segmented, StatTile, EmptyNote, RefreshButton } from './ui.jsx';
+import { asList } from '../../lib/list.js';
 
 export { DeskCard, AudioUnlockBanner } from './ui.jsx';
 
@@ -253,7 +254,7 @@ function RosterActions({ t, onAction, busy, canPrescribe, canCancel, canCollect,
  * prescription pad for that patient — doctors only).
  */
 export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh, busy, canPrescribe = false, canCancel = false, canCollect = false }) {
-  const tokens = s?.tokens ?? [];
+  const tokens = asList(s?.tokens);
   const rows = filter === 'ALL' ? tokens : tokens.filter((t) => t.status === filter);
   // While someone is inside, nobody else can be called in from the list.
   const occupiedBy = tokens.find((t) => t.status === TOKEN_STATUS.IN_CHAMBER) ?? null;

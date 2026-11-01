@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { DeskCard, EmptyNote, LoadError, PageHeader, Pill, RefreshButton, StatTile } from '../../components/desk/ui.jsx';
 import { PettyExpenseModal, VoidExpenseModal } from '../../components/desk/CashTools.jsx';
 import { DateRangePicker, isoToday, rangeLabel } from '../../components/desk/DateRangePicker.jsx';
+import { asList } from '../../lib/list.js';
 
 /**
  * Petty cash: money paid out of the desk drawer, each entry with a mandatory
@@ -20,7 +21,7 @@ export default function PettyCashView() {
   const [adding, setAdding] = useState(false);
   const [voiding, setVoiding] = useState(null);
 
-  const entries = (data?.items ?? []).filter((i) => i.kind === 'EXPENSE');
+  const entries = (asList(data?.items)).filter((i) => i.kind === 'EXPENSE');
   const active = entries.filter((e) => e.status === 'ACTIVE');
   const total = active.reduce((a, e) => a + e.originalAmount, 0);
   const multiDay = range.from !== range.to;

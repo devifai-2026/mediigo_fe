@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import clsx from 'clsx';
 import { DeskCard } from '../desk/ui.jsx';
+import { asList } from '../../lib/list.js';
 
 const OPEN = new Set(['NEW', 'FOLLOW_UP', 'INTERESTED']);
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -30,7 +31,7 @@ export function followUpEvents(leads) {
     if (OPEN.has(lead.stage) && lead.nextVisitAt) {
       out.push({ lead, at: new Date(lead.nextVisitAt), kind: new Date(lead.nextVisitAt) < now ? 'OVERDUE' : 'PLANNED' });
     }
-    for (const v of lead.visits ?? []) out.push({ lead, at: new Date(v.at), kind: 'DONE', visit: v });
+    for (const v of asList(lead.visits)) out.push({ lead, at: new Date(v.at), kind: 'DONE', visit: v });
   }
   return out.sort((a, b) => a.at - b.at);
 }

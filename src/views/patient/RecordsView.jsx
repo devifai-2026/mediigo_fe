@@ -6,6 +6,7 @@ import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { useNoIndex } from '../../lib/seo.js';
+import { asList } from '../../lib/list.js';
 
 const longDate = (iso) => (iso
   ? new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -28,7 +29,7 @@ const PHARMACY_NOTE = {
 export default function RecordsView() {
   useNoIndex('Health records');
   const { data, loading } = useApi('/api/prescriptions/mine');
-  const records = useMemo(() => data ?? [], [data]);
+  const records = useMemo(() => asList(data), [data]);
   const people = useMemo(() => [...new Set(records.map((r) => r.patientName).filter(Boolean))], [records]);
   const [who, setWho] = useState('ALL');
   const [open, setOpen] = useState(null);

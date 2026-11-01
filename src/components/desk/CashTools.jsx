@@ -6,6 +6,7 @@ import { Field, Input } from '../ui/Field.jsx';
 import { MoneyInput } from '../ui/MoneyInput.jsx';
 import { api } from '../../lib/api.js';
 import { inr, timeOf } from '../../lib/format.js';
+import { asList } from '../../lib/list.js';
 
 const QUICK_CATEGORIES = ['Gloves & masks', 'Cleaning', 'Stationery', 'Tea & water', 'Courier', 'Repairs'];
 
@@ -125,7 +126,7 @@ export function ShiftReport({ clinicName, dayClose, ledger, byDoctor = [], prepa
   if (!dayClose) return null;
   const e = dayClose.expected;
   const petty = dayClose.pettyCash ?? { total: 0, count: 0 };
-  const expenses = (ledger?.items ?? []).filter((i) => i.kind === 'EXPENSE' && i.date === dayClose.date);
+  const expenses = (asList(ledger?.items)).filter((i) => i.kind === 'EXPENSE' && i.date === dayClose.date);
   const row = (label, value, strong) => (
     <div className={clsx('flex justify-between py-1 border-b border-gray-200', strong && 'font-semibold')}>
       <span>{label}</span><span>{value}</span>

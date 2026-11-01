@@ -14,6 +14,7 @@ import { token, duration, time12 } from '../../lib/format.js';
 import { patientsAhead, progressPct } from '../../lib/queue.js';
 import { TOKEN_STATUS } from '../../lib/constants.js';
 import { useNoIndex } from '../../lib/seo.js';
+import { asList } from '../../lib/list.js';
 
 export default function TrackerView() {
   useNoIndex('Live tracker');
@@ -29,7 +30,7 @@ export default function TrackerView() {
   const today = new Date().toLocaleDateString('en-CA');
   const active = useMemo(() => {
     // A WAITING token from a past day is stale, not "next".
-    const list = (tokens ?? []).filter((t) => String(t.date) >= today);
+    const list = (asList(tokens)).filter((t) => String(t.date) >= today);
     list.sort((a, b) => String(a.date).localeCompare(String(b.date))
       || (a.status === TOKEN_STATUS.IN_CHAMBER ? -1 : 0) - (b.status === TOKEN_STATUS.IN_CHAMBER ? -1 : 0)
       || a.tokenNumber - b.tokenNumber);

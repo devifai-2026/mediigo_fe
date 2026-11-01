@@ -30,6 +30,7 @@ const LOG_TONE = {
   TICKET_MOVED: 'bg-blue-100 text-mg-navy',
   WALKIN_BOOKED: 'bg-slate-100 text-slate-600',
 };
+import { asList } from '../../lib/list.js';
 
 export default function ComplaintsView() {
   const { role } = useAuth();
@@ -48,7 +49,7 @@ export default function ComplaintsView() {
   const reload = () => { refetch(); refetchSummary(); };
 
   const rows = useMemo(
-    () => (tickets || []).filter((t) => !priority || t.priority === priority),
+    () => (asList(tickets)).filter((t) => !priority || t.priority === priority),
     [tickets, priority],
   );
 
@@ -64,8 +65,8 @@ export default function ComplaintsView() {
   if (loading) return <SkeletonRows rows={6} />;
 
   const c = summary?.counts ?? {};
-  const trend = summary?.trend ?? [];
-  const logTrend = log?.trend ?? [];
+  const trend = asList(summary?.trend);
+  const logTrend = asList(log?.trend);
 
   return (
     <section className="space-y-6">
@@ -174,7 +175,7 @@ export default function ComplaintsView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
-                    {(log?.rows ?? []).map((r) => (
+                    {(asList(log?.rows)).map((r) => (
                       <tr key={r.id} className="hover:bg-slate-50 transition">
                         <td className="py-2.5 px-4 whitespace-nowrap">
                           <span className="text-slate-700">{shortDate(r.createdAt)}</span>
@@ -235,10 +236,10 @@ export default function ComplaintsView() {
             <div className="h-56">
               <Bar
                 data={{
-                  labels: (log?.byAction ?? []).map((a) => a.action.replace(/_/g, ' ').toLowerCase()),
+                  labels: (asList(log?.byAction)).map((a) => a.action.replace(/_/g, ' ').toLowerCase()),
                   datasets: [{
                     label: 'Events',
-                    data: (log?.byAction ?? []).map((a) => a.count),
+                    data: (asList(log?.byAction)).map((a) => a.count),
                     backgroundColor: '#1E3FA0',
                     borderRadius: 6,
                   }],

@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
 import { Field, Input } from '../ui/Field.jsx';
 import { Icon } from '../ui/Icon.jsx';
+import { asList } from '../../lib/list.js';
 
 const DAY_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SHIFT_LABEL = { MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Evening' };
@@ -31,7 +32,7 @@ export function AvailabilityManager({ doctorId, canEdit = true }) {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const days = data?.days ?? [];
+  const days = asList(data?.days);
 
   const markOff = async () => {
     setBusy(true);

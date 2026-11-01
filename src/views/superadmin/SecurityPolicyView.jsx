@@ -9,6 +9,7 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { ROLES, ROLE_LABEL } from '../../lib/constants.js';
 import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
+import { asList } from '../../lib/list.js';
 
 const TOGGLEABLE = [ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.FIELD_AGENT, ROLES.EXEC_ADMIN, ROLES.SUPER_ADMIN];
 
@@ -30,7 +31,7 @@ export default function SecurityPolicyView() {
   const set = (k, v) => setForm({ ...form, [k]: v });
 
   const toggleRole = (role) => {
-    const list = new Set(form.require2faRoles || []);
+    const list = new Set(asList(form.require2faRoles));
     if (list.has(role)) list.delete(role); else list.add(role);
     set('require2faRoles', [...list]);
   };
@@ -96,7 +97,7 @@ export default function SecurityPolicyView() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {TOGGLEABLE.map((r) => {
-            const on = (form.require2faRoles || []).includes(r);
+            const on = (asList(form.require2faRoles)).includes(r);
             return (
               <button
                 key={r}

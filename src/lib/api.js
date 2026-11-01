@@ -34,7 +34,18 @@ api.interceptors.request.use((config) => {
 let refreshPromise = null;
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // Every API answer is JSON. Anything else with a 2xx — a host's HTML
+    // "busy" or error page while the backend is slow — is a failed request,
+    // not data: passed on, a component got a string and crashed on .map.
+    if (typeof res.data === 'string' && res.data.trim()) {
+      const e = new Error('The server is busy right now — please try again in a moment.');
+      e.code = 'BAD_RESPONSE';
+      e.status = res.status;
+      return Promise.reject(e);
+    }
+    return res;
+  },
   async (error) => {
     const original = error.config;
     const status = error.response?.status;
@@ -78,4 +89,10 @@ export const normalizeError = (error) => {
   return e;
 };
 
-export const unwrap = (res) => res.data?.data ?? res.data;
+// The payload of an { ok, data } answer, exactly as sent — `data: null`
+// included. The old `res.data?.data ?? res.data` turned a null payload into
+// the whole envelope object, which then reached .map and .slots.
+export const unwrap = (res) => {
+  const body = res?.data;
+  return body && typeof body === 'object' && !Array.isArray(body) && 'data' in body ? body.data : body;
+};

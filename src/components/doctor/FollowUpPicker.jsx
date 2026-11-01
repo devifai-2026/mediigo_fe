@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { api, unwrap } from '../../lib/api.js';
 import { SHIFT_LABEL, t12 } from '../../lib/followUps.js';
+import { asList } from '../../lib/list.js';
 
 const DAY_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -34,7 +35,7 @@ export function FollowUpPicker({ doctorId, value, onChange }) {
   useEffect(() => {
     let alive = true;
     api.get(`/api/queue/${doctorId}/followup-options`)
-      .then((res) => { if (alive) setDays(unwrap(res)?.days ?? []); })
+      .then((res) => { if (alive) setDays(asList(unwrap(res)?.days)); })
       .catch((e) => { if (alive) { setDays([]); setError(e.message); } });
     return () => { alive = false; };
   }, [doctorId]);
@@ -45,7 +46,7 @@ export function FollowUpPicker({ doctorId, value, onChange }) {
     stripRef.current?.querySelector(`[data-date="${value.date}"]`)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [value?.date]);
 
-  const openDays = (days || []).filter((d) => d.shifts.some((s) => s.isBookable));
+  const openDays = (asList(days)).filter((d) => d.shifts.some((s) => s.isBookable));
 
   const pick = (day, shift) => {
     const sh = shift ?? day.shifts.find((s) => s.isBookable)?.shift;

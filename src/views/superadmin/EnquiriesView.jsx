@@ -8,6 +8,7 @@ import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 import { phone as fmtPhone } from '../../lib/format.js';
+import { asList } from '../../lib/list.js';
 
 /**
  * Enquiries from the /clinic landing page.
@@ -37,7 +38,7 @@ export default function EnquiriesView() {
   const [busyId, setBusyId] = useState(null);
   const [pick, setPick] = useState({});
 
-  const items = data?.items ?? [];
+  const items = asList(data?.items);
   const counts = data?.counts ?? {};
 
   const act = async (row, path, body, msg) => {

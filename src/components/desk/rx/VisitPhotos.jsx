@@ -9,6 +9,7 @@ import { token as fmtToken } from '../../../lib/format.js';
 import { Button } from '../../ui/Button.jsx';
 import { Modal } from '../../ui/Modal.jsx';
 import { useFocusTrap } from '../../../hooks/useFocusTrap.js';
+import { asList } from '../../../lib/list.js';
 
 export const KIND_LABEL = { PRESCRIPTION: 'Prescription', HEALTH: 'Health photo' };
 const KIND_ICON = { PRESCRIPTION: 'fa-file-prescription', HEALTH: 'fa-heart-pulse' };
@@ -144,7 +145,7 @@ export function PhotoGallery({ photos, startId, onClose, onRemoved }) {
   const open = Boolean(startId && photos?.length);
   useFocusTrap(panelRef, open);
 
-  const list = (photos ?? []).filter((p) => p.kind === kind);
+  const list = (asList(photos)).filter((p) => p.kind === kind);
   let index = list.findIndex((p) => p.id === currentId);
   // The photo on screen was just removed: stay at the same place in the row.
   if (index === -1 && list.length) index = Math.min(lastIndex, list.length - 1);

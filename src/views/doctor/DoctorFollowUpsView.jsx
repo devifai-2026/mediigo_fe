@@ -12,6 +12,7 @@ import { token, phone } from '../../lib/format.js';
 import {
   FOLLOWUP_STATUS, followUpBadge, longDate, replyBy, SHIFT_LABEL, t12,
 } from '../../lib/followUps.js';
+import { asList } from '../../lib/list.js';
 
 /**
  * Every follow-up this doctor has booked from today on, sorted by what needs
@@ -33,7 +34,7 @@ export default function DoctorFollowUpsView() {
   const [tab, setTab] = useState(null);
 
   const groups = useMemo(() => {
-    const rows = data || [];
+    const rows = asList(data);
     return {
       action: rows.filter((r) => r.overdue),
       pending: rows.filter((r) => r.status === FOLLOWUP_STATUS.PENDING && !r.overdue),

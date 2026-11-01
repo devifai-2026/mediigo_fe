@@ -7,6 +7,7 @@ import { inr } from '../../lib/format.js';
 import { SiteFooter } from '../../components/legal/SiteFooter.jsx';
 import { useSeo } from '../../lib/seo.js';
 import { SITE } from '../../lib/site.js';
+import { asList } from '../../lib/list.js';
 
 /**
  * Mediigo for clinics — the page doctors land on from an ad (mediigo.in/clinic).
@@ -127,7 +128,7 @@ function DeskMock() {
 function EnquiryForm({ formRef, prefill }) {
   const location = useLocation();
   const { data: specialtyList } = useApi('/api/specialties');
-  const specialties = (specialtyList ?? []).map((s) => s.name);
+  const specialties = (asList(specialtyList)).map((s) => s.name);
   const [f, setF] = useState({ name: '', phone: '', clinicName: '', city: '', specialty: '', doctorsCount: '', preferredTime: '', email: '', message: '', website: '' });
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);

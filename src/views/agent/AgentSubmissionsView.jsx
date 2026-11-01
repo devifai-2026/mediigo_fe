@@ -9,6 +9,7 @@ import { EVENTS } from '../../lib/socketEvents.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { DeskCard, EmptyNote, PageHeader, Pill, Segmented, StatTile } from '../../components/desk/ui.jsx';
 import { APPROVAL, span, hoursLabel } from './approvalStatus.js';
+import { asList } from '../../lib/list.js';
 
 const fmt = (d) => (d
   ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
@@ -100,7 +101,7 @@ export default function AgentSubmissionsView() {
     }
   };
   const [filter, setFilter] = useState('ALL');
-  const subs = data ?? [];
+  const subs = asList(data);
 
   const counts = {
     ALL: subs.length,

@@ -12,6 +12,7 @@ import { ROLES, ROLE_LABEL } from '../../lib/constants.js';
 import { phone as fmtPhone, shortDate, timeOf, initials } from '../../lib/format.js';
 import { ResetPasswordModal } from '../../components/superadmin/ResetPasswordModal.jsx';
 import { useLoginAs } from '../../hooks/useLoginAs.js';
+import { asList } from '../../lib/list.js';
 
 const ROLE_CHIP = {
   EXEC_ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -191,7 +192,7 @@ export default function StaffProfileView() {
             empty={!user.clinics?.length ? 'No clinics in this district yet.' : null}
           >
             <div className="space-y-1.5 max-h-72 overflow-y-auto">
-              {(user.clinics || []).map((c) => (
+              {(asList(user.clinics)).map((c) => (
                 <div key={c.id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-100 bg-slate-50">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-800 truncate">{c.name}</p>
@@ -207,7 +208,7 @@ export default function StaffProfileView() {
         {isExec && (
           <Section title="Field agents reporting in" empty={!user.agents?.length ? 'No agents in this district.' : null}>
             <div className="space-y-1.5 max-h-72 overflow-y-auto">
-              {(user.agents || []).map((a) => (
+              {(asList(user.agents)).map((a) => (
                 <Link
                   key={a.id}
                   to={`/super/staff/${a.id}`}
@@ -232,7 +233,7 @@ export default function StaffProfileView() {
         {isAgent && (
           <Section title="Clinics onboarded" empty={!user.submissions?.length ? 'No submissions filed yet.' : null}>
             <div className="space-y-1.5 max-h-72 overflow-y-auto">
-              {(user.submissions || []).map((s) => (
+              {(asList(user.submissions)).map((s) => (
                 <div key={s.id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-100 bg-slate-50">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-800 truncate">{s.clinicName}</p>
@@ -272,7 +273,7 @@ export default function StaffProfileView() {
         {/* ---- Activity ---- */}
         <Section title="Recent activity" empty={!user.activity?.length ? 'Nothing recorded yet.' : null}>
           <div className="space-y-2 max-h-72 overflow-y-auto">
-            {(user.activity || []).map((a, i) => (
+            {(asList(user.activity)).map((a, i) => (
               <div key={`${a.at}-${i}`} className="flex items-start gap-2.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                 <div className="min-w-0 flex-1">

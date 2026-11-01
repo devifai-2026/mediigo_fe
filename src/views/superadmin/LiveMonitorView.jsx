@@ -4,6 +4,7 @@ import { useConsole } from '../../context/AdminConsoleContext.jsx';
 import { AdminKpi, AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 import { Avatar, DeskCard, EmptyNote, Pill, Segmented } from '../../components/desk/ui.jsx';
 import { token, timeOf } from '../../lib/format.js';
+import { asList } from '../../lib/list.js';
 
 const STATE = {
   CONSULTING: { label: 'Consulting', tone: 'teal', order: 0 },
@@ -123,7 +124,7 @@ export default function LiveMonitorView() {
 
   const doctors = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return (live?.doctors ?? [])
+    return (asList(live?.doctors))
       .filter((d) => filter === 'ALL' || d.state === filter)
       .filter((d) => !s || [d.name, d.clinicName, d.city, d.district, d.specialty].some((v) => String(v || '').toLowerCase().includes(s)))
       // Emergencies first, then whoever has the longest queue.

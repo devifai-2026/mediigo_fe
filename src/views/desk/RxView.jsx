@@ -22,6 +22,7 @@ import { MedicineRows, blankMed, clearMedicineCache, isBlank, resolveSpoken } fr
 import { DictationBar } from '../../components/desk/rx/DictationBar.jsx';
 import { parseDictation, useDictation } from '../../components/desk/rx/dictation.js';
 import { AddVisitPhotosModal, PhotoGallery, PhotoGroups, VisitPhotos } from '../../components/desk/rx/VisitPhotos.jsx';
+import { asList } from '../../lib/list.js';
 
 const STATUS_LABEL = {
   [TOKEN_STATUS.IN_CHAMBER]: 'In chamber',
@@ -31,7 +32,7 @@ const STATUS_LABEL = {
 };
 
 // Mirrors the server's symptomsOf(): the complaint plus declared conditions.
-const symptomsOf = (p) => [p?.complaint, ...(p?.conditions ?? []).map((c) => `k/c/o ${c}`)].filter(Boolean).join('; ');
+const symptomsOf = (p) => [p?.complaint, ...(asList(p?.conditions)).map((c) => `k/c/o ${c}`)].filter(Boolean).join('; ');
 
 const VISIT_STATUS = { COMPLETED: 'Seen', IN_CHAMBER: 'In chamber', WAITING: 'Waiting', SKIPPED: 'Skipped', RESCHEDULE_NEEDED: 'Rescheduling' };
 
@@ -99,7 +100,7 @@ export default function RxView() {
   // The doctor's record: header details and fees for the Total Due default.
   const { data: doctorRec } = useApi(doctorId ? `/api/doctors/${doctorId}` : null, { skip: !doctorId });
   const patients = useMemo(
-    () => (snapshot?.tokens ?? []).filter((t) => STATUS_LABEL[t.status]),
+    () => (asList(snapshot?.tokens)).filter((t) => STATUS_LABEL[t.status]),
     [snapshot],
   );
 
@@ -118,7 +119,7 @@ export default function RxView() {
   // This patient's previous prescription here, for "Repeat last Rx". Matched on
   // the name too: a family sharing one phone shares the lookup.
   const lastRx = useMemo(() => {
-    const visit = (history?.visits ?? []).find((v) => v.tokenId !== patient?.tokenId
+    const visit = (asList(history?.visits)).find((v) => v.tokenId !== patient?.tokenId
       && v.prescriptions.length && (!patient?.name || v.patientName === patient.name));
     return visit ? { ...visit.prescriptions[0], date: visit.date } : null;
   }, [history, patient?.tokenId, patient?.name]);
@@ -140,7 +141,7 @@ export default function RxView() {
   };
 
   // Photos already on the selected patient's visit, from the same lookup.
-  const visitPhotos = history?.visits?.find((v) => v.tokenId === patient?.tokenId)?.photos ?? [];
+  const visitPhotos = asList(history?.visits?.find((v) => v.tokenId === patient?.tokenId)?.photos);
 
   const [printing, setPrinting] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -341,7 +342,7 @@ function RxWriter({ patients, patient, doctor, clinicName, lastRx, hasPharmacy, 
     }
   }
 
-  const myDiagnoses = patterns?.diagnoses ?? [];
+  const myDiagnoses = asList(patterns?.diagnoses);
   const loadDiagnoses = (q) => {
     const mine = myDiagnoses.filter((d) => !q.trim() || prefixMatch(q, d.diagnosis));
     const taken = new Set(mine.map((d) => d.diagnosis.toLowerCase()));
@@ -624,7 +625,7 @@ function PatientList({ patients, selected, onPick }) {
  * A family sharing one phone is split by name, starting on today's patient.
  */
 function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPrint, onSend, myDoctorId, isDoctor, patientName, footfallPath, onPhotosChanged }) {
-  const all = history?.visits ?? [];
+  const all = asList(history?.visits);
   const more = history ? history.totalVisits - all.length : 0;
   const names = [...new Set(all.map((v) => v.patientName).filter(Boolean))];
   const [who, setWho] = useState(null);
@@ -796,7 +797,7 @@ function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPri
       {/* Fed from the live history, so a removal shows at once. */}
       {gallery && (
         <PhotoGallery
-          photos={all.find((v) => v.tokenId === gallery.tokenId)?.photos ?? []}
+          photos={asList(all.find((v) => v.tokenId === gallery.tokenId)?.photos)}
           startId={gallery.id}
           onClose={() => setGallery(null)}
           onRemoved={onPhotosChanged}
@@ -808,7 +809,7 @@ function EmrLookup({ phoneQuery, onPhone, valid, history, loading, onView, onPri
         return (
           <AddVisitPhotosModal
             visit={v && { tokenId: v.tokenId, tokenNumber: v.tokenNumber, name: v.patientName, date: v.date }}
-            photos={v?.photos ?? []}
+            photos={asList(v?.photos)}
             onClose={() => setAdding(null)}
             onChanged={onPhotosChanged}
           />

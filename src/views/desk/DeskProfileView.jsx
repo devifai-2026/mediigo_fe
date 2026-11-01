@@ -22,6 +22,7 @@ import { ClinicPharmacyCard } from '../../components/desk/ClinicPharmacyCard.jsx
 import { ChangePasswordCard } from '../../components/desk/ChangePasswordCard.jsx';
 import { AccountSummary } from '../../components/desk/AccountSummary.jsx';
 import { Avatar, DeskCard, DoctorPicker, EmptyNote, PageHeader, Pill, RefreshButton, SectionHead } from '../../components/desk/ui.jsx';
+import { asList } from '../../lib/list.js';
 
 const errMsg = (e) => e?.response?.data?.error?.message || e.message;
 
@@ -95,7 +96,7 @@ function DoctorSettings({ doctorId }) {
     if (!doctor || !details) return;
     setFees(doctor.fees);
     setDetails({ ...toProfileForm(doctor), name: doctor.name || '' });
-    setSpecialtyIds((doctor.specialtyIds || []).map(String));
+    setSpecialtyIds((asList(doctor.specialtyIds)).map(String));
   }, [doctor]);
 
   const run = async (key, fn, msg) => {
@@ -163,7 +164,7 @@ function DoctorSettings({ doctorId }) {
   const onBreak = Boolean(doctor.session?.isOnBreak);
 
   // Today's shift, measured from the queue itself.
-  const tokens = snapshot?.tokens ?? [];
+  const tokens = asList(snapshot?.tokens);
   const consults = tokens
     .filter((t) => t.enteredChamberAt && t.completedAt)
     .map((t) => (new Date(t.completedAt) - new Date(t.enteredChamberAt)) / 60000)
@@ -227,7 +228,7 @@ function DoctorSettings({ doctorId }) {
               <Input value={details.name} maxLength={80} onChange={setDetail('name')} />
             </Field>
             <SpecialtyPicker
-              options={specialtyOptions ?? []}
+              options={asList(specialtyOptions)}
               value={specialtyIds}
               onChange={setSpecialtyIds}
               hint="The first is the primary and leads on the patient card."
@@ -272,7 +273,7 @@ function DoctorSettings({ doctorId }) {
             <WeeklyScheduleEditor doctorId={doctorId} schedule={doctor.schedule} onSaved={refetch} />
           </div>
           <div className="rounded-lg border border-slate-200 p-4">
-            <AvailabilityManager key={JSON.stringify(doctor.schedule ?? [])} doctorId={doctorId} />
+            <AvailabilityManager key={JSON.stringify(asList(doctor.schedule))} doctorId={doctorId} />
           </div>
         </div>
       </StepCard>

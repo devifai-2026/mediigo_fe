@@ -3,6 +3,7 @@ import { inr, token } from '../../lib/format.js';
 import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
 import { patientLine } from './deskFormat.js';
+import { asList } from '../../lib/list.js';
 
 const longDate = (iso) => (iso
   ? new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -84,7 +85,7 @@ export function RxDocument({ rx, clinicName }) {
             </tr>
           </thead>
           <tbody>
-            {(rx.medicines || []).map((m, i) => (
+            {(asList(rx.medicines)).map((m, i) => (
               // eslint-disable-next-line react/no-array-index-key
               <tr key={i} className="border-b border-gray-200 align-top">
                 <td className="py-1.5 pr-2">{i + 1}</td>

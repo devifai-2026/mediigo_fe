@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
 import { phone as fmtPhone } from '../../lib/format.js';
 import { ROLE_LABEL as ALL_ROLE_LABELS } from '../../lib/constants.js';
+import { asList } from '../../lib/list.js';
 
 const ROLE_LABEL = { ...ALL_ROLE_LABELS, RECEPTIONIST: 'Front desk', DOCTOR: 'Doctor', PHARMACIST: 'Pharmacy' };
 
@@ -19,7 +20,7 @@ const message = (c, clinicName) => [
   `Mobile: ${c.phone}`,
   ...(c.tempPassword
     ? [`Temporary password: ${c.tempPassword}`, 'Please change it after your first sign-in.']
-    : SIGN_IN_LINES[c.signIn] ?? []),
+    : asList(SIGN_IN_LINES[c.signIn])),
 ].join('\n');
 
 const signInText = (c) => {
@@ -34,7 +35,7 @@ const signInText = (c) => {
  */
 export function CredentialsModal({ result, onClose, title = 'Logins created' }) {
   const [copied, setCopied] = useState(null);
-  const creds = result?.credentials ?? [];
+  const creds = asList(result?.credentials);
   if (!result || !creds.length) return null;
   const clinicName = result.hospital?.name || '';
   const anyTemp = creds.some((c) => c.tempPassword);

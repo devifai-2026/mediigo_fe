@@ -11,6 +11,7 @@ import { SpecialtyPicker } from '../ui/SpecialtyPicker.jsx';
 import { PhotoField } from '../ui/PhotoCropper.jsx';
 import { DoctorBasicsFields, DoctorPublicProfileFields, RegistrationFields } from '../doctor/DoctorProfileFields.jsx';
 import { BLANK_PROFILE, toProfilePayload, doctorProfileErrors, feeErrors } from '../../lib/doctorProfile.js';
+import { asList } from '../../lib/list.js';
 
 /**
  * Add a doctor to an existing clinic.
@@ -62,7 +63,7 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
     setForm((f) => ({ ...f, [k]: value }));
     setErrors(({ [k]: _, ...rest }) => rest);
   };
-  const options = specialties ?? [];
+  const options = asList(specialties);
   const primary = options.find((o) => o.id === specialtyIds[0]);
 
   const submit = async (e) => {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { Icon } from '../ui/Icon.jsx';
+import { asList } from '../../lib/list.js';
 
 /**
  * Pre-existing conditions, as chips.
@@ -13,7 +14,7 @@ const COMMON = ['Diabetes', 'Hypertension', 'Asthma', 'Thyroid', 'Heart disease'
 
 export function ConditionsField({ value = [], onChange, label = 'Pre-existing conditions', hint }) {
   const [draft, setDraft] = useState('');
-  const list = value || [];
+  const list = asList(value);
 
   const toggle = (c) => {
     onChange(list.includes(c) ? list.filter((x) => x !== c) : [...list, c]);

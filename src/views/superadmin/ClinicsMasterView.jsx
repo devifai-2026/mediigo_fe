@@ -13,6 +13,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge.jsx';
 import { FilterPills } from '../../components/ui/FilterPills.jsx';
 import { inr } from '../../lib/format.js';
 import { NETWORK_STATE } from '../../lib/constants.js';
+import { asList } from '../../lib/list.js';
 
 export default function ClinicsMasterView() {
   const { data, clinics, refetch } = useConsole();
@@ -30,7 +31,7 @@ export default function ClinicsMasterView() {
   // Which clinic we are adding a doctor to, or null.
   const [addingTo, setAddingTo] = useState(null);
 
-  const rollup = data?.clinicRollup ?? [];
+  const rollup = asList(data?.clinicRollup);
   const q = query.toLowerCase();
 
   const clinicRows = rollup.filter((c) => {

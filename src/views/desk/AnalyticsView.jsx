@@ -19,6 +19,7 @@ import { pad2, patientLine } from '../../components/desk/deskFormat.js';
 import {
   DateRangePicker, PRESETS, isoToday, presetOf, rangeLabel, shiftIso,
 } from '../../components/desk/DateRangePicker.jsx';
+import { asList } from '../../lib/list.js';
 
 // One-tap shortcuts beside the calendar; anything else is picked from it.
 const QUICK = [
@@ -213,7 +214,7 @@ export default function AnalyticsView() {
           clinicName={[dayClose?.hospitalName, isDoctor ? user?.name : doctorName].filter(Boolean).join(' — ')}
           dayClose={dayClose}
           ledger={ledger}
-          byDoctor={single ? (analytics?.byDoctor ?? []) : []}
+          byDoctor={single ? (asList(analytics?.byDoctor)) : []}
           preparedBy={user?.name}
         />
       </PrintPortal>
@@ -299,15 +300,15 @@ function RevenueSection({ analytics, ledger, dayClose, range, canManageCash, can
         </DeskCard>
       )}
 
-      {(analytics.byDoctor ?? []).length > 0 && (
+      {(asList(analytics.byDoctor)).length > 0 && (
         <DeskCard className="p-4 sm:p-5 space-y-4">
           <SectionHead
             title="Doctor & Specialty Revenue Contribution"
             subtitle="Each practitioner’s share of collections"
-            right={<Pill tone="slate">Active roster: {(analytics.byDoctor ?? []).length} doctor{(analytics.byDoctor ?? []).length === 1 ? '' : 's'}</Pill>}
+            right={<Pill tone="slate">Active roster: {(asList(analytics.byDoctor)).length} doctor{(asList(analytics.byDoctor)).length === 1 ? '' : 's'}</Pill>}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {(analytics.byDoctor ?? []).map((d) => (
+            {(asList(analytics.byDoctor)).map((d) => (
               <div key={d.doctorId} className="p-4 bg-mg-surface rounded-lg flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar name={d.name} src={d.photoUrl} className="w-11 h-11" />
@@ -371,7 +372,7 @@ const METHOD_TONE = { CASH: 'emerald', UPI: 'teal', CARD: 'blue', SPLIT: 'amber'
 function LedgerTable({ ledger, canVoid, onVoid, range }) {
   const [search, setSearch] = useState('');
   const [method, setMethod] = useState('ALL');
-  const items = ledger?.items ?? [];
+  const items = asList(ledger?.items);
 
   const rows = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -540,7 +541,7 @@ function Reconciliation({ dayClose }) {
 const hourLabel = (h) => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'AM' : 'PM'}`;
 
 function FootfallSection({ analytics, footfall, range, analyticsError, footfallError, onRetry, initialSearch, onPhotosChanged }) {
-  const rows = footfall?.rows ?? [];
+  const rows = asList(footfall?.rows);
   const single = range.from === range.to;
 
   // Check-ins per hour, today. Built from the register itself so the bars and
@@ -640,11 +641,11 @@ function FootfallSection({ analytics, footfall, range, analyticsError, footfallE
         </DeskCard>
       </div>
 
-      {(analytics.byDoctor ?? []).length > 0 && (
+      {(asList(analytics.byDoctor)).length > 0 && (
         <DeskCard className="p-4 sm:p-5 space-y-4">
           <SectionHead title="Doctor Footfall & Patient Traffic Share" subtitle="Each practitioner’s patient volume" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {(analytics.byDoctor ?? []).map((d) => (
+            {(asList(analytics.byDoctor)).map((d) => (
               <div key={d.doctorId} className="p-4 bg-mg-surface rounded-lg flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar name={d.name} src={d.photoUrl} className="w-11 h-11" />
@@ -682,7 +683,7 @@ function FootfallRegister({ footfall, range, initialSearch = '', onPhotosChanged
   const [printing, setPrinting] = useState(null);
   const [gallery, setGallery] = useState(null); // { tokenId, id }
   const [adding, setAdding] = useState(null); // tokenId of the visit taking photos
-  const rows = footfall?.rows ?? [];
+  const rows = asList(footfall?.rows);
   // Mirrors the server: a doctor adds photos to their own patients' visits,
   // the desk to any visit at the clinic; never to a cancelled one.
   const mayAddPhoto = (r) => r.status !== 'CANCELLED'
@@ -694,7 +695,7 @@ function FootfallRegister({ footfall, range, initialSearch = '', onPhotosChanged
     return rows.filter((r) => [
       r.patientName, r.phone, token(r.tokenNumber), r.complaint, r.doctorName,
       ...r.prescriptions.flatMap((x) => [x.diagnosis, ...x.medicines.map((m) => m.name)]),
-      ...(r.photos ?? []).map((ph) => ph.caption),
+      ...(asList(r.photos)).map((ph) => ph.caption),
     ].some((v) => String(v || '').toLowerCase().includes(s)));
   }, [rows, search]);
 
@@ -798,7 +799,7 @@ function FootfallRegister({ footfall, range, initialSearch = '', onPhotosChanged
       {/* Both fed from the live register, so an upload or removal shows at once. */}
       {gallery && (
         <PhotoGallery
-          photos={rowOf(gallery.tokenId)?.photos ?? []}
+          photos={asList(rowOf(gallery.tokenId)?.photos)}
           startId={gallery.id}
           onClose={() => setGallery(null)}
           onRemoved={onPhotosChanged}
@@ -807,7 +808,7 @@ function FootfallRegister({ footfall, range, initialSearch = '', onPhotosChanged
       {adding && rowOf(adding) && (
         <AddVisitPhotosModal
           visit={{ tokenId: adding, tokenNumber: rowOf(adding).tokenNumber, name: rowOf(adding).patientName, date: rowOf(adding).date }}
-          photos={rowOf(adding).photos ?? []}
+          photos={asList(rowOf(adding).photos)}
           onClose={() => setAdding(null)}
           onChanged={onPhotosChanged}
         />
@@ -829,7 +830,7 @@ function CombinedSection({ analytics, error, onRetry, range }) {
 
   const money = analytics.accounts.totals;
   const p = analytics.patients.totals;
-  const docs = analytics.byDoctor ?? [];
+  const docs = asList(analytics.byDoctor);
   const maxRevenue = Math.max(1, ...docs.map((d) => d.revenue));
   const maxBooked = Math.max(1, ...docs.map((d) => d.booked));
 

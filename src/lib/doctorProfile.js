@@ -1,4 +1,5 @@
 import { collect, intRangeError, moneyError, requiredError } from './validators.js';
+import { asList } from './list.js';
 
 
 /**
@@ -47,13 +48,13 @@ export const BLANK_PROFILE = {
 /** A doctor record from the API → form strings. */
 export const toProfileForm = (d = {}) => ({
   chamberNumber: d.chamberNumber || '',
-  qualifications: (d.qualifications || []).join(', '),
+  qualifications: (asList(d.qualifications)).join(', '),
   experienceYears: d.experienceYears ?? '',
-  languages: (d.languages || []).join(', '),
+  languages: (asList(d.languages)).join(', '),
   avgConsultMinutes: d.avgConsultMinutes ?? '',
   followupWindowDays: d.followupWindowDays ?? '',
   about: d.about || '',
-  ...Object.fromEntries(LIST_FIELDS.map(([k]) => [k, (d[k] || []).join('\n')])),
+  ...Object.fromEntries(LIST_FIELDS.map(([k]) => [k, (asList(d[k])).join('\n')])),
   councilRegNo: d.councilRegNo || '',
   registrationCouncil: d.registrationCouncil || '',
   registrationYear: d.registrationYear ?? '',

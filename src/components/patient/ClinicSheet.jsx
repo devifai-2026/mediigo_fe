@@ -8,6 +8,7 @@ import { PhotoOrFallback } from '../ui/PhotoOrFallback.jsx';
 import { inr, initialsOf, phone, token } from '../../lib/format.js';
 import { clinicAddress, clinicDirections, clinicKind, km, nextAvailableText, isLiveNow } from '../../lib/clinics.js';
 import { RatingBadge } from './RatingBadge.jsx';
+import { asList } from '../../lib/list.js';
 
 /**
  * A clinic and every doctor in it. Opened from a clinic card: "Details" to
@@ -125,7 +126,7 @@ export function ClinicSheet({ clinic, choosing = false, filtered = false, onClos
     try {
       const params = new URLSearchParams({ lat: clinic.coordinates.lat, lng: clinic.coordinates.lng, radiusKm: 1 });
       const res = await api.get(`/api/doctors/nearby?${params}`);
-      const here = (res.data?.data ?? []).filter((d) => String(d.hospital?.id) === String(clinic.id));
+      const here = (asList(res.data?.data)).filter((d) => String(d.hospital?.id) === String(clinic.id));
       setAllDoctors(here.length ? here : clinic.doctors);
     } catch {
       setAllDoctors(clinic.doctors);

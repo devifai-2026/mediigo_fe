@@ -9,6 +9,7 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
+import { asList } from '../../lib/list.js';
 
 /**
  * Review moderation.
@@ -75,7 +76,7 @@ export default function ReviewsView() {
     if (ok) act(row, 'DELETE');
   };
 
-  const rows = data || [];
+  const rows = asList(data);
 
   return (
     <div className="space-y-4">

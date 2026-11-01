@@ -8,6 +8,7 @@ import { Field, Input } from '../../components/ui/Field.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { inr } from '../../lib/format.js';
+import { asList } from '../../lib/list.js';
 
 const SEVERITY = {
   CRITICAL: 'bg-rose-50 border-rose-200 text-rose-700',
@@ -39,7 +40,7 @@ export default function VaultView() {
     try {
       const vault = unwrap(await api.post('/api/policy/vault/lookup', { aadhaarNumber: digits }));
       const gaps = unwrap(await api.get(`/api/policy/vault/${vault.aadhaarHash}/gap-analysis`));
-      setPolicies(vault.policies || []);
+      setPolicies(asList(vault.policies));
       setAnalysis(gaps);
       setStage('result');
       // The raw number leaves memory as soon as it has been hashed server-side.

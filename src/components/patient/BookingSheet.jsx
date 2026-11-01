@@ -12,6 +12,7 @@ import { ConditionsField } from './ConditionsField.jsx';
 import { FamilyMemberForm } from './FamilyMemberForm.jsx';
 import { inr, token, time12, ageOf, initials } from '../../lib/format.js';
 import { VISIT_LABEL } from '../../lib/constants.js';
+import { asList } from '../../lib/list.js';
 
 const DAY_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SHIFT_LABEL = { MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Evening' };
@@ -56,7 +57,7 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
   const navigate = useNavigate();
 
   const members = useMemo(() => {
-    const list = user?.familyMembers ?? [];
+    const list = asList(user?.familyMembers);
     return [...list].sort((a, b) => (a.relation === 'SELF' ? -1 : b.relation === 'SELF' ? 1 : 0));
   }, [user]);
 
@@ -96,7 +97,7 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
   // Pre-fill the chosen person's own history, so a returning patient does not
   // retype it — and a child's history is never their parent's.
   const member = members.find((m) => m._id === memberId) ?? null;
-  useEffect(() => { setConditions(member?.conditions ?? []); }, [member?._id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setConditions(asList(member?.conditions)); }, [member?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The doctor's real sittings for the next 7 days. Without a schedule the
   // response is simply empty, and booking falls back to same-day, in order.
@@ -108,7 +109,7 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
       try {
         const d = unwrap(await api.get(`/api/doctors/${doctor.doctorId}/availability`));
         if (!alive) return;
-        const week = d.days ?? [];
+        const week = asList(d.days);
         setDays(week);
         // Keep a sitting already chosen on the doctor's profile page, if it is
         // still bookable; otherwise preselect the first one a patient could take.

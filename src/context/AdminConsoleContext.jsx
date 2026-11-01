@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi.js';
+import { asList } from '../lib/list.js';
 
 const AdminConsoleContext = createContext(null);
 export const useConsole = () => useContext(AdminConsoleContext);
@@ -23,8 +24,8 @@ export function AdminConsoleProvider({ children }) {
   }, [refetchLive]);
 
   const value = useMemo(() => {
-    const clinics = data?.clinics ?? [];
-    const agents = data?.agents ?? [];
+    const clinics = asList(data?.clinics);
+    const agents = asList(data?.agents);
 
     const approved = clinics.filter((c) => c.status === 'Approved');
     const pending = clinics.filter((c) => c.status === 'Pending');
@@ -44,7 +45,7 @@ export function AdminConsoleProvider({ children }) {
 
     // The approvals queue counts real pending submissions, not just clinics
     // whose parent hospital is unapproved.
-    const pendingApprovals = (data?.approvals ?? []).length;
+    const pendingApprovals = (asList(data?.approvals)).length;
 
     return {
       data,
@@ -53,8 +54,8 @@ export function AdminConsoleProvider({ children }) {
       refetch,
       clinics,
       agents,
-      executives: data?.executives ?? [],
-      approvals: data?.approvals ?? [],
+      executives: asList(data?.executives),
+      approvals: asList(data?.approvals),
       charts: data?.charts ?? { labels: [], onboarded: [], revenueHundreds: [], patients: [] },
       metrics: {
         totalClinics: clinics.length,

@@ -13,6 +13,7 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { FilterPills } from '../../components/ui/FilterPills.jsx';
 import { NETWORK_STATE, ROLES } from '../../lib/constants.js';
+import { asList } from '../../lib/list.js';
 
 export default function ClinicsView() {
   const { data, loading, refetch } = useApi('/api/admin/hospitals');
@@ -26,7 +27,7 @@ export default function ClinicsView() {
   const [busy, setBusy] = useState(false);
   const [inFlight, setInFlight] = useState(null);
 
-  const rows = (data || []).filter((h) => filter === 'ALL' || h.networkState === filter);
+  const rows = (asList(data)).filter((h) => filter === 'ALL' || h.networkState === filter);
 
   const open = (type, hospital) => { setAction({ type, hospital }); setReason(''); setTypedName(''); setInFlight(null); };
 

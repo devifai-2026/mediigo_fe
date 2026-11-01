@@ -1,3 +1,4 @@
+import { asList } from './list.js';
 /**
  * Cookie consent and the optional trackers it gates.
  *
@@ -60,7 +61,7 @@ export function loadTrackers() {
     s.async = true;
     s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_ID)}`;
     document.head.appendChild(s);
-    window.dataLayer = window.dataLayer || [];
+    window.dataLayer = asList(window.dataLayer);
     window.gtag = function gtag() { window.dataLayer.push(arguments); }; // eslint-disable-line prefer-rest-params
     window.gtag('js', new Date());
     // No ad personalisation signals from health pages; page views only.

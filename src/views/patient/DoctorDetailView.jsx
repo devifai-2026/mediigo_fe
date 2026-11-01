@@ -18,6 +18,7 @@ import { directionsUrl } from '../../lib/maps.js';
 import { demoProfilesEnabled, demoProfileFor } from '../../lib/demoProfiles.js';
 import { useSeo } from '../../lib/seo.js';
 import { SITE } from '../../lib/site.js';
+import { asList } from '../../lib/list.js';
 
 /**
  * A doctor's public profile: who they are, what they treat, what patients say,
@@ -287,7 +288,7 @@ export default function DoctorDetailView() {
     api.get(`/api/doctors/${doctorId}/availability`)
       .then((res) => {
         if (!alive) return;
-        const week = unwrap(res)?.days ?? [];
+        const week = asList(unwrap(res)?.days);
         setDays(week);
         const firstOpen = week.find((x) => x.shifts.some((sh) => sh.isBookable));
         const firstShift = firstOpen?.shifts.find((sh) => sh.isBookable);
@@ -384,7 +385,7 @@ export default function DoctorDetailView() {
     const params = new URLSearchParams({ lat, lng, radiusKm: 25, specialty: d.specialty });
     api.get(`/api/doctors/nearby?${params}`)
       .then((res) => {
-        if (alive) setOthers((res.data?.data ?? []).filter((x) => x.doctorId !== doctorId).slice(0, 6));
+        if (alive) setOthers((asList(res.data?.data)).filter((x) => x.doctorId !== doctorId).slice(0, 6));
       })
       .catch(() => {});
     return () => { alive = false; };
@@ -446,13 +447,13 @@ export default function DoctorDetailView() {
 
   let reviewData = reviews?.items?.length ? reviews : null;
   if (!reviewData && demo) { reviewData = demo.reviews; usedDemo = true; }
-  const reviewItems = reviewData?.items ?? [];
+  const reviewItems = asList(reviewData?.items);
   const reviewCount = reviewData?.summary?.count ?? reviewItems.length;
   const average = reviewData?.summary?.average;
   const recommendPct = reviewData?.summary?.recommendPct
     ?? (reviewItems.length ? Math.round((reviewItems.filter((r) => r.rating >= 4).length / reviewItems.length) * 100) : null);
 
-  const schedule = (d.schedule || []).filter((s) => s.isActive !== false);
+  const schedule = (asList(d.schedule)).filter((s) => s.isActive !== false);
   const weekly = [1, 2, 3, 4, 5, 6, 0].map((day) => ({
     day,
     shifts: schedule.filter((s) => s.day === day).sort((a, b) => (SHIFT_ORDER[a.shift] ?? 9) - (SHIFT_ORDER[b.shift] ?? 9)),
@@ -1109,7 +1110,7 @@ export default function DoctorDetailView() {
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold truncate">{o.name}</span>
-                  <span className="block text-xs text-mg-teal truncate">{o.specialty} · {(o.qualifications || []).join(', ')}</span>
+                  <span className="block text-xs text-mg-teal truncate">{o.specialty} · {(asList(o.qualifications)).join(', ')}</span>
                   <span className="block text-xs text-slate-500 truncate">{o.hospital?.name}</span>
                 </span>
                 <span className="text-sm font-bold text-mg-navy shrink-0">{inr(o.fees?.fresh)}</span>

@@ -10,6 +10,7 @@ import {
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { FilterPills } from '../../components/ui/FilterPills.jsx';
 import { inr, phone as fmtPhone, shortDate, initials } from '../../lib/format.js';
+import { asList } from '../../lib/list.js';
 
 /**
  * Patients Master — every patient the network has ever seen, with the graphs
@@ -85,14 +86,14 @@ export default function PatientsMasterView() {
   const { data: analytics } = useApi(`/api/superadmin/patients/analytics?${qs}`);
   const { data: options } = useApi('/api/superadmin/patients/filters');
 
-  const rows = master?.rows ?? [];
+  const rows = asList(master?.rows);
   const total = master?.total ?? 0;
   const k = analytics?.kpis ?? {};
   const charts = analytics?.charts ?? {};
 
   // Only the doctors at the selected clinic, so the two dropdowns cannot be
   // set to a contradictory pair.
-  const doctorOptions = (options?.doctors ?? []).filter(
+  const doctorOptions = (asList(options?.doctors)).filter(
     (d) => !filters.hospitalId || d.hospitalId === filters.hospitalId,
   );
 
@@ -148,8 +149,8 @@ export default function PatientsMasterView() {
         >
           <div className="h-64">
             <PatientFlowChart
-              labels={charts.labels ?? []} fresh={charts.fresh ?? []}
-              followup={charts.followup ?? []} emergency={charts.emergency ?? []}
+              labels={asList(charts.labels)} fresh={asList(charts.fresh)}
+              followup={asList(charts.followup)} emergency={asList(charts.emergency)}
             />
           </div>
         </Panel>
@@ -187,13 +188,13 @@ export default function PatientsMasterView() {
         </Panel>
 
         <Panel className="lg:col-span-2" title="Top Clinics by Footfall" hint="Visits against the unique patients behind them.">
-          <div className="h-52"><TopClinicsChart clinics={(charts.topClinics ?? []).slice(0, 6)} /></div>
+          <div className="h-52"><TopClinicsChart clinics={(asList(charts.topClinics)).slice(0, 6)} /></div>
         </Panel>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Panel title="Top Doctors by Patients Seen" hint="Who is actually carrying the consultation load.">
-          <div className="h-56"><TopDoctorsChart doctors={(charts.topDoctors ?? []).slice(0, 6)} /></div>
+          <div className="h-56"><TopDoctorsChart doctors={(asList(charts.topDoctors)).slice(0, 6)} /></div>
         </Panel>
         <Panel title="Patient Age Profile" hint="Distinct patients by age band, from what was captured at booking.">
           <div className="h-56"><AgeBandChart bands={charts.ageBands ?? {}} /></div>
@@ -225,7 +226,7 @@ export default function PatientsMasterView() {
             className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-mg-blue"
           >
             <option value="">All clinics</option>
-            {(options?.clinics ?? []).map((c) => (
+            {(asList(options?.clinics)).map((c) => (
               <option key={c.id} value={c.id}>{c.name}{c.city ? ` · ${c.city}` : ''}</option>
             ))}
           </select>

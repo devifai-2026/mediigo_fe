@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { AnchoredMenu } from '../../ui/AnchoredMenu.jsx';
+import { asList } from '../../../lib/list.js';
 
 /**
  * A text input with a keyboard-driven suggestion list.
@@ -30,7 +31,7 @@ export const SuggestInput = forwardRef(function SuggestInput(
     const mine = ++seq.current;
     Promise.resolve(load(q)).then((list) => {
       if (mine !== seq.current) return;
-      setItems(list || []);
+      setItems(asList(list));
       setItemsFor(q);
       setActive(0);
     }).catch(() => {});

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api, unwrap } from '../../lib/api.js';
 import { Field, Input } from '../ui/Field.jsx';
+import { asList } from '../../lib/list.js';
 
 /**
  * Address search backed by Google Places, proxied through our own API so the
@@ -36,7 +37,7 @@ export function AddressAutocomplete({ onResolved, disabled }) {
       try {
         const d = unwrap(await api.get(`/api/onboarding/address/suggest?q=${encodeURIComponent(query)}`));
         setEnabled(d.enabled);
-        setItems(d.suggestions ?? []);
+        setItems(asList(d.suggestions));
         setOpen(true);
       } catch {
         setItems([]);

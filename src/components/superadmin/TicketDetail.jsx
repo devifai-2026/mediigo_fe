@@ -8,6 +8,7 @@ import { Field, Textarea, Select } from '../ui/Field.jsx';
 import { PRIORITY, CATEGORY, ROLE_TONE, COLUMNS } from '../../lib/tickets.js';
 import { ROLE_LABEL } from '../../lib/constants.js';
 import { shortDate, timeOf } from '../../lib/format.js';
+import { asList } from '../../lib/list.js';
 
 export function TicketDetail({ ticketId, open, onClose, onChanged, canTriage }) {
   const toast = useToast();
@@ -95,7 +96,7 @@ export function TicketDetail({ ticketId, open, onClose, onChanged, canTriage }) 
               Conversation ({ticket.comments?.length ?? 0})
             </p>
             <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-              {(ticket.comments ?? []).length === 0 ? (
+              {(asList(ticket.comments)).length === 0 ? (
                 <p className="text-[11px] text-slate-400 italic">No replies yet.</p>
               ) : ticket.comments.map((c, i) => (
                 <div

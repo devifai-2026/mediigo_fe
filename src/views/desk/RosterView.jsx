@@ -10,6 +10,7 @@ import { ROLES } from '../../lib/constants.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { Avatar, DeskCard, EmptyNote, LoadError, PageHeader, Pill } from '../../components/desk/ui.jsx';
 import { pad2 } from '../../components/desk/deskFormat.js';
+import { asList } from '../../lib/list.js';
 
 const SHIFT_LABEL = { MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Evening' };
 
@@ -89,7 +90,7 @@ export default function RosterView() {
     }
   };
 
-  const doctors = data?.doctors ?? [];
+  const doctors = asList(data?.doctors);
   const today = data?.date
     ? new Date(`${data.date}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
     : '';

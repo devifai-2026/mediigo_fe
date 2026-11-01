@@ -11,6 +11,7 @@ import { useGeolocation } from '../../hooks/useGeolocation.js';
 import { AvatarEditor, EditDetailsModal, ChangePhoneModal, DeleteAccountModal } from '../../components/patient/AccountSettings.jsx';
 import { useNoIndex } from '../../lib/seo.js';
 import { PasswordSection } from '../../components/patient/PasswordSection.jsx';
+import { asList } from '../../lib/list.js';
 
 export default function ProfileView() {
   useNoIndex('My profile');
@@ -46,7 +47,7 @@ export default function ProfileView() {
 
   // Bound to the live user object — the prototype's profile name and phone were
   // static HTML that diverged from state after login.
-  const members = user?.familyMembers ?? [];
+  const members = asList(user?.familyMembers);
 
   const removeMember = async (m) => {
     if (!(await confirm({ title: 'Remove family member?', message: `${m.name} will no longer appear when booking.`, danger: true, confirmLabel: 'Remove' }))) return;

@@ -6,6 +6,7 @@ import { DeskCard, EmptyNote, Pill, SectionHead, Segmented } from '../../compone
 import { DateRangePicker, PRESETS, isoToday, presetOf, rangeLabel } from '../../components/desk/DateRangePicker.jsx';
 import { inr, timeOf } from '../../lib/format.js';
 import { downloadCsv } from '../../lib/csv.js';
+import { asList } from '../../lib/list.js';
 
 const QUICK = [
   { value: 'today', label: 'Today' },
@@ -48,15 +49,15 @@ export default function FinancialAuditView() {
   const [clinicSearch, setClinicSearch] = useState('');
   const clinics = useMemo(() => {
     const s = clinicSearch.trim().toLowerCase();
-    return (net?.byClinic ?? []).filter((c) => !s || [c.name, c.city, c.district].some((v) => String(v || '').toLowerCase().includes(s)));
+    return (asList(net?.byClinic)).filter((c) => !s || [c.name, c.city, c.district].some((v) => String(v || '').toLowerCase().includes(s)));
   }, [net, clinicSearch]);
 
   const [pettyFilter, setPettyFilter] = useState('ALL');
   const pettyRows = useMemo(
-    () => (petty?.items ?? []).filter((r) => pettyFilter === 'ALL' || r.status === pettyFilter),
+    () => (asList(petty?.items)).filter((r) => pettyFilter === 'ALL' || r.status === pettyFilter),
     [petty, pettyFilter],
   );
-  const voided = (petty?.items ?? []).filter((r) => r.status === 'VOID');
+  const voided = (asList(petty?.items)).filter((r) => r.status === 'VOID');
 
   const exportClinics = () => downloadCsv(`mediigo-financial-audit_${range.from}_${range.to}.csv`, [
     ['Clinic', (c) => c.name], ['City', (c) => c.city], ['District', (c) => c.district],

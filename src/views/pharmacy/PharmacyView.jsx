@@ -16,6 +16,7 @@ import { AudioUnlockBanner, DeskCard, EmptyNote, LoadError, PageHeader, Pill, Pr
 import { RxPrint } from '../../components/desk/RxPrint.jsx';
 import { isoToday } from '../../components/desk/DateRangePicker.jsx';
 import { patientLine } from '../../components/desk/deskFormat.js';
+import { asList } from '../../lib/list.js';
 
 const errMsg = (e) => e?.response?.data?.error?.message || e.message;
 
@@ -66,7 +67,7 @@ export default function PharmacyView({ view }) {
 
   const params = new URLSearchParams({ view, ...(q ? { q } : {}), ...(date ? { date } : {}) });
   const { data, error, loading, refetch, setData } = useApi(`/api/pharmacy/prescriptions?${params}`);
-  const items = useMemo(() => data?.items ?? [], [data]);
+  const items = useMemo(() => asList(data?.items), [data]);
 
   const [selectedId, setSelectedId] = useState(null);
   const selected = items.find((r) => r._id === selectedId) ?? items[0] ?? null;

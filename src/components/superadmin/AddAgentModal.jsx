@@ -6,6 +6,7 @@ import { unwrap } from '../../lib/api.js';
 import { CredentialsModal } from '../onboarding/CredentialsModal.jsx';
 import { PasswordInput } from '../ui/Field.jsx';
 import { nameError, phoneError, passwordError, requiredError, collect, serverFieldErrors } from '../../lib/validators.js';
+import { asList } from '../../lib/list.js';
 
 /** Field agent registration — the prototype's modal-new-agent, wired to real user creation. */
 export function AddAgentModal({ open, onClose, onDone }) {
@@ -97,7 +98,7 @@ export function AddAgentModal({ open, onClose, onDone }) {
           <div>
             <label className={LABEL}>Assigned Operational Cluster *</label>
             <select value={form.districtId} onChange={(e) => set('districtId', e.target.value)} className={`${cls('districtId')} font-semibold`}>
-              {(districts || []).map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
+              {(asList(districts)).map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
             </select>
             <Err k="districtId" />
           </div>

@@ -10,6 +10,7 @@ import { PasswordInput } from '../ui/Field.jsx';
 import {
   nameError, phoneError, pincodeError, passwordError, requiredError, lengthError, collect, serverFieldErrors,
 } from '../../lib/validators.js';
+import { asList } from '../../lib/list.js';
 
 /**
  * Super Admin direct onboarding. Layout follows the prototype's
@@ -199,7 +200,7 @@ export function AddClinicModal({ open, onClose, onDone }) {
             <div>
               <label className={LABEL}>District *</label>
               <select value={form.districtId} onChange={set('districtId')} className={`${INPUT} font-medium`}>
-                {(districts || []).map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
+                {(asList(districts)).map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
               </select>
             </div>
           </div>
