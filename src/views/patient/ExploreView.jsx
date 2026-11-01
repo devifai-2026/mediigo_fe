@@ -27,6 +27,9 @@ const ALL_TILE = { label: 'All Clinics', value: '', img: '/categories/AllClinics
 
 // How many specialty tiles show before "more". Two rows on the widest grid.
 const TILE_LIMIT = 8;
+// On a phone the grid opens with just these, then "Explore all" — nine
+// photo tiles pushed the clinic list a full screen down.
+const MOBILE_FEATURED = [/general\s*medicine/i, /\bent\b|ear.*nose|throat/i, /dermat/i];
 
 export default function ExploreView() {
   useSeo({
@@ -101,6 +104,7 @@ export default function ExploreView() {
   // would be worse than showing none.
   const [tiles, setTiles] = useState([]);
   const [showAllTiles, setShowAllTiles] = useState(false);
+  const [mobileAllTiles, setMobileAllTiles] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -360,8 +364,21 @@ export default function ExploreView() {
 
   // All Clinics always leads, then the admin's order.
   const allTiles = [ALL_TILE, ...tiles];
-  const visibleTiles = showAllTiles ? allTiles : allTiles.slice(0, TILE_LIMIT + 1);
   const hiddenTileCount = Math.max(0, allTiles.length - (TILE_LIMIT + 1));
+  // Which tiles show at each size. Desktop keeps its "N more" toggle; a
+  // phone shows All + the featured few (and whatever is selected) until
+  // "Explore all" is tapped.
+  const isFeatured = (c) => !c.value || c.value === specialty
+    || MOBILE_FEATURED.some((re) => re.test(c.value) || re.test(String(c.label).replace(/\s+/g, ' ')));
+  const tileClass = (c, i) => {
+    const onMobile = mobileAllTiles || isFeatured(c);
+    const onDesktop = showAllTiles || i <= TILE_LIMIT;
+    if (onMobile && onDesktop) return 'flex';
+    if (onMobile) return 'flex sm:hidden';
+    if (onDesktop) return 'hidden sm:flex';
+    return 'hidden';
+  };
+  const mobileHiddenCount = allTiles.filter((c) => !isFeatured(c)).length;
 
   // The city with the most clinics — where an empty result is most likely to
   // find something, and a far better offer than "widen your radius".
@@ -664,14 +681,15 @@ export default function ExploreView() {
       <section>
         <h3 className="text-lg sm:text-xl font-semibold text-slate-900">Browse by Specialities</h3>
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {visibleTiles.map((c) => (
+          {allTiles.map((c, i) => (
             <button
               key={c.value || 'all'}
               type="button"
               onClick={() => pickSpecialty(c.value)}
               aria-pressed={specialty === c.value}
               className={clsx(
-                'flex items-center gap-3 p-2.5 min-h-[76px] rounded-lg border bg-white text-left transition hover:shadow-sm',
+                tileClass(c, i),
+                'items-center gap-3 p-2.5 min-h-[76px] rounded-lg border bg-white text-left transition hover:shadow-sm',
                 specialty === c.value ? 'border-mg-teal ring-1 ring-mg-teal' : 'border-slate-100',
               )}
             >
@@ -690,11 +708,24 @@ export default function ExploreView() {
 
           {/* A real tile rather than bare text: as the odd one out it read like
               a broken card. It says how many it hides, and toggles back. */}
+          {/* Phone only: reveal every specialty, or fold back to the few. */}
+          {mobileHiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setMobileAllTiles((v) => !v)}
+              aria-expanded={mobileAllTiles}
+              className="sm:hidden col-span-2 h-11 rounded-lg border border-mg-teal/40 bg-teal-50/60 text-sm font-semibold text-mg-tealDark inline-flex items-center justify-center gap-2 active:bg-teal-50"
+            >
+              {mobileAllTiles ? 'Show fewer' : `Explore all specialities (${mobileHiddenCount} more)`}
+              <Icon name="chevronDown" className={clsx('w-4 h-4 transition', mobileAllTiles && 'rotate-180')} />
+            </button>
+          )}
+
           {hiddenTileCount > 0 && (
             <button
               type="button"
               onClick={() => setShowAllTiles((v) => !v)}
-              className="flex items-center gap-3 p-2.5 min-h-[76px] rounded-lg border border-dashed border-slate-200 bg-white text-left transition hover:border-mg-teal hover:shadow-sm"
+              className="hidden sm:flex items-center gap-3 p-2.5 min-h-[76px] rounded-lg border border-dashed border-slate-200 bg-white text-left transition hover:border-mg-teal hover:shadow-sm"
             >
               <span className="w-14 h-14 rounded-md shrink-0 bg-slate-50 text-slate-400 grid place-items-center">
                 <Icon name={showAllTiles ? 'chevronDown' : 'plus'} className={clsx('w-5 h-5', showAllTiles && 'rotate-180')} />
