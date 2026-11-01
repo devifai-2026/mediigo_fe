@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api, unwrap } from '../../lib/api.js';
 import { useGeolocation } from '../../hooks/useGeolocation.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -9,7 +9,7 @@ import { ClinicSheet } from '../../components/patient/ClinicSheet.jsx';
 import { groupByClinic } from '../../lib/clinics.js';
 import { BookingSheet } from '../../components/patient/BookingSheet.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
-import { EmptyState } from '../../components/ui/EmptyState.jsx';
+import { Button } from '../../components/ui/Button.jsx';
 import { SkeletonCard } from '../../components/ui/Skeleton.jsx';
 import { SPECIALTIES } from '../../lib/constants.js';
 import { initialsOf } from '../../lib/format.js';
@@ -772,22 +772,13 @@ export default function ExploreView() {
               ))}
             </div>
           ) : (
-            <EmptyState
-              icon="search"
-              title="No clinics found nearby"
-              // Widening the radius is useless advice when the whole network is
-              // in another state, so when we know a city that HAS clinics, offer
-              // to go there instead of suggesting a filter change that cannot help.
-              hint={biggestCity
-                ? `The nearest clinics are in ${biggestCity.city}. Browse there, or search by a doctor's name.`
-                : 'Try a wider radius, clear the specialty filter, or search by a doctor\'s name.'}
-              action={biggestCity ? `Browse ${biggestCity.city}` : 'Reset filters'}
-              onAction={() => {
-                setSpecialty('');
-                setSearch('');
-                if (biggestCity) useCity(biggestCity);
-                else setRadius('any');
-              }}
+            <ComingSoon
+              filtered={Boolean(specialty || search.trim())}
+              what={[search.trim() && `"${search.trim()}"`, specialty].filter(Boolean).join(' in ')}
+              nearestCity={biggestCity?.city ?? null}
+              narrowed={radius !== 'any'}
+              onBrowseCity={() => { setSpecialty(''); setSearch(''); if (biggestCity) useCity(biggestCity); }}
+              onShowAll={() => { setSpecialty(''); setSearch(''); setRadius('any'); }}
             />
           )}
         </div>
@@ -803,6 +794,53 @@ export default function ExploreView() {
         />
       )}
       <BookingSheet doctor={booking} onClose={() => setBooking(null)} />
+    </div>
+  );
+}
+
+/**
+ * What a patient sees when nothing is near them. Never a bare "no clinics
+ * found": either their filters are too narrow (say so, offer to clear
+ * them), or Mediigo simply has not reached their area yet — which is news
+ * about us, not a failure of theirs, and comes with somewhere to go.
+ */
+function ComingSoon({ filtered, what, nearestCity, narrowed, onBrowseCity, onShowAll }) {
+  if (filtered) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center">
+        <span className="mx-auto w-12 h-12 rounded-full bg-teal-50 grid place-items-center">
+          <Icon name="search" className="w-5 h-5 text-mg-teal" />
+        </span>
+        <h3 className="mt-4 text-base font-semibold text-slate-900">No match for {what || 'that'} nearby — yet</h3>
+        <p className="mt-1.5 text-sm text-slate-500 max-w-md mx-auto">
+          We're adding doctors every week. Try a different specialty or name, or see every clinic around you.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Button onClick={onShowAll}>Show all clinics</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 via-white to-blue-50 px-6 py-10 text-center">
+      <span className="mx-auto w-14 h-14 rounded-full bg-white shadow-sm grid place-items-center">
+        <Icon name="location" className="w-6 h-6 text-mg-teal" />
+      </span>
+      <p className="mt-4 text-[11px] font-semibold uppercase tracking-wider text-mg-teal">Coming soon</p>
+      <h3 className="mt-1 text-lg sm:text-xl font-semibold text-slate-900">Mediigo is coming to your area soon</h3>
+      <p className="mt-2 text-sm text-slate-600 max-w-lg mx-auto">
+        We're bringing trusted clinics near you onto Mediigo, so you can book a token and skip the waiting room.
+        {nearestCity ? ` Until then, doctors in ${nearestCity} are ready to see you.` : ''}
+      </p>
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        {nearestCity && <Button onClick={onBrowseCity}>Browse clinics in {nearestCity}</Button>}
+        {narrowed && <Button variant="secondary" onClick={onShowAll}>Show all clinics</Button>}
+      </div>
+      <p className="mt-5 text-xs text-slate-500">
+        Know a good clinic nearby?{' '}
+        <Link to="/clinic#enquire" className="font-semibold text-mg-teal hover:underline">Invite them to Mediigo</Link>
+      </p>
     </div>
   );
 }
