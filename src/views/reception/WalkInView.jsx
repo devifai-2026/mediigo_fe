@@ -31,7 +31,7 @@ export default function WalkInView() {
   const [visitType, setVisitType] = useState('fresh');
   // Today's sittings for the chosen doctor, each with the token it would
   // issue now; the desk picks one (the sitting under way by default).
-  const { data: sittingData, refetch: refetchSittings } = useApi(doctorId ? `/api/pos/walkin/sittings?doctorId=${doctorId}` : null, { skip: !doctorId });
+  const { data: sittingData, loading: sittingsLoading, error: sittingsError, refetch: refetchSittings } = useApi(doctorId ? `/api/pos/walkin/sittings?doctorId=${doctorId}` : null, { skip: !doctorId });
   const sittings = asList(sittingData?.sittings);
   const [shift, setShift] = useState(null);
   useEffect(() => {
@@ -206,6 +206,22 @@ export default function WalkInView() {
               <i className="fa-solid fa-user-doctor mr-1.5 text-slate-400" aria-hidden="true" />
               Choose a doctor above to see their sittings (Morning / Afternoon / Evening) and the token number.
             </p>
+          </div>
+        ) : !sittings.length ? (
+          // Never just vanish: say why the token number is missing.
+          <div>
+            <p className="text-[11px] font-medium text-slate-700 mb-2">Sitting &amp; token</p>
+            {sittingsLoading ? (
+              <div className="h-16 rounded-lg bg-slate-100 animate-pulse" />
+            ) : (
+              <p className="text-xs rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 flex items-center justify-between gap-2 text-amber-900">
+                <span>
+                  {sittingsError ? `Couldn't load this doctor's sittings (${sittingsError.message}).` : 'No sittings found for this doctor today.'}
+                  {' '}The token is still issued in order when you collect payment.
+                </span>
+                <button type="button" onClick={() => refetchSittings()} className="shrink-0 font-semibold text-mg-teal hover:underline">Retry</button>
+              </p>
+            )}
           </div>
         ) : !sittings.some((x) => x.shift) ? (
           sittings[0] && (
