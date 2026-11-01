@@ -62,6 +62,13 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
   }, [user]);
 
   const [memberId, setMemberId] = useState('');
+  // This account's open tokens, to say "already booked" before the patient
+  // picks a slot — not as an error after they press Confirm.
+  const [mine, setMine] = useState([]);
+  const loadMine = () => api.get('/api/patients/me/tokens?status=WAITING,IN_CHAMBER,SKIPPED')
+    .then((r) => setMine(asList(unwrap(r))))
+    .catch(() => {});
+  useEffect(() => { if (doctor?.doctorId) loadMine(); }, [doctor?.doctorId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [adding, setAdding] = useState(false);
   const [visitType, setVisitType] = useState('fresh');
   const [busy, setBusy] = useState(false);
@@ -169,9 +176,19 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
 
   const fee = doctor?.fees?.[visitType] ?? ticket?.fee ?? 0;
   const scheduled = days.length > 0;
+
+  // The open token this person already holds with this doctor on the chosen
+  // date. The account holder's own bookings may carry their SELF entry or
+  // none, so both count as "them".
+  const selfId = members.find((m) => m.relation === 'SELF')?._id ?? null;
+  const bookingDate = slot?.date ?? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  const existingFor = (m) => mine.find((t) => String(t.doctorId?._id ?? t.doctorId) === String(doctor?.doctorId)
+    && t.date === bookingDate
+    && String(t.familyMemberId ?? selfId) === String(m?._id ?? selfId));
+  const already = existingFor(member);
   const chosen = grid?.slots.find((x) => x.number === tokenNumber) ?? null;
   const selectedDay = days.find((d) => d.date === slot?.date);
-  const ready = Boolean(memberId || !members.length) && (!scheduled || (slot?.shift && tokenNumber));
+  const ready = Boolean(memberId || !members.length) && (!scheduled || (slot?.shift && tokenNumber)) && !already;
 
   const confirm = async () => {
     setBusy(true);
@@ -188,6 +205,7 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
       }));
       setTicket({ ...created, doctor, fee, expectedAt: chosen?.time ?? null });
       toast.success(`Token ${token(created.tokenNumber)} confirmed`);
+      loadMine();
     } catch (e) {
       toast.error(e.message);
       // Most likely someone took the number first: show the grid as it is now.
@@ -316,6 +334,11 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
                     <span className="block text-[11px] text-slate-500">
                       {RELATION_LABEL[m.relation] ?? 'Family'}{age != null ? ` · ${age}y` : ''}{m.gender ? ` · ${m.gender}` : ''}
                     </span>
+                    {existingFor(m) && (
+                      <span className="mt-1 inline-block px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-semibold">
+                        Booked {token(existingFor(m).tokenNumber)}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -564,8 +587,19 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
               <p className="text-lg font-bold text-mg-navy leading-tight">{inr(fee)}</p>
             </div>
           </div>
+          {already && (
+            <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900 flex items-center justify-between gap-3">
+              <span>
+                <strong>{member?.name ?? 'This patient'}</strong> already has <strong>Token {token(already.tokenNumber)}</strong> with {doctor?.name} on {longDate(already.date)}.
+                {' '}Pick someone else or another day to book again.
+              </span>
+              <button type="button" onClick={() => navigate('/p/bookings')} className="shrink-0 font-semibold text-mg-teal hover:underline">
+                View booking
+              </button>
+            </div>
+          )}
           <Button onClick={confirm} loading={busy} disabled={!ready || adding} className="w-full h-12 !text-base !rounded-xl" size="lg">
-            {adding ? 'Save the new member first' : 'Confirm booking'}
+            {adding ? 'Save the new member first' : already ? `Already booked · ${token(already.tokenNumber)}` : 'Confirm booking'}
           </Button>
         </div>
       </div>
