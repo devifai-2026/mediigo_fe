@@ -7,12 +7,21 @@ import { Logo } from '../ui/Icon.jsx';
 
 // Shown while the session is restored from the refresh cookie. Without this
 // gate the router would flash the login screen at an already-signed-in user.
+// While the server cannot be reached it says so, instead of dropping a
+// signed-in user on the login page.
 export function AuthSplash() {
+  const { bootError, retryRestore } = useAuth();
   return (
     <div className="min-h-screen grid place-items-center bg-slate-50">
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-3 px-6 text-center">
         <Logo className="w-14 h-14 animate-pulse" rounded="rounded-2xl" />
-        <p className="text-xs font-semibold text-slate-400">Loading Mediigo…</p>
+        <p className="text-xs font-semibold text-slate-400">{bootError ? 'Reconnecting to Mediigo…' : 'Loading Mediigo…'}</p>
+        {bootError && (
+          <>
+            <p className="text-[11px] text-slate-500 max-w-xs">We could not reach the server. You are still signed in — we will keep trying.</p>
+            <button type="button" onClick={retryRestore} className="text-xs font-semibold text-mg-blue hover:underline">Retry now</button>
+          </>
+        )}
       </div>
     </div>
   );

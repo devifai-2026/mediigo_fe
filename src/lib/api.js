@@ -73,7 +73,11 @@ api.interceptors.response.use(
       original.headers.Authorization = `Bearer ${fresh}`;
       return api(original);
     } catch (e) {
-      onAuthFailure?.();
+      // Sign out only when the server rejected the refresh cookie. A refresh
+      // that failed in transit (offline, 5xx, the host's busy page) says
+      // nothing about the session, and logging out on it lost a valid one.
+      const refreshStatus = e?.response?.status;
+      if (refreshStatus === 401 || refreshStatus === 403 || e?.message === 'refresh failed') onAuthFailure?.();
       return Promise.reject(normalizeError(error));
     }
   },

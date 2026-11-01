@@ -43,23 +43,47 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Silent restore from the httpOnly refresh cookie.
+  //
+  // Only the server saying "no session" (401/403) makes this a guest. Anything
+  // else — offline, a 5xx or the host's HTML page while the Node app wakes up
+  // or restarts — used to land here too, so a page refresh at the wrong moment
+  // signed people out although their cookie was fine. Those now retry, with
+  // the splash saying so, until the server answers either way.
+  const [bootError, setBootError] = useState(null);
+  const retryBoot = useRef(null);
   useEffect(() => {
     if (bootstrapped.current) return;
     bootstrapped.current = true;
-    (async () => {
+    let attempt = 0;
+    const restore = async () => {
+      clearTimeout(retryBoot.current?.timer);
       try {
         const r = await api.post('/api/auth/refresh');
         const accessToken = unwrap(r)?.accessToken;
-        if (!accessToken) throw new Error('no session');
+        if (!accessToken) throw Object.assign(new Error('no session'), { status: 401 });
         setAccessToken(accessToken);
         const me = unwrap(await api.get('/api/auth/me'));
         setUser(me);
+        setBootError(null);
         setStatus('authed');
-      } catch {
-        setStatus('guest');
+      } catch (err) {
+        if (err?.status === 401 || err?.status === 403) {
+          setAccessToken(null);
+          setBootError(null);
+          setStatus('guest');
+          return;
+        }
+        attempt += 1;
+        setBootError(err?.message || 'Could not reach Mediigo');
+        const delay = Math.min(1000 * 2 ** (attempt - 1), 15000);
+        retryBoot.current = { timer: setTimeout(restore, delay), now: restore };
       }
-    })();
+    };
+    retryBoot.current = { now: restore };
+    restore();
+    return () => clearTimeout(retryBoot.current?.timer);
   }, []);
+  const retryRestore = useCallback(() => retryBoot.current?.now?.(), []);
 
   useEffect(() => {
     setAuthFailureHandler(() => logout({ silent: true }));
@@ -160,6 +184,8 @@ export function AuthProvider({ children }) {
         requestOtp,
         verifyOtp,
         signUp,
+        bootError,
+        retryRestore,
         staffLogin,
         logout,
         refreshUser,
