@@ -12,7 +12,7 @@ const digits = (v, n) => String(v ?? '').replace(/\D/g, '').slice(0, n);
  * doctor defaults to clinic admin (whole-clinic revenue); the rest see their
  * own queue and numbers only.
  */
-export function DoctorCard({ index, doctor, errors = {}, specialties, onChange, onRemove, onMakeAdmin, canRemove, onError }) {
+export function DoctorCard({ index, doctor, errors = {}, specialties, specialtiesFailed, onRetrySpecialties, onChange, onRemove, onMakeAdmin, canRemove, onError }) {
   const set = (k) => (e) => onChange({ ...doctor, [k]: e.target.value });
   const setFee = (k) => (e) => onChange({ ...doctor, fees: { ...(doctor.fees ?? {}), [k]: digits(e.target.value, 5) } });
   // Tolerate a draft or a server reply in an unexpected shape rather than
@@ -72,12 +72,21 @@ export function DoctorCard({ index, doctor, errors = {}, specialties, onChange, 
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_2fr_auto] gap-3 lg:gap-4 items-end">
-        <WField label="Specialty" required error={errors.specialtyId}>
+        <WField
+          label="Specialty"
+          required
+          error={specialtiesFailed ? 'Could not load the specialty list' : errors.specialtyId}
+        >
           {(id) => (
             <select id={id} value={doctor.specialtyId} onChange={set('specialtyId')} className={clsx(W_INPUT, 'cursor-pointer', errors.specialtyId && 'border-rose-300 bg-rose-50/40')}>
               <option value="">Select specialty…</option>
               {specialtyOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
+          )}
+          {specialtiesFailed && (
+            <button type="button" onClick={onRetrySpecialties} className="mt-1 text-[11px] font-semibold text-mg-teal hover:underline">
+              <i className="fa-solid fa-rotate-right mr-1" aria-hidden="true" /> Try again
+            </button>
           )}
         </WField>
         <div>

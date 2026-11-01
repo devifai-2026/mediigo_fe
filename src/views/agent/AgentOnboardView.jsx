@@ -159,8 +159,11 @@ export default function AgentOnboardView() {
   const [params] = useSearchParams();
   const leadId = params.get('lead');
   const { data: leads } = useApi(leadId ? '/api/onboarding/leads' : null, { skip: !leadId });
-  const { data: specialtyList } = useApi('/api/specialties');
+  const { data: specialtyList, loading: specialtiesLoading, refetch: reloadSpecialties } = useApi('/api/specialties');
   const specialties = Array.isArray(specialtyList) ? specialtyList : [];
+  // Anything but a list (an error page from a proxy, a cache's HTML) is a
+  // failed load, not "no specialties" — the agent is told and can retry.
+  const specialtiesFailed = !specialtiesLoading && !Array.isArray(specialtyList);
   const lead = leads?.find((l) => l._id === leadId) ?? null;
 
   const [draft] = useState(() => (leadId ? null : readDraft()));
@@ -573,6 +576,8 @@ export default function AgentOnboardView() {
                 index={i}
                 doctor={d}
                 specialties={specialties}
+                specialtiesFailed={specialtiesFailed}
+                onRetrySpecialties={reloadSpecialties}
                 errors={Object.fromEntries(Object.entries(errors).filter(([k]) => k.startsWith(`doctors.${i}.`)).map(([k, v]) => [k.slice(`doctors.${i}.`.length), v]))}
                 onChange={(next) => updateDoctor(i, next)}
                 onRemove={() => removeDoctor(i)}
