@@ -61,7 +61,9 @@ export default function ExploreView() {
   const [loading, setLoading] = useState(true);
   const [specialty, setSpecialty] = useState('');
   const [search, setSearch] = useState('');
-  const [radius, setRadius] = useState(15);
+  // 'any' by default: a patient sees every clinic nearest-first and narrows
+  // it down, rather than starting from an empty 15 km list.
+  const [radius, setRadius] = useState('any');
   const [booking, setBooking] = useState(null);
   // The clinic sheet: { clinic, choosing } — choosing when opened from
   // "Book Token", so it leads with picking a doctor.
@@ -724,7 +726,7 @@ export default function ExploreView() {
             <Icon name="location" className="w-4 h-4 text-mg-teal" /> Within
           </span>
           {/* "Any" searches the whole network, still nearest first. */}
-          {[5, 10, 15, 25, 50, 'any'].map((r) => (
+          {['any', 5, 10, 15, 25, 50].map((r) => (
             <button
               key={r}
               type="button"
