@@ -10,7 +10,7 @@ import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
-import { token, duration } from '../../lib/format.js';
+import { token, duration, time12 } from '../../lib/format.js';
 import { patientsAhead, progressPct } from '../../lib/queue.js';
 import { TOKEN_STATUS } from '../../lib/constants.js';
 import { useNoIndex } from '../../lib/seo.js';
@@ -47,18 +47,37 @@ export default function TrackerView() {
     const current = snapshot?.currentToken ?? 0;
     const mine = active.tokenNumber;
     const onBreak = snapshot?.session?.isOnBreak;
-    const ahead = patientsAhead(mine, current);
+    // With nobody called yet, #13 has twelve ahead, not thirteen.
+    const ahead = current ? patientsAhead(mine, current) : Math.max(0, mine - 1);
+    const avg = snapshot?.avgConsultMinutes ?? 8;
+
+    // Before the sitting opens, a countdown from "now" is meaningless: the
+    // wait runs from the opening time. Device time stands in for clinic time.
+    const minutesOf = (hhmm) => { const [h, m] = String(hhmm || '').split(':').map(Number); return Number.isFinite(h) ? h * 60 + (m || 0) : null; };
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const startMins = minutesOf(active.startTime);
+    const notStarted = isToday && startMins != null && nowMins < startMins && !current;
+    // No timetable, and the doctor is not taking tokens: nothing to count from.
+    const notOpen = isToday && startMins == null && snapshot?.session && !snapshot.session.isBookingOpen && !current;
+    const expectedMins = notStarted ? startMins + ahead * avg : null;
+    const hhmm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+
     return {
       current,
       mine,
       ahead,
       onBreak,
+      notStarted,
+      notOpen,
+      opensAt: notStarted ? time12(active.startTime) : null,
+      expectedAt: expectedMins != null ? time12(hhmm(expectedMins)) : null,
       breakReason: snapshot?.session?.breakReason,
       // Paused rather than a countdown that would be wrong.
-      wait: onBreak ? null : ahead * (snapshot?.avgConsultMinutes ?? 8),
+      wait: onBreak || notStarted || notOpen ? null : ahead * avg,
       pct: progressPct(current, mine),
     };
-  }, [active, snapshot]);
+  }, [active, snapshot, isToday]);
 
   // Same rule and wording as Bookings: the fee is not refunded, and the
   // patient is told before they confirm, not after.
@@ -143,16 +162,22 @@ export default function TrackerView() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 text-center text-slate-900">
           <div className="bg-white rounded-md py-4">
             <span className="text-[11px] font-medium text-slate-700 block">Current OPD Token</span>
-            <span className="block text-3xl font-bold text-mg-navy mt-1.5">{token(view.current)}</span>
+            {view.notStarted || view.notOpen ? (
+              <span className="block text-xl font-bold text-slate-500 mt-2.5">{view.notStarted ? `Opens ${view.opensAt}` : 'Not open yet'}</span>
+            ) : (
+              <span className="block text-3xl font-bold text-mg-navy mt-1.5">{token(view.current)}</span>
+            )}
           </div>
           <div className="bg-white rounded-md py-4">
             <span className="text-[11px] font-medium text-slate-700 block">Your Token</span>
             <span className="block text-3xl font-bold text-mg-teal mt-1.5">{token(view.mine)}</span>
           </div>
           <div className="col-span-2 sm:col-span-1 bg-white rounded-md py-4">
-            <span className="text-[11px] font-medium text-slate-700 block">Approx. Wait</span>
+            <span className="text-[11px] font-medium text-slate-700 block">{view.notStarted ? 'Your expected time' : 'Approx. Wait'}</span>
             <span className="block text-2xl font-bold text-mg-navy mt-2">
-              {view.wait == null ? 'Paused' : `~ ${duration(view.wait)}`}
+              {view.notStarted ? `~ ${view.expectedAt}`
+                : view.notOpen ? 'From opening'
+                  : view.wait == null ? 'Paused' : `~ ${duration(view.wait)}`}
             </span>
           </div>
         </div>
