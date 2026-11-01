@@ -12,8 +12,10 @@ import { AddDoctorModal } from '../../components/superadmin/AddDoctorModal.jsx';
 import { StatusBadge } from '../../components/ui/StatusBadge.jsx';
 import { FilterPills } from '../../components/ui/FilterPills.jsx';
 import { inr } from '../../lib/format.js';
-import { NETWORK_STATE } from '../../lib/constants.js';
+import { NETWORK_STATE, ROLES } from '../../lib/constants.js';
 import { asList } from '../../lib/list.js';
+import { useLoginAs } from '../../hooks/useLoginAs.js';
+import { ResetPasswordModal } from '../../components/superadmin/ResetPasswordModal.jsx';
 
 export default function ClinicsMasterView() {
   const { data, clinics, refetch } = useConsole();
@@ -27,6 +29,8 @@ export default function ClinicsMasterView() {
   const [query, setQuery] = useState('');
   const [openClinic, setOpenClinic] = useState(null);
   const [openDoctor, setOpenDoctor] = useState(null);
+  const [resetDoctor, setResetDoctor] = useState(null);
+  const loginAs = useLoginAs();
   const [busy, setBusy] = useState(null);
   // Which clinic we are adding a doctor to, or null.
   const [addingTo, setAddingTo] = useState(null);
@@ -267,6 +271,20 @@ export default function ClinicsMasterView() {
                           className="p-1.5 text-slate-400 hover:text-mg-blue hover:bg-blue-50 rounded-lg">
                           <i className="fa-solid fa-id-card text-xs" />
                         </button>
+                        {d.userId && (
+                          <>
+                            <button type="button" title="Login as this doctor"
+                              onClick={() => loginAs({ userId: d.userId, name: d.doctorName, role: ROLES.DOCTOR })}
+                              className="p-1.5 text-slate-400 hover:text-mg-teal hover:bg-teal-50 rounded-lg">
+                              <i className="fa-solid fa-user-secret text-xs" />
+                            </button>
+                            <button type="button" title="Reset password"
+                              onClick={() => setResetDoctor({ id: d.userId, name: d.doctorName })}
+                              className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg">
+                              <i className="fa-solid fa-key text-xs" />
+                            </button>
+                          </>
+                        )}
                         <button type="button" title="Deboard doctor" onClick={() => deboardDoctor(d)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
                           <i className="fa-solid fa-trash text-xs" />
@@ -303,6 +321,7 @@ export default function ClinicsMasterView() {
         onClose={() => setOpenDoctor(null)}
         onChanged={refetch}
       />
+      {resetDoctor && <ResetPasswordModal user={resetDoctor} onClose={() => setResetDoctor(null)} />}
     </section>
   );
 }
