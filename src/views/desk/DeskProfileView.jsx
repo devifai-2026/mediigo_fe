@@ -92,8 +92,10 @@ function DoctorSettings({ doctorId }) {
   const [busy, setBusy] = useState(null);
   const [photoBusy, setPhotoBusy] = useState(false);
 
+  // Fill the form once the doctor has loaded. (This also waited for
+  // `details`, which only this effect sets — so the profile never appeared.)
   useEffect(() => {
-    if (!doctor || !details) return;
+    if (!doctor) return;
     setFees(doctor.fees);
     setDetails({ ...toProfileForm(doctor), name: doctor.name || '' });
     setSpecialtyIds((asList(doctor.specialtyIds)).map(String));
