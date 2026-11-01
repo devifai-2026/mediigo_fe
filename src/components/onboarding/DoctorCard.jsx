@@ -12,7 +12,7 @@ const digits = (v, n) => String(v ?? '').replace(/\D/g, '').slice(0, n);
  * doctor defaults to clinic admin (whole-clinic revenue); the rest see their
  * own queue and numbers only.
  */
-export function DoctorCard({ index, doctor, errors = {}, specialties, specialtiesFailed, onRetrySpecialties, onChange, onRemove, onMakeAdmin, canRemove, onError }) {
+export function DoctorCard({ index, doctor, errors = {}, specialties, specialtiesFailed, onRetrySpecialties, askPassword = false, onChange, onRemove, onMakeAdmin, canRemove, onError }) {
   const set = (k) => (e) => onChange({ ...doctor, [k]: e.target.value });
   const setFee = (k) => (e) => onChange({ ...doctor, fees: { ...(doctor.fees ?? {}), [k]: digits(e.target.value, 5) } });
   // Tolerate a draft or a server reply in an unexpected shape rather than
@@ -69,6 +69,20 @@ export function DoctorCard({ index, doctor, errors = {}, specialties, specialtie
         <WInput label="Qualifications" value={doctor.qualifications} onChange={set('qualifications')} placeholder="MBBS, MD (Cardiology)" hint="Comma separated" />
         <WInput label="Designation" value={doctor.designation ?? ''} onChange={set('designation')} placeholder="Chief Cardiologist" />
         <WInput label="Experience (years)" inputMode="numeric" value={doctor.experienceYears} onChange={(e) => onChange({ ...doctor, experienceYears: digits(e.target.value, 2) })} placeholder="14" />
+        {askPassword && (
+          <WInput
+            label="Login password"
+            required
+            type="password"
+            autoComplete="new-password"
+            value={doctor.password ?? ''}
+            onChange={set('password')}
+            placeholder="At least 8 characters"
+            hint="This doctor's own sign-in. Not saved on this device."
+            error={errors.password}
+            inputClassName="font-mono"
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_2fr_auto] gap-3 lg:gap-4 items-end">

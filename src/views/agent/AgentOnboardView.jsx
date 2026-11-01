@@ -30,6 +30,8 @@ const blankDoctor = (council = '', admin = false) => ({
   qualifications: '', designation: '', specialtyId: '', experienceYears: '',
   fees: { fresh: '500', followup: '250', emergency: '900' },
   photo: null, isClinicAdmin: admin,
+  // The doctor's own sign-in password; never saved in the device draft.
+  password: '',
 });
 
 const BLANK = {
@@ -140,9 +142,11 @@ const validate = (step, f) => {
       if (d.registrationCouncil.trim().length < 2) e[k('registrationCouncil')] = 'Required';
       if (!d.specialtyId) e[k('specialtyId')] = 'Pick a specialty';
       ['fresh', 'followup', 'emergency'].forEach((fee) => { if (d.fees[fee] === '') e[k(`fees.${fee}`)] = 'Required'; });
+      // Each doctor signs in with their own password, separate from the clinic's.
+      if (f.login.method === 'PASSWORD' && (d.password || '').length < 8) e[k('password')] = 'Set a password of at least 8 characters';
     });
     if (!f.doctors.length) e.doctors = 'Add at least one doctor';
-    if (f.login.method === 'PASSWORD' && f.login.password.length < 8) e['login.password'] = 'Set a password of at least 8 characters';
+    if (f.login.method === 'PASSWORD' && f.login.password.length < 8) e['login.password'] = 'Set the clinic password — at least 8 characters';
   }
   return e;
 };
@@ -206,7 +210,7 @@ export default function AgentOnboardView() {
   useEffect(() => {
     if (submitted) return;
     // The password stays out of the draft: this device may be shared.
-    const kept = { ...form, login: { ...form.login, password: '' } };
+    const kept = { ...form, login: { ...form.login, password: '' }, doctors: form.doctors.map((d) => ({ ...d, password: '' })) };
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ form: kept, step, reached, at: Date.now() })); } catch { /* private mode */ }
   }, [form, step, reached, submitted]);
 
@@ -273,7 +277,12 @@ export default function AgentOnboardView() {
         ...(lead ? { leadId: lead._id } : {}),
         credentials: form.login.method === 'OTP'
           ? { method: 'OTP' }
-          : { method: 'PASSWORD', password: form.login.password },
+          // The clinic (front-desk) password, plus each doctor's own by phone.
+          : {
+            method: 'PASSWORD',
+            password: form.login.password,
+            perLogin: form.doctors.map((d) => ({ phone: d.phone, password: d.password })),
+          },
         payload: {
           name: form.name.trim(),
           code: form.code.trim().toUpperCase(),
@@ -577,6 +586,7 @@ export default function AgentOnboardView() {
                 doctor={d}
                 specialties={specialties}
                 specialtiesFailed={specialtiesFailed}
+                askPassword={form.login.method === 'PASSWORD'}
                 onRetrySpecialties={reloadSpecialties}
                 errors={Object.fromEntries(Object.entries(errors).filter(([k]) => k.startsWith(`doctors.${i}.`)).map(([k, v]) => [k.slice(`doctors.${i}.`.length), v]))}
                 onChange={(next) => updateDoctor(i, next)}
@@ -628,7 +638,7 @@ export default function AgentOnboardView() {
 function LoginMethodSection({ login, error, onChange }) {
   const [shown, setShown] = useState(false);
   const options = [
-    ['PASSWORD', 'fa-key', 'Password', 'You set one password now for every login above. Each person can change it after signing in.'],
+    ['PASSWORD', 'fa-key', 'Password', 'One password for the clinic’s front desk, and each doctor sets their own on their card above. Anyone can change theirs after signing in.'],
     ['OTP', 'fa-brands fa-whatsapp', 'WhatsApp OTP', 'No password — each login signs in with a code sent to its mobile. Needs WhatsApp messaging to be live.'],
   ];
   return (
@@ -657,7 +667,7 @@ function LoginMethodSection({ login, error, onChange }) {
         ))}
       </div>
       {login.method === 'PASSWORD' && (
-        <WField label="Password for every login" required error={error} hint="At least 8 characters. Not saved on this device." className="sm:max-w-sm">
+        <WField label="Clinic (front-desk) password" required error={error} hint="For the front-desk login. At least 8 characters. Not saved on this device." className="sm:max-w-sm">
           {(id) => (
             <div className="relative">
               <input
