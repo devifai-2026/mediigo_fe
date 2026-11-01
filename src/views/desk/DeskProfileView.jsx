@@ -72,7 +72,7 @@ export default function DeskProfileView() {
         </>
       )}
       {doctorId
-        ? <DoctorSettings key={doctorId} doctorId={doctorId} />
+        ? <DoctorSettings key={doctorId} doctorId={doctorId} readOnly={role === ROLES.RECEPTIONIST} />
         : doctors && <DeskCard><EmptyNote icon="fa-user-doctor" title="No doctors at this clinic yet" /></DeskCard>}
       {/* The doctor's own papers: view, and replace an expired or blurry one. */}
       {isDoctor && doctorId && (
@@ -86,7 +86,21 @@ export default function DeskProfileView() {
   );
 }
 
-function DoctorSettings({ doctorId }) {
+// Read-only wrapper: a disabled fieldset turns off every input and button
+// inside, and pointer-events stops custom pickers built from plain elements.
+function ReadOnly({ on, children }) {
+  return on
+    ? <fieldset disabled className="contents [&_*]:!cursor-default"><div className="pointer-events-none">{children}</div></fieldset>
+    : children;
+}
+
+/**
+ * One doctor's settings. The front desk sees everything here but changes
+ * only the day-to-day controls — bookings open or closed, and days off. The
+ * profile, photo, fees and weekly timings are the doctor's to edit (the API
+ * enforces this too).
+ */
+function DoctorSettings({ doctorId, readOnly = false }) {
   const toast = useToast();
   const confirm = useConfirm();
   const { data: doctor, refetch } = useApi(`/api/doctors/${doctorId}`);
@@ -222,6 +236,13 @@ function DoctorSettings({ doctorId }) {
       {/* Set up in this order: who the doctor is, when they sit, then how the
           day is going. */}
       <StepCard step={1} icon="fa-user-pen" title="Profile Details" subtitle="Shown to patients and read out in announcements">
+        {readOnly && (
+          <p className="text-xs text-slate-600 bg-mg-surface border border-slate-200 rounded-lg px-3 py-2">
+            <i className="fa-solid fa-lock mr-1.5 text-slate-400" aria-hidden="true" />
+            View only — the doctor updates their own profile, photo, fees and timings.
+          </p>
+        )}
+        <ReadOnly on={readOnly}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="space-y-4">
             <PhotoField
@@ -254,9 +275,12 @@ function DoctorSettings({ doctorId }) {
             <DoctorPublicProfileFields form={details} set={setDetail} />
           </div>
         </details>
-        <Button onClick={saveDetails} loading={busy === 'details'} disabled={details.name.trim().length < 2} className="w-full sm:w-auto">
-          <i className="fa-solid fa-check" aria-hidden="true" /> Save profile
-        </Button>
+        </ReadOnly>
+        {!readOnly && (
+          <Button onClick={saveDetails} loading={busy === 'details'} disabled={details.name.trim().length < 2} className="w-full sm:w-auto">
+            <i className="fa-solid fa-check" aria-hidden="true" /> Save profile
+          </Button>
+        )}
       </StepCard>
 
       <StepCard
@@ -279,7 +303,9 @@ function DoctorSettings({ doctorId }) {
         )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="rounded-lg border border-slate-200 p-4">
-            <WeeklyScheduleEditor doctorId={doctorId} schedule={doctor.schedule} onSaved={refetch} />
+            <ReadOnly on={readOnly}>
+              <WeeklyScheduleEditor doctorId={doctorId} schedule={doctor.schedule} onSaved={refetch} />
+            </ReadOnly>
           </div>
           <div className="rounded-lg border border-slate-200 p-4">
             <AvailabilityManager key={JSON.stringify(asList(doctor.schedule))} doctorId={doctorId} />
@@ -303,6 +329,7 @@ function DoctorSettings({ doctorId }) {
         </div>
         <div className="pt-4 border-t border-slate-100 space-y-3">
           <SectionHead icon="fa-indian-rupee-sign" title="OPD Consultation Fees" subtitle="Applied at the front desk when a patient registers" />
+          <ReadOnly on={readOnly}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[['fresh', 'Fresh consultation'], ['followup', 'Follow-up'], ['emergency', 'Emergency / urgent']].map(([k, label]) => (
               <div key={k} className="p-3 rounded-lg bg-mg-surface space-y-1.5">
@@ -311,9 +338,12 @@ function DoctorSettings({ doctorId }) {
               </div>
             ))}
           </div>
-          <Button onClick={saveFees} loading={busy === 'fees'} className="w-full sm:w-auto">
-            <i className="fa-solid fa-check" aria-hidden="true" /> Save fee changes
-          </Button>
+          </ReadOnly>
+          {!readOnly && (
+            <Button onClick={saveFees} loading={busy === 'fees'} className="w-full sm:w-auto">
+              <i className="fa-solid fa-check" aria-hidden="true" /> Save fee changes
+            </Button>
+          )}
         </div>
       </StepCard>
 
