@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useConfirm } from '../../context/ConfirmContext.jsx';
 import { useApi } from '../../hooks/useApi.js';
-import { api } from '../../lib/api.js';
+import { api, unwrap } from '../../lib/api.js';
 import { ROLES } from '../../lib/constants.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { Avatar, DeskCard, EmptyNote, LoadError, PageHeader, Pill } from '../../components/desk/ui.jsx';
@@ -92,6 +92,32 @@ export default function RosterView() {
       refetch();
     } catch (e) {
       toast.error(e?.response?.data?.error?.message || e.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  /** Keep today's sitting open longer, or undo it. */
+  const extend = async (d, s, minutes) => {
+    setBusyId(`${d.doctorId}:${s.shift}`);
+    try {
+      const out = unwrap(await api.post(`/api/doctors/${d.doctorId}/extend`, { shift: s.shift, minutes }));
+      toast.success(`${SHIFT_LABEL[s.shift] ?? 'Sitting'} now runs till ${t12(out.endTime)}`);
+      refetch();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+  const undoExtend = async (d, s) => {
+    setBusyId(`${d.doctorId}:${s.shift}`);
+    try {
+      await api.post(`/api/doctors/${d.doctorId}/extend/clear`, { shift: s.shift });
+      toast.success(`${SHIFT_LABEL[s.shift] ?? 'Sitting'} is back to its usual time`);
+      refetch();
+    } catch (e) {
+      toast.error(e.message);
     } finally {
       setBusyId(null);
     }
@@ -206,6 +232,37 @@ export default function RosterView() {
                               {phase === 'live' ? 'In progress' : phase === 'upcoming' ? 'Upcoming' : 'Ended'}
                             </span>
                           </div>
+                          {/* Running late: keep today's sitting open for bookings
+                              a little longer. Today only; the weekly timetable
+                              is unchanged. */}
+                          {isToday && canToggle && s.shift && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white">
+                              <span className="text-[11px] text-slate-500 mr-1">
+                                {s.extended ? <>Extended to <strong className="text-slate-700">{t12(s.endTime)}</strong></> : 'Need more time?'}
+                              </span>
+                              {[[15, '+15 min'], [30, '+30 min'], [60, '+1 hr']].map(([m, label]) => (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  disabled={busyId === `${d.doctorId}:${s.shift}`}
+                                  onClick={() => extend(d, s, m)}
+                                  className="h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-semibold text-mg-tealDark hover:border-mg-teal disabled:opacity-50"
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                              {s.extended && (
+                                <button
+                                  type="button"
+                                  disabled={busyId === `${d.doctorId}:${s.shift}`}
+                                  onClick={() => undoExtend(d, s)}
+                                  className="h-7 px-2 text-[11px] font-semibold text-slate-500 hover:text-rose-600 disabled:opacity-50"
+                                >
+                                  Undo
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
