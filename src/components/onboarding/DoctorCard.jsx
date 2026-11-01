@@ -3,6 +3,13 @@ import clsx from 'clsx';
 import { api, unwrap } from '../../lib/api.js';
 import { initialsOf } from '../../lib/format.js';
 import { Badge, W_INPUT, WField, WInput, WSection } from './WizardUi.jsx';
+import { openPrivateDocument } from '../../lib/documents.js';
+
+const DOCS = [
+  ['AADHAAR', 'Aadhaar card', 'fa-id-card'],
+  ['PAN', 'PAN card', 'fa-address-card'],
+  ['REG_CERT', 'Registration certificate', 'fa-file-medical'],
+];
 
 const digits = (v, n) => String(v ?? '').replace(/\D/g, '').slice(0, n);
 
@@ -140,6 +147,74 @@ export function DoctorCard({ index, doctor, errors = {}, specialties, specialtie
           <input ref={photoInput} type="file" accept="image/jpeg,image/png" className="hidden" onChange={(e) => { uploadPhoto(e.target.files?.[0]); e.target.value = ''; }} />
         </div>
       </div>
+
+      {/* Identity and registration papers: all three, before review. Stored
+          privately — the card only ever holds a storage key. */}
+      <div>
+        <p className="text-xs font-medium text-slate-700 mb-1.5">Verification documents <span className="text-rose-500">*</span></p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {DOCS.map(([type, label, icon]) => (
+            <DocTile
+              key={type}
+              label={label}
+              icon={icon}
+              objectPath={doctor.documents?.[type] ?? null}
+              error={errors[`documents.${type}`]}
+              onUploaded={(objectPath) => onChange({ ...doctor, documents: { ...(doctor.documents ?? {}), [type]: objectPath } })}
+              onError={onError}
+              type={type}
+            />
+          ))}
+        </div>
+      </div>
     </WSection>
+  );
+}
+
+/** One required document: upload a photo, then view or replace it. */
+function DocTile({ type, label, icon, objectPath, error, onUploaded, onError }) {
+  const input = useRef(null);
+  const [busy, setBusy] = useState(false);
+
+  const upload = async (file) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const body = new FormData();
+      body.append('photo', file);
+      const out = unwrap(await api.post(`/api/onboarding/documents?type=${type}`, body, { headers: { 'Content-Type': undefined } }));
+      onUploaded(out.objectPath);
+    } catch (e) {
+      onError?.(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={clsx(
+      'rounded-lg border p-2.5 flex items-center gap-2.5 bg-white',
+      error ? 'border-rose-300 bg-rose-50/40' : objectPath ? 'border-emerald-200' : 'border-dashed border-slate-300',
+    )}>
+      <span className={clsx('w-9 h-9 rounded-lg grid place-items-center shrink-0', objectPath ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400')}>
+        <i className={clsx('fa-solid', objectPath ? 'fa-circle-check' : icon)} aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-semibold text-slate-800 truncate">{label}</span>
+        {error
+          ? <span className="block text-[11px] font-medium text-rose-600">{error}</span>
+          : <span className="block text-[11px] text-slate-500">{busy ? 'Uploading…' : objectPath ? 'Uploaded' : 'Photo required'}</span>}
+      </span>
+      {objectPath && (
+        <button type="button" onClick={() => openPrivateDocument(`/api/onboarding/documents/file?path=${encodeURIComponent(objectPath)}`).catch((e) => onError?.(e.message))}
+          className="text-[11px] font-semibold text-mg-blue hover:underline shrink-0">View</button>
+      )}
+      <button type="button" onClick={() => input.current?.click()} disabled={busy}
+        className="text-[11px] font-semibold text-mg-teal hover:underline shrink-0 disabled:opacity-50">
+        {objectPath ? 'Replace' : 'Upload'}
+      </button>
+      <input ref={input} type="file" accept="image/jpeg,image/png" className="hidden"
+        onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
+    </div>
   );
 }

@@ -32,7 +32,15 @@ const blankDoctor = (council = '', admin = false) => ({
   photo: null, isClinicAdmin: admin,
   // The doctor's own sign-in password; never saved in the device draft.
   password: '',
+  // Aadhaar / PAN / registration certificate: { [type]: objectPath }.
+  documents: {},
 });
+
+export const DOC_TYPES = [
+  ['AADHAAR', 'Aadhaar card'],
+  ['PAN', 'PAN card'],
+  ['REG_CERT', 'Registration certificate'],
+];
 
 const BLANK = {
   name: '', code: '', licenseNumber: '', type: 'CLINIC', subscriptionPlan: 'BASIC',
@@ -144,6 +152,8 @@ const validate = (step, f) => {
       ['fresh', 'followup', 'emergency'].forEach((fee) => { if (d.fees[fee] === '') e[k(`fees.${fee}`)] = 'Required'; });
       // Each doctor signs in with their own password, separate from the clinic's.
       if (f.login.method === 'PASSWORD' && (d.password || '').length < 8) e[k('password')] = 'Set a password of at least 8 characters';
+      // All three papers are required before review.
+      DOC_TYPES.forEach(([type, label]) => { if (!d.documents?.[type]) e[k(`documents.${type}`)] = `Upload the ${label}`; });
     });
     if (!f.doctors.length) e.doctors = 'Add at least one doctor';
     if (f.login.method === 'PASSWORD' && f.login.password.length < 8) e['login.password'] = 'Set the clinic password — at least 8 characters';
@@ -182,7 +192,7 @@ export default function AgentOnboardView() {
       reception: { ...BLANK.reception, ...draft.form.reception },
       login: { ...BLANK.login, ...draft.form.login },
       doctors: (Array.isArray(draft.form.doctors) && draft.form.doctors.length ? draft.form.doctors : BLANK.doctors)
-        .map((d) => ({ ...blankDoctor(), ...d, fees: { ...blankDoctor().fees, ...(d?.fees ?? {}) } })),
+        .map((d) => ({ ...blankDoctor(), ...d, fees: { ...blankDoctor().fees, ...(d?.fees ?? {}) }, documents: { ...(d?.documents ?? {}) } })),
     }
     : BLANK));
   const [step, setStep] = useState(() => Math.min(draft?.step ?? 0, 2));
@@ -320,6 +330,8 @@ export default function AgentOnboardView() {
             fees: { fresh: Number(d.fees.fresh), followup: Number(d.fees.followup), emergency: Number(d.fees.emergency) },
             isClinicAdmin: d.isClinicAdmin,
             photo: d.photo,
+            // Storage keys of the private Aadhaar / PAN / certificate photos.
+            documents: Object.entries(d.documents || {}).map(([type, objectPath]) => ({ type, objectPath })),
           })),
         },
       }));

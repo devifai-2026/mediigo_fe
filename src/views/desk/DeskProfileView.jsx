@@ -22,6 +22,7 @@ import { ClinicPharmacyCard } from '../../components/desk/ClinicPharmacyCard.jsx
 import { ChangePasswordCard } from '../../components/desk/ChangePasswordCard.jsx';
 import { AccountSummary } from '../../components/desk/AccountSummary.jsx';
 import { Avatar, DeskCard, DoctorPicker, EmptyNote, PageHeader, Pill, RefreshButton, SectionHead } from '../../components/desk/ui.jsx';
+import { DoctorDocuments } from '../../components/doctor/DoctorDocuments.jsx';
 import { asList } from '../../lib/list.js';
 
 const errMsg = (e) => e?.response?.data?.error?.message || e.message;
@@ -73,6 +74,12 @@ export default function DeskProfileView() {
       {doctorId
         ? <DoctorSettings key={doctorId} doctorId={doctorId} />
         : doctors && <DeskCard><EmptyNote icon="fa-user-doctor" title="No doctors at this clinic yet" /></DeskCard>}
+      {/* The doctor's own papers: view, and replace an expired or blurry one. */}
+      {isDoctor && doctorId && (
+        <DeskCard className="p-4 sm:p-5">
+          <DoctorDocuments doctorId={doctorId} canReplace />
+        </DeskCard>
+      )}
       {isDoctor && <ClinicPharmacyCard />}
       <ChangePasswordCard />
     </div>

@@ -10,6 +10,7 @@ import { Button } from '../ui/Button.jsx';
 import { RegistrationFields } from '../doctor/DoctorProfileFields.jsx';
 import { toProfileForm, toProfilePayload, BLANK_PROFILE } from '../../lib/doctorProfile.js';
 import { ResetPasswordModal } from './ResetPasswordModal.jsx';
+import { DoctorDocuments } from '../doctor/DoctorDocuments.jsx';
 import { useLoginAs } from '../../hooks/useLoginAs.js';
 import { ROLES } from '../../lib/constants.js';
 
@@ -121,6 +122,8 @@ export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
             </Button>
           </div>
         )}
+        <DoctorDocuments doctorId={doctor.id} canReplace />
+
         {resetting && (
           <ResetPasswordModal user={{ id: doctor.userId, name: doctor.doctorName }} onClose={() => setResetting(false)} />
         )}

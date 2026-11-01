@@ -11,6 +11,10 @@ import { Icon } from '../../components/ui/Icon.jsx';
 import { directionsUrl } from '../../lib/maps.js';
 import { CredentialsModal } from '../../components/onboarding/CredentialsModal.jsx';
 import { ApproveDialog } from '../../components/onboarding/ApproveDialog.jsx';
+import { openPrivateDocument } from '../../lib/documents.js';
+import { asList } from '../../lib/list.js';
+
+const DOC_LABEL = { AADHAAR: 'Aadhaar', PAN: 'PAN', REG_CERT: 'Reg. certificate' };
 
 export default function ApprovalsView() {
   const { data, loading, refetch } = useApi('/api/admin/approvals');
@@ -101,6 +105,27 @@ export default function ApprovalsView() {
                       </a>
                     ))}
                   </div>
+                )}
+                {/* Each doctor's papers, to check before publishing. */}
+                {asList(s.payload?.doctors).length > 0 && (
+                  <ul className="pt-2 space-y-1">
+                    {asList(s.payload.doctors).map((d) => (
+                      <li key={d.phone || d.councilRegNo} className="text-[11px] text-slate-600 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span className="font-semibold text-slate-800">{d.name}</span>
+                        <span className="text-slate-400">{d.councilRegNo}</span>
+                        {asList(d.documents).length ? asList(d.documents).map((doc) => (
+                          <button
+                            key={doc.type}
+                            type="button"
+                            onClick={() => openPrivateDocument(`/api/onboarding/documents/file?path=${encodeURIComponent(doc.objectPath)}`).catch((e) => toast.error(e.message))}
+                            className="inline-flex items-center gap-1 font-semibold text-mg-blue hover:underline"
+                          >
+                            <i className="fa-solid fa-file-image" aria-hidden="true" />{DOC_LABEL[doc.type] ?? doc.type}
+                          </button>
+                        )) : <span className="text-amber-700 font-semibold">No documents</span>}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
 
