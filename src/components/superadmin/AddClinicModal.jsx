@@ -5,6 +5,11 @@ import { useApi } from '../../hooks/useApi.js';
 import { AddressAutocomplete } from '../onboarding/AddressAutocomplete.jsx';
 import { MapPicker } from '../onboarding/MapPicker.jsx';
 import { ClinicPhotosField } from '../onboarding/ClinicPhotosField.jsx';
+import { CredentialsModal } from '../onboarding/CredentialsModal.jsx';
+import { PasswordInput } from '../ui/Field.jsx';
+import {
+  nameError, phoneError, pincodeError, passwordError, requiredError, lengthError, collect, serverFieldErrors,
+} from '../../lib/validators.js';
 
 /**
  * Super Admin direct onboarding. Layout follows the prototype's
@@ -17,14 +22,30 @@ const BLANK = {
   line1: '', city: '', pincode: '', state: 'West Bengal',
   lat: null, lng: null, placeId: '', formatted: '', pinSource: '',
   photos: [],
-  feeFresh: 500, feeFollowup: 300, feeEmergency: 800,
+  password: '',
 };
+
+const validate = (f) => collect({
+  doctorName: nameError(f.doctorName, 'Contact name'),
+  clinicName: nameError(f.clinicName, 'Clinic name'),
+  code: requiredError(f.code, 'Clinic code') || (/^[A-Z0-9-]{3,20}$/i.test(f.code.trim()) ? '' : 'Use 3-20 letters, digits or dashes'),
+  regNo: requiredError(f.regNo, 'Licence number') || lengthError(f.regNo, { label: 'Licence number', min: 3, max: 40 }),
+  phone: phoneError(f.phone),
+  districtId: requiredError(f.districtId, 'District'),
+  line1: requiredError(f.line1, 'Street address') || lengthError(f.line1, { label: 'Street address', min: 5, max: 200 }),
+  pincode: pincodeError(f.pincode),
+  city: nameError(f.city, 'City'),
+  password: passwordError(f.password, { required: false }),
+  pin: f.lat == null ? 'Drop a pin on the map for the clinic location' : '',
+});
 
 export function AddClinicModal({ open, onClose, onDone }) {
   const toast = useToast();
   const { data: districts } = useApi(open ? '/api/superadmin/districts' : null, { skip: !open });
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState(BLANK);
+  const [errors, setErrors] = useState({});
+  const [issued, setIssued] = useState(null);
 
   useEffect(() => {
     if (districts?.length && !form.districtId) setForm((f) => ({ ...f, districtId: districts[0]._id }));
@@ -33,17 +54,29 @@ export function AddClinicModal({ open, onClose, onDone }) {
   // Clear on close, or the next clinic inherits this one's details — including
   // its map pin, which would put two clinics at the same coordinates.
   useEffect(() => {
-    if (!open) setForm(BLANK);
+    if (!open) { setForm(BLANK); setErrors({}); }
   }, [open]);
 
+  // The logins outlive the form: show them even after it has closed.
+  if (issued) {
+    return <CredentialsModal result={issued} onClose={() => { setIssued(null); onClose(); }} />;
+  }
   if (!open) return null;
 
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const set = (k) => (e) => {
+    setForm({ ...form, [k]: e.target.value });
+    if (errors[k]) setErrors(({ [k]: _, ...rest }) => rest);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     // Approval needs coordinates — a clinic with none never shows in search.
-    if (form.lat == null) { toast.error('Drop a pin on the map for the clinic location'); return; }
+    const problems = validate(form);
+    setErrors(problems);
+    if (Object.keys(problems).length) {
+      toast.error(Object.values(problems)[0]);
+      return;
+    }
     setBusy(true);
     try {
       // Create the clinic submission, then immediately authorize it — the
@@ -68,12 +101,21 @@ export function AddClinicModal({ open, onClose, onDone }) {
         },
       }));
       await api.post(`/api/onboarding/submissions/${sub._id}/submit`);
-      await api.post(`/api/admin/submissions/${sub._id}/approve`);
+      // The password, when typed, becomes the front desk's; otherwise one is
+      // generated. Either way it comes back once, in `credentials`.
+      const approved = unwrap(await api.post(`/api/admin/submissions/${sub._id}/approve`, form.password ? { password: form.password } : {}));
 
       toast.success(`Clinic "${form.clinicName}" onboarded and activated`);
       onDone?.();
-      onClose();
+      if (approved?.credentials?.length) {
+        setIssued(approved);
+      } else {
+        // The contact number already signs someone in, so no desk login was made.
+        toast.warn(`No front-desk login was created — ${form.phone} already has a Mediigo account.`, { duration: 9000 });
+        onClose();
+      }
     } catch (err) {
+      setErrors(serverFieldErrors(err));
       toast.error(err.message);
     } finally {
       setBusy(false);
@@ -82,6 +124,8 @@ export function AddClinicModal({ open, onClose, onDone }) {
 
   const INPUT = 'w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-mg-blue';
   const LABEL = 'block font-semibold text-slate-700 mb-1';
+  const inputCls = (k) => `${INPUT} ${errors[k] ? 'border-rose-300 bg-rose-50/40' : ''}`;
+  const Err = ({ k }) => (errors[k] ? <p className="mt-1 text-[11px] font-medium text-rose-600">{errors[k]}</p> : null);
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -98,7 +142,7 @@ export function AddClinicModal({ open, onClose, onDone }) {
           </button>
         </div>
 
-        <form onSubmit={submit} className="space-y-4 text-xs">
+        <form onSubmit={submit} className="space-y-4 text-xs" noValidate>
           {/* Searching Places fills the address, PIN and coordinates. A clinic
               that is not listed on Google is normal — every field below stays
               editable, so typing the whole thing by hand still works. */}
@@ -124,27 +168,33 @@ export function AddClinicModal({ open, onClose, onDone }) {
             value={form.lat != null ? { lat: form.lat, lng: form.lng } : null}
             onChange={({ lat, lng }) => setForm((f) => ({ ...f, lat, lng, placeId: '', pinSource: 'MAP_PIN' }))}
           />
+          <Err k="pin" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Front Desk Contact Name *</label>
-              <input required value={form.doctorName} onChange={set('doctorName')} placeholder="Dr. Sameer Roy" className={INPUT} />
+              <input value={form.doctorName} onChange={set('doctorName')} placeholder="Dr. Sameer Roy" className={inputCls('doctorName')} />
+              <Err k="doctorName" />
             </div>
             <div>
               <label className={LABEL}>Clinic Name *</label>
-              <input required value={form.clinicName} onChange={set('clinicName')} placeholder="Apollo Care Center" className={INPUT} />
+              <input value={form.clinicName} onChange={set('clinicName')} placeholder="Apollo Care Center" className={inputCls('clinicName')} />
+              <Err k="clinicName" />
             </div>
             <div>
               <label className={LABEL}>Clinic Code *</label>
-              <input required value={form.code} onChange={set('code')} placeholder="MG-KOL-010" className={`${INPUT} uppercase`} />
+              <input value={form.code} onChange={set('code')} placeholder="MG-KOL-010" className={`${inputCls('code')} uppercase`} />
+              <Err k="code" />
             </div>
             <div>
               <label className={LABEL}>Medical Licence No. *</label>
-              <input required value={form.regNo} onChange={set('regNo')} placeholder="WB-CLIN-100010" className={INPUT} />
+              <input value={form.regNo} onChange={set('regNo')} placeholder="WB-CLIN-100010" className={inputCls('regNo')} />
+              <Err k="regNo" />
             </div>
             <div>
               <label className={LABEL}>Contact Phone *</label>
-              <input required value={form.phone} onChange={set('phone')} placeholder="9876543210" className={INPUT} />
+              <input value={form.phone} onChange={(e) => set('phone')({ target: { value: e.target.value.replace(/[^\d+]/g, '') } })} inputMode="numeric" maxLength={13} placeholder="9876543210" className={inputCls('phone')} />
+              <Err k="phone" />
             </div>
             <div>
               <label className={LABEL}>District *</label>
@@ -157,17 +207,20 @@ export function AddClinicModal({ open, onClose, onDone }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
               <label className={LABEL}>Street Address *</label>
-              <input required value={form.line1} onChange={set('line1')} placeholder="DD-12, Sector 1, Salt Lake" className={INPUT} />
+              <input value={form.line1} onChange={set('line1')} placeholder="DD-12, Sector 1, Salt Lake" className={inputCls('line1')} />
+              <Err k="line1" />
             </div>
             <div>
               <label className={LABEL}>PIN Code *</label>
-              <input required maxLength={6} value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, '') })} placeholder="700064" className={INPUT} />
+              <input maxLength={6} inputMode="numeric" value={form.pincode} onChange={(e) => set('pincode')({ target: { value: e.target.value.replace(/\D/g, '') } })} placeholder="700064" className={inputCls('pincode')} />
+              <Err k="pincode" />
             </div>
           </div>
 
           <div>
             <label className={LABEL}>City *</label>
-            <input required value={form.city} onChange={set('city')} placeholder="Kolkata" className={INPUT} />
+            <input value={form.city} onChange={set('city')} placeholder="Kolkata" className={inputCls('city')} />
+              <Err k="city" />
           </div>
 
           <ClinicPhotosField
@@ -176,23 +229,21 @@ export function AddClinicModal({ open, onClose, onDone }) {
             onError={(m) => toast.error(m)}
           />
 
-          <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-xl space-y-3">
-            <h4 className="font-semibold text-mg-navy text-xs uppercase tracking-wider">Default Consultation Fees</h4>
-            <div className="grid grid-cols-3 gap-3">
-              {[['feeFresh', 'Fresh Consult (₹)'], ['feeFollowup', 'Follow-Up (₹)'], ['feeEmergency', 'Emergency (₹)']].map(([k, label]) => (
-                <div key={k}>
-                  <label className="block font-semibold text-slate-700 mb-1">{label}</label>
-                  <input
-                    type="number" min="0" value={form[k]}
-                    onChange={(e) => setForm({ ...form, [k]: Number(e.target.value) })}
-                    className="w-full bg-white border border-slate-200 rounded-lg p-2 font-semibold text-slate-800"
-                  />
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-mg-navy">
-              A front-desk login is created on approval and its temporary password is shown once.
+          {/* Fees belong to each doctor, set when the doctor is added — the
+              clinic itself has none, so they are not asked for here. */}
+          <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
+            <h4 className="font-semibold text-mg-navy text-xs uppercase tracking-wider">Front-desk login</h4>
+            <p className="text-[11px] text-mg-navy">
+              Signs in with the contact phone above. Set a password, or leave it blank and one is generated — either way it is shown once, to copy or send on WhatsApp.
             </p>
+            <PasswordInput
+              value={form.password}
+              onChange={set('password')}
+              placeholder="Auto-generate"
+              autoComplete="new-password"
+              error={errors.password}
+            />
+            <Err k="password" />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

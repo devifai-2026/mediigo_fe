@@ -4,6 +4,9 @@ import { useState, useCallback } from 'react';
 // the success and error branches and never read position.coords, so "Near Me"
 // did nothing. Here success genuinely uses the device coordinates.
 const FALLBACK = { lat: 22.5726, lng: 88.3639, label: 'Kolkata' };
+// What locate() resolves with when there is no fix, so a caller can tell —
+// reading `status` right after awaiting locate() sees the previous render's.
+const DENIED = { ...FALLBACK, denied: true };
 
 // Remembering the answer matters: browsers only show the permission dialog on a
 // genuine visit, and re-asking someone who already said no is just noise.
@@ -46,7 +49,7 @@ export const useGeolocation = ({ initial = null } = {}) => {
       new Promise((resolve) => {
         if (!navigator.geolocation) {
           setStatus('unsupported');
-          resolve(FALLBACK);
+          resolve(DENIED);
           return;
         }
         setStatus('locating');
@@ -73,7 +76,7 @@ export const useGeolocation = ({ initial = null } = {}) => {
           if (!best) {
             setStatus('denied');
             setCoords(FALLBACK);
-            resolve(FALLBACK);
+            resolve(DENIED);
             return;
           }
           const next = { lat: best.latitude, lng: best.longitude, label: 'Your location' };
@@ -99,7 +102,7 @@ export const useGeolocation = ({ initial = null } = {}) => {
               if (timer) clearTimeout(timer);
               setStatus('denied');
               setCoords(FALLBACK);
-              resolve(FALLBACK);
+              resolve(DENIED);
             }
           },
           { enableHighAccuracy: true, timeout: DEADLINE_MS, maximumAge: 0 },

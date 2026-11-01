@@ -17,14 +17,30 @@ import { useNoIndex } from '../../lib/seo.js';
 
 export default function TrackerView() {
   useNoIndex('Live tracker');
-  const { data: tokens, loading, refetch } = useApi('/api/patients/me/tokens?status=WAITING');
+  // In the chamber counts too: a patient who has just been called must not
+  // see their tracker go blank.
+  const { data: tokens, loading, refetch } = useApi('/api/patients/me/tokens?status=WAITING,IN_CHAMBER');
   const confirm = useConfirm();
   const toast = useToast();
   const [cancelling, setCancelling] = useState(false);
-  const active = tokens?.[0] ?? null;
+  // The visit that is next in time, not the newest booking: the list comes
+  // newest-first, so a booking for next week used to hide today's token.
+  // Device-local date: an Indian patient's "today" is the clinic's.
+  const today = new Date().toLocaleDateString('en-CA');
+  const active = useMemo(() => {
+    // A WAITING token from a past day is stale, not "next".
+    const list = (tokens ?? []).filter((t) => String(t.date) >= today);
+    list.sort((a, b) => String(a.date).localeCompare(String(b.date))
+      || (a.status === TOKEN_STATUS.IN_CHAMBER ? -1 : 0) - (b.status === TOKEN_STATUS.IN_CHAMBER ? -1 : 0)
+      || a.tokenNumber - b.tokenNumber);
+    return list[0] ?? null;
+  }, [tokens, today]);
+  const isToday = active?.date === today;
   const doctorId = active?.doctorId?._id ?? active?.doctorId;
 
-  const { snapshot } = useQueueSnapshot(doctorId);
+  // Only today's queue says anything about a token; a future booking compared
+  // against it showed a made-up position.
+  const { snapshot } = useQueueSnapshot(isToday ? doctorId : null);
 
   const view = useMemo(() => {
     if (!active) return null;
@@ -92,6 +108,11 @@ export default function TrackerView() {
       <div>
         <h2 className="mg-title">Live Tracker</h2>
         <p className="text-xs text-slate-500 mt-1">Your place in the queue, updated as the doctor calls each token</p>
+        {!isToday && (
+          <p className="mt-3 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            Your next visit is on {new Date(`${active.date}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}. Live tracking starts that day.
+          </p>
+        )}
       </div>
 
       <DarkHero>

@@ -9,10 +9,15 @@ export const api = axios.create({
 // Access token lives in memory only — never localStorage, where XSS could read it.
 let accessToken = null;
 let onAuthFailure = null;
+// While a Super Admin is signed in as someone else, a 401 means that borrowed
+// session ran out. Refreshing would quietly swap in the admin's own token under
+// the other user's screens, so it ends the impersonation instead.
+let onImpersonationExpired = null;
 
 export const setAccessToken = (t) => { accessToken = t; };
 export const getAccessToken = () => accessToken;
 export const setAuthFailureHandler = (fn) => { onAuthFailure = fn; };
+export const setImpersonationExpiredHandler = (fn) => { onImpersonationExpired = fn; };
 
 api.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
@@ -30,6 +35,11 @@ api.interceptors.response.use(
     const status = error.response?.status;
 
     if (status !== 401 || original?._retried || original?.url?.includes('/api/auth/')) {
+      return Promise.reject(normalizeError(error));
+    }
+
+    if (onImpersonationExpired) {
+      onImpersonationExpired();
       return Promise.reject(normalizeError(error));
     }
 

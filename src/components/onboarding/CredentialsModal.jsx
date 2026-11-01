@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
 import { phone as fmtPhone } from '../../lib/format.js';
+import { ROLE_LABEL as ALL_ROLE_LABELS } from '../../lib/constants.js';
 
-const ROLE_LABEL = { RECEPTIONIST: 'Front desk', DOCTOR: 'Doctor', PHARMACIST: 'Pharmacy' };
+const ROLE_LABEL = { ...ALL_ROLE_LABELS, RECEPTIONIST: 'Front desk', DOCTOR: 'Doctor', PHARMACIST: 'Pharmacy' };
 
 // How each login signs in: a password only this approver has seen, the one
 // the field agent set with the clinic, or a WhatsApp code.
@@ -31,7 +32,7 @@ const signInText = (c) => {
  * once — the passwords are not stored anywhere readable — so each row can be
  * copied or sent straight to the person on WhatsApp from the approver's phone.
  */
-export function CredentialsModal({ result, onClose }) {
+export function CredentialsModal({ result, onClose, title = 'Logins created' }) {
   const [copied, setCopied] = useState(null);
   const creds = result?.credentials ?? [];
   if (!result || !creds.length) return null;
@@ -43,7 +44,7 @@ export function CredentialsModal({ result, onClose }) {
   };
 
   return (
-    <Modal open onClose={onClose} title="Logins created" subtitle={clinicName} size="lg" closeOnBackdrop={false}>
+    <Modal open onClose={onClose} title={title} subtitle={clinicName} size="lg" closeOnBackdrop={false}>
       <div className="space-y-4">
         {anyTemp ? (
           <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">

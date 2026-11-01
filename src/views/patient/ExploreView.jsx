@@ -52,7 +52,7 @@ export default function ExploreView() {
         label: user.lastKnownLocation.label || 'Your location',
       }
     : null;
-  const { coords, locate, locateOnce, status: geoStatus, accuracy, isFallback } = useGeolocation({ initial: saved });
+  const { coords, locate, locateOnce, setCoords, status: geoStatus, accuracy, isFallback } = useGeolocation({ initial: saved });
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -172,12 +172,14 @@ export default function ExploreView() {
           if (away) {
             // Far more useful than "widen your radius" when the doctor is in
             // another city and no radius would ever reach them.
-            toast.warn(`${away.name} practises at ${away.clinicName}${away.city ? `, ${away.city}` : ''} — not within ${radius} km of you.`, opts);
+            toast.warn(`${away.name} practises at ${away.clinicName}${away.city ? `, ${away.city}` : ''} — not within ${radius} km of you. Choose "Any" to include them.`, opts);
           } else {
             const bits = [];
             if (term) bits.push(`"${term}"`);
             if (specialty) bits.push(specialty);
-            toast.warn(`No doctors match ${bits.join(' in ')} within ${radius} km — try a wider radius or clear the filters.`, opts);
+            toast.warn(radius === 'any'
+              ? `No doctors on Mediigo match ${bits.join(' in ')} yet — try clearing the filters.`
+              : `No doctors match ${bits.join(' in ')} within ${radius} km — try a wider radius or clear the filters.`, opts);
           }
         }
       } else if (found.length) {
@@ -286,7 +288,7 @@ export default function ExploreView() {
     setLocOpen(false);
     setCityName(null);
     const c = await locate();
-    if (geoStatus === 'denied') toast.warn('Location permission denied — pick a city instead', { key: 'explore-location' });
+    if (c.denied) toast.warn('Location permission denied — pick a city instead', { key: 'explore-location' });
     else persist(c);
     load(c);
   };
@@ -294,13 +296,32 @@ export default function ExploreView() {
   /** Search from a city centre — no permission prompt, no dead end. */
   const useCity = (c) => usePlace({ label: c.city, lat: c.lat, lng: c.lng });
 
-  /** Search from any picked place: a city, a locality or a pincode. */
-  const usePlace = (p) => {
+  /**
+   * Search from any picked place: a city, a locality or a pincode. A Google
+   * suggestion carries only a placeId until it is picked; its exact point is
+   * fetched then.
+   *
+   * The point is kept as the current location, not just searched from once:
+   * changing the radius or specialty afterwards searches from the same place
+   * instead of jumping back to the GPS fix or the city centre.
+   */
+  const usePlace = async (p) => {
     setLocOpen(false);
     setCityQuery('');
-    setCityName(p.label);
     locInputRef.current?.blur();
-    load({ lat: p.lat, lng: p.lng, label: p.label });
+    let place = p;
+    if (p.placeId && p.lat == null) {
+      try {
+        place = { ...p, ...unwrap(await api.get(`/api/doctors/places/resolve?placeId=${encodeURIComponent(p.placeId)}`)) };
+      } catch (e) {
+        toast.error(e.message);
+        return;
+      }
+    }
+    const c = { lat: place.lat, lng: place.lng, label: p.label };
+    setCityName(p.label);
+    setCoords(c);
+    load(c);
   };
 
   // Place type-ahead, debounced like the doctor suggestions.
@@ -311,7 +332,9 @@ export default function ExploreView() {
     setPlacesLoading(true);
     const id = setTimeout(async () => {
       try {
-        const res = await api.get(`/api/doctors/places?q=${encodeURIComponent(term)}`);
+        // Biased towards where the patient is, so "Sector 5" means the nearby one.
+        const near = coords?.lat != null ? `&lat=${coords.lat}&lng=${coords.lng}` : '';
+        const res = await api.get(`/api/doctors/places?q=${encodeURIComponent(term)}${near}`);
         if (alive) setPlaces(res.data.data || []);
       } catch {
         if (alive) setPlaces([]);
@@ -700,7 +723,8 @@ export default function ExploreView() {
           <span className="shrink-0 inline-flex items-center gap-1.5 pr-1 text-xs font-semibold text-slate-700">
             <Icon name="location" className="w-4 h-4 text-mg-teal" /> Within
           </span>
-          {[5, 10, 15, 25, 50].map((r) => (
+          {/* "Any" searches the whole network, still nearest first. */}
+          {[5, 10, 15, 25, 50, 'any'].map((r) => (
             <button
               key={r}
               type="button"
@@ -713,7 +737,7 @@ export default function ExploreView() {
                   : 'bg-white border-slate-200 text-slate-700 hover:border-mg-teal hover:text-mg-tealDark',
               )}
             >
-              {r} km
+              {r === 'any' ? 'Any' : `${r} km`}
             </button>
           ))}
           {specialty && (
@@ -760,7 +784,7 @@ export default function ExploreView() {
                 setSpecialty('');
                 setSearch('');
                 if (biggestCity) useCity(biggestCity);
-                else setRadius(25);
+                else setRadius('any');
               }}
             />
           )}

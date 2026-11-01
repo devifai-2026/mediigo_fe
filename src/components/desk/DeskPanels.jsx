@@ -166,9 +166,18 @@ function RosterStatus({ t }) {
 }
 
 /** What can be done with a token in its current state. */
-function RosterActions({ t, onAction, busy, canPrescribe, canCancel, occupiedBy }) {
+function RosterActions({ t, onAction, busy, canPrescribe, canCancel, canCollect, occupiedBy }) {
+  // An app booking arrives unpaid; the desk takes the fee when the patient is
+  // here. Nothing is collected for a visit that will not happen.
+  const collectable = canCollect && t.fee == null
+    && [TOKEN_STATUS.WAITING, TOKEN_STATUS.IN_CHAMBER, TOKEN_STATUS.COMPLETED].includes(t.status);
   return (
     <>
+      {collectable && (
+        <ActionButton tone="teal" disabled={busy} title="Take the consultation fee" onClick={() => onAction('PAY', t)}>
+          <i className="fa-solid fa-indian-rupee-sign" aria-hidden="true" /> Collect
+        </ActionButton>
+      )}
       {t.status === TOKEN_STATUS.WAITING && (
         <>
           {t.followUpStatus === FOLLOWUP_STATUS.PENDING && (
@@ -243,7 +252,7 @@ function RosterActions({ t, onAction, busy, canPrescribe, canCancel, occupiedBy 
  * follow-up slot nobody confirmed) and RX (open the
  * prescription pad for that patient — doctors only).
  */
-export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh, busy, canPrescribe = false, canCancel = false }) {
+export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh, busy, canPrescribe = false, canCancel = false, canCollect = false }) {
   const tokens = s?.tokens ?? [];
   const rows = filter === 'ALL' ? tokens : tokens.filter((t) => t.status === filter);
   // While someone is inside, nobody else can be called in from the list.
@@ -286,7 +295,7 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh,
                   <div><RosterPatient t={t} /></div>
                   <div className="flex items-baseline gap-2"><RosterFee t={t} /></div>
                   <div className="flex flex-wrap items-center gap-1.5 [&>button]:min-h-9">
-                    <RosterActions t={t} onAction={onAction} busy={busy} canPrescribe={canPrescribe} canCancel={canCancel} occupiedBy={occupiedBy} />
+                    <RosterActions t={t} onAction={onAction} busy={busy} canPrescribe={canPrescribe} canCancel={canCancel} canCollect={canCollect} occupiedBy={occupiedBy} />
                   </div>
                 </li>
               );
@@ -322,7 +331,7 @@ export function DeskRoster({ snapshot: s, filter, onFilter, onAction, onRefresh,
                       <td className="py-3.5 px-4"><RosterStatus t={t} /></td>
                       <td className="py-3.5 px-5">
                         <div className="flex items-center justify-end gap-1.5">
-                          <RosterActions t={t} onAction={onAction} busy={busy} canPrescribe={canPrescribe} canCancel={canCancel} occupiedBy={occupiedBy} />
+                          <RosterActions t={t} onAction={onAction} busy={busy} canPrescribe={canPrescribe} canCancel={canCancel} canCollect={canCollect} occupiedBy={occupiedBy} />
                         </div>
                       </td>
                     </tr>

@@ -9,7 +9,7 @@ import { useSocketEvent } from '../../hooks/useSocketEvent.js';
 import { useDeskActions } from '../../hooks/useDeskActions.js';
 import { announce } from '../../lib/audio.js';
 import { EVENTS } from '../../lib/socketEvents.js';
-import { api } from '../../lib/api.js';
+import { api, unwrap } from '../../lib/api.js';
 import { AvailabilityManager } from '../../components/doctor/AvailabilityManager.jsx';
 import { BreakStateManager } from '../../components/doctor/BreakStateManager.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
@@ -18,6 +18,8 @@ import { DeskStats, SkippedPanel, DeskRoster } from '../../components/desk/DeskP
 import { AudioUnlockBanner, DeskCard, DoctorPicker, Pill, RefreshButton } from '../../components/desk/ui.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { CancelTokenModal, CancellationsPanel } from '../../components/desk/Cancellations.jsx';
+import { SplitPaymentModal } from '../../components/payment/SplitPaymentModal.jsx';
+import { token as fmtToken } from '../../lib/format.js';
 
 export default function ReceptionQueueView() {
   const { data: doctors } = useApi('/api/doctors');
@@ -30,6 +32,24 @@ export default function ReceptionQueueView() {
   const { ready: audioReady, unlock } = useAudioUnlock();
   const desk = useDeskActions(doctorId, refetch);
   const [cancelling, setCancelling] = useState(null);
+  // An app-booked token whose fee is being taken at the desk.
+  const [paying, setPaying] = useState(null);
+  const [payBusy, setPayBusy] = useState(false);
+  const payFee = paying ? (doctors?.find((d) => d._id === doctorId)?.fees?.[paying.visitType || 'fresh'] ?? 0) : 0;
+
+  const collectFor = async (payment) => {
+    setPayBusy(true);
+    try {
+      const txn = unwrap(await api.post(`/api/pos/tokens/${paying.tokenId}/pay`, { discount: 0, ...payment }));
+      toast.success(`${fmtToken(paying.tokenNumber)} paid · ${txn.receiptNumber}`);
+      setPaying(null);
+      refetch();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setPayBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!doctorId && doctors?.length) setDoctorId(doctors[0]._id);
@@ -137,7 +157,20 @@ export default function ReceptionQueueView() {
         busy={desk.busy}
         onRefresh={refetch}
         canCancel
-        onAction={(action, t) => (action === 'CANCEL' ? setCancelling(t) : desk.onRowAction(action, t))}
+        canCollect
+        onAction={(action, t) => {
+          if (action === 'CANCEL') return setCancelling(t);
+          if (action === 'PAY') return setPaying(t);
+          return desk.onRowAction(action, t);
+        }}
+      />
+      <SplitPaymentModal
+        open={Boolean(paying)}
+        onClose={() => !payBusy && setPaying(null)}
+        totalFee={payFee}
+        patientName={paying?.name}
+        onConfirm={collectFor}
+        submitting={payBusy}
       />
 
       <CancellationsPanel cancellations={s?.cancellations} />

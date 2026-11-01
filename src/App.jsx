@@ -2,6 +2,9 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { RequireAuth, RequireRole, RedirectHome, PublicOrRoleHome } from './components/guards/Guards.jsx';
 import { PortalShell } from './components/layout/PortalShell.jsx';
+import { ImpersonationBanner } from './components/guards/ImpersonationBanner.jsx';
+import { ForcePasswordChange } from './components/guards/ForcePasswordChange.jsx';
+import { SubmissionStatusToasts } from './components/agent/SubmissionStatusToasts.jsx';
 import { ROLES } from './lib/constants.js';
 
 import LoginView from './views/public/LoginView.jsx';
@@ -146,6 +149,9 @@ export default function App() {
   return (
     <>
     <CookieBanner />
+    <ImpersonationBanner />
+    <ForcePasswordChange />
+    <SubmissionStatusToasts />
     <Routes key={identity}>
       {/* Legal and company pages, each at its own address: /privacy-policy,
           /terms, /cookie-policy, /clinic-terms, /refund-policy,

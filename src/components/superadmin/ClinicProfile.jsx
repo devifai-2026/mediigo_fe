@@ -1,5 +1,10 @@
+import { useState } from 'react';
 import clsx from 'clsx';
 import { Modal } from '../ui/Modal.jsx';
+import { ResetPasswordModal } from './ResetPasswordModal.jsx';
+import { useLoginAs } from '../../hooks/useLoginAs.js';
+import { ROLE_LABEL } from '../../lib/constants.js';
+import { phone as fmtPhone } from '../../lib/format.js';
 import { StatusBadge } from '../ui/StatusBadge.jsx';
 import { ClinicMap } from './ClinicMap.jsx';
 import { inr, shortDate } from '../../lib/format.js';
@@ -12,6 +17,8 @@ const Stat = ({ label, value, tone = 'text-slate-900' }) => (
 );
 
 export function ClinicProfile({ clinic, open, onClose, onOpenDoctor, onAddDoctor }) {
+  const [resetting, setResetting] = useState(null);
+  const loginAs = useLoginAs();
   if (!open || !clinic) return null;
   const a = clinic.address ?? {};
 
@@ -112,7 +119,43 @@ export function ClinicProfile({ clinic, open, onClose, onOpenDoctor, onAddDoctor
             </div>
           )}
         </div>
+
+        {/* Front desk and pharmacy logins. Doctors' own logins are in each doctor's drawer. */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Clinic logins</p>
+          {!clinic.logins?.length ? (
+            <p className="text-[11px] text-slate-400 italic">No front-desk login yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {clinic.logins.map((u) => (
+                <div key={u.id} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-900">
+                      {u.name}
+                      <span className="ml-2 text-[10px] font-semibold uppercase text-slate-500">{ROLE_LABEL[u.role] ?? u.role}</span>
+                      {!u.isActive && <span className="ml-2 text-[10px] font-semibold text-rose-600">DEACTIVATED</span>}
+                    </p>
+                    <p className="text-[11px] text-slate-500">+91 {fmtPhone(u.phone)}</p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button type="button" onClick={() => setResetting(u)}
+                      className="h-8 px-2.5 rounded-lg text-[11px] font-semibold border border-slate-300 bg-white hover:bg-slate-50">
+                      <i className="fa-solid fa-key mr-1" /> Reset password
+                    </button>
+                    {u.isActive && (
+                      <button type="button" onClick={() => loginAs({ userId: u.id, name: u.name, role: u.role })}
+                        className="h-8 px-2.5 rounded-lg text-[11px] font-semibold border border-mg-teal text-mg-tealDark bg-white hover:bg-mg-teal/5">
+                        <i className="fa-solid fa-user-secret mr-1" /> Login as
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+      {resetting && <ResetPasswordModal user={resetting} onClose={() => setResetting(null)} />}
     </Modal>
   );
 }

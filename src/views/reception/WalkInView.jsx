@@ -13,6 +13,7 @@ import { ROLES, VISIT_LABEL } from '../../lib/constants.js';
 import { DeskCard, PageHeader, Pill } from '../../components/desk/ui.jsx';
 import { WalkInTokenCard } from '../../components/desk/WalkInTokenCard.jsx';
 import clsx from 'clsx';
+import { nameError, phoneError, intRangeError, lengthError, moneyError, collect as collectErrors } from '../../lib/validators.js';
 
 const VISIT_HINT = { fresh: 'Standard first visit', followup: 'Returning patient', emergency: 'Priority token' };
 
@@ -23,6 +24,8 @@ export default function WalkInView() {
   const rosterPath = role === ROLES.DOCTOR ? '/d/roster' : '/r/roster';
 
   const [form, setForm] = useState({ name: '', phone: '', age: '', gender: 'M', complaint: '' });
+  const [errors, setErrors] = useState({});
+  const setField = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setErrors(({ [k]: _, ...rest }) => rest); };
   const [doctorId, setDoctorId] = useState('');
   const [visitType, setVisitType] = useState('fresh');
   const [payOpen, setPayOpen] = useState(false);
@@ -59,6 +62,25 @@ export default function WalkInView() {
   }, [doctorId, visitType]);
   const ready = form.name.trim() && doctorId;
 
+  // Checked before the payment sheet opens, so nobody counts out cash for a
+  // registration the server is about to refuse.
+  const openPay = () => {
+    const problems = collectErrors({
+      name: nameError(form.name, 'Patient name'),
+      phone: phoneError(form.phone, { required: false }),
+      age: intRangeError(form.age, { label: 'Age', min: 0, max: 130 }),
+      complaint: lengthError(form.complaint, { label: 'Complaint', max: 200 }),
+      doctorId: doctorId ? '' : 'Pick a doctor',
+      fee: overrideOn ? moneyError(customFee, { label: 'Consultation charge', max: 100000 }) : '',
+    });
+    setErrors(problems);
+    if (Object.keys(problems).length) {
+      toast.error(Object.values(problems)[0]);
+      return;
+    }
+    setPayOpen(true);
+  };
+
   const collect = async (payment) => {
     setSubmitting(true);
     try {
@@ -73,6 +95,9 @@ export default function WalkInView() {
         },
         visitType,
         discount: 0,
+        // The changed charge goes to the server as such; it records it against
+        // the listed fee and checks the payment against this amount.
+        ...(overrideOn && fee !== listedFee ? { overrideFee: fee } : {}),
         ...payment,
       }));
 
@@ -126,24 +151,24 @@ export default function WalkInView() {
 
       <DeskCard className="p-4 sm:p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="Full patient name" required className="sm:col-span-2">
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Rajesh Khanna" />
+          <Field label="Full patient name" required className="sm:col-span-2" error={errors.name}>
+            <Input error={errors.name} value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="e.g. Rajesh Khanna" />
           </Field>
-          <Field label="Mobile number">
-            <Input inputMode="numeric" maxLength={10} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} placeholder="10-digit phone" />
+          <Field label="Mobile number" error={errors.phone}>
+            <Input error={errors.phone} inputMode="numeric" maxLength={10} value={form.phone} onChange={(e) => setField('phone', e.target.value.replace(/\D/g, ''))} placeholder="10-digit phone" />
           </Field>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="Age (years)">
-            <Input inputMode="numeric" maxLength={3} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 42" />
+          <Field label="Age (years)" error={errors.age}>
+            <Input error={errors.age} inputMode="numeric" maxLength={3} value={form.age} onChange={(e) => setField('age', e.target.value.replace(/\D/g, ''))} placeholder="e.g. 42" />
           </Field>
           <Field label="Gender">
             <Select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
               <option value="M">Male</option><option value="F">Female</option><option value="O">Other</option>
             </Select>
           </Field>
-          <Field label="Assign doctor" required>
+          <Field label="Assign doctor" required error={errors.doctorId}>
             <Select value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
               <option value="">Select a doctor…</option>
               {(doctors || []).map((d) => (
@@ -155,8 +180,8 @@ export default function WalkInView() {
           </Field>
         </div>
 
-        <Field label="Disease / symptoms / chief complaint">
-          <Input value={form.complaint} onChange={(e) => setForm({ ...form, complaint: e.target.value })} placeholder="e.g. Viral fever, body ache, joint pain" />
+        <Field label="Disease / symptoms / chief complaint" error={errors.complaint}>
+          <Input error={errors.complaint} maxLength={200} value={form.complaint} onChange={(e) => setField('complaint', e.target.value)} placeholder="e.g. Viral fever, body ache, joint pain" />
         </Field>
 
         <div>
@@ -216,6 +241,7 @@ export default function WalkInView() {
                 Change consultation charge
               </button>
             )}
+            {errors.fee && <p className="text-[11px] font-medium text-rose-600">{errors.fee}</p>}
             {overrideOn && Number(customFee) !== listedFee && (
               <p className="text-[11px] text-amber-600">
                 Listed fee is {inr(listedFee)} — this visit is being charged {inr(fee)}.
@@ -223,7 +249,7 @@ export default function WalkInView() {
             )}
           </div>
 
-          <Button onClick={() => setPayOpen(true)} disabled={!ready} size="lg">
+          <Button onClick={openPay} disabled={!ready} size="lg">
             <i className="fa-solid fa-print" aria-hidden="true" /> Collect payment &amp; issue token
           </Button>
         </div>

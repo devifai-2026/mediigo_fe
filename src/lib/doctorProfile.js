@@ -1,3 +1,6 @@
+import { collect, intRangeError, moneyError, requiredError } from './validators.js';
+
+
 /**
  * A doctor's profile as form state, and back.
  *
@@ -82,3 +85,29 @@ export const toProfilePayload = (f, { includeLocked = false } = {}) => {
   }
   return out;
 };
+
+/**
+ * Field errors for the doctor profile form, the same checks wherever it is
+ * shown. `includeLocked` checks registration too, which only matters where it
+ * can still be edited (onboarding, super admin).
+ */
+export const doctorProfileErrors = (f, { includeLocked = false } = {}) => {
+  const year = new Date().getFullYear();
+  return collect({
+    experienceYears: intRangeError(f.experienceYears, { label: 'Experience', min: 0, max: 70 }),
+    avgConsultMinutes: intRangeError(f.avgConsultMinutes, { label: 'Average consult', min: 1, max: 120 }),
+    followupWindowDays: intRangeError(f.followupWindowDays, { label: 'Follow-up window', min: 0, max: 90 }),
+    ...(includeLocked ? {
+      registrationCouncil: requiredError(f.registrationCouncil, 'Medical council'),
+      councilRegNo: requiredError(f.councilRegNo, 'Registration number'),
+      registrationYear: intRangeError(f.registrationYear, { label: 'Year of registration', min: 1950, max: year }),
+    } : {}),
+  });
+};
+
+/** Fresh / follow-up / emergency fees, each a non-negative rupee amount. */
+export const feeErrors = (f) => collect({
+  feeFresh: moneyError(f.feeFresh, { label: 'Fresh fee', max: 100000 }),
+  feeFollowup: moneyError(f.feeFollowup, { label: 'Follow-up fee', max: 100000 }),
+  feeEmergency: moneyError(f.feeEmergency, { label: 'Emergency fee', max: 100000 }),
+});

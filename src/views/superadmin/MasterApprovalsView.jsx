@@ -6,6 +6,7 @@ import { api } from '../../lib/api.js';
 import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 import { inr } from '../../lib/format.js';
 import { CredentialsModal } from '../../components/onboarding/CredentialsModal.jsx';
+import { ApproveDialog } from '../../components/onboarding/ApproveDialog.jsx';
 
 export default function MasterApprovalsView() {
   const { approvals, refetch } = useConsole();
@@ -13,12 +14,15 @@ export default function MasterApprovalsView() {
   const confirm = useConfirm();
   const [busy, setBusy] = useState(null);
   const [issued, setIssued] = useState(null);
+  const [approving, setApproving] = useState(null);
 
-  const approve = async (c) => {
+  const approve = async ({ trialDays, password }) => {
+    const c = approving;
     setBusy(c.id);
     try {
-      const r = await api.post(`/api/admin/submissions/${c.id}/approve`);
+      const r = await api.post(`/api/admin/submissions/${c.id}/approve`, { trialDays, ...(password ? { password } : {}) });
       toast.success('Clinic approved and published');
+      setApproving(null);
       if (r.data?.data?.credentials?.length) setIssued(r.data.data);
       refetch();
     } catch (e) {
@@ -104,7 +108,7 @@ export default function MasterApprovalsView() {
               <button
                 type="button"
                 disabled={busy === c.id || !c.hasGeocode}
-                onClick={() => approve(c)}
+                onClick={() => setApproving(c)}
                 className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow transition disabled:opacity-50"
               >
                 Approve Clinic
@@ -121,6 +125,12 @@ export default function MasterApprovalsView() {
           </div>
         ))}
       </div>
+      <ApproveDialog
+        submission={approving ? { ...approving, payload: { name: approving.clinicName } } : null}
+        busy={Boolean(busy)}
+        onCancel={() => setApproving(null)}
+        onApprove={approve}
+      />
       <CredentialsModal result={issued} onClose={() => setIssued(null)} />
     </section>
   );

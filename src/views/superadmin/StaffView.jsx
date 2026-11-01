@@ -8,11 +8,15 @@ import { useConfirm } from '../../context/ConfirmContext.jsx';
 import { AdminPageHeader } from '../../components/superadmin/AdminKpi.jsx';
 import { Modal } from '../../components/ui/Modal.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { Field, Input, Select } from '../../components/ui/Field.jsx';
+import { Field, Input, Select, PasswordInput } from '../../components/ui/Field.jsx';
+import { CredentialsModal } from '../../components/onboarding/CredentialsModal.jsx';
+import { nameError, phoneError, emailError, passwordError, collect, serverFieldErrors } from '../../lib/validators.js';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { FilterPills } from '../../components/ui/FilterPills.jsx';
 import { ROLES, ROLE_LABEL } from '../../lib/constants.js';
 import { phone as fmtPhone, shortDate } from '../../lib/format.js';
+import { ResetPasswordModal } from '../../components/superadmin/ResetPasswordModal.jsx';
+import { useLoginAs } from '../../hooks/useLoginAs.js';
 
 const ROLE_CHIP = {
   EXEC_ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -34,12 +38,19 @@ export default function StaffView() {
   const { data: districts } = useApi('/api/superadmin/districts');
   const toast = useToast();
   const confirm = useConfirm();
+  const loginAs = useLoginAs();
 
   const [filter, setFilter] = useState('ALL');
   const [dialog, setDialog] = useState(null); // {mode, user}
   const [form, setForm] = useState({});
   const [busy, setBusy] = useState(false);
   const [transfer, setTransfer] = useState(null); // pending handover after a blocked deactivate
+  const [errors, setErrors] = useState({});
+  const [issued, setIssued] = useState(null); // a new login's credentials, shown once
+  // Only needed to pin a new front desk to its clinic.
+  const { data: clinics } = useApi(dialog?.mode === 'create' && form.role === ROLES.RECEPTIONIST ? '/api/admin/hospitals' : null, {
+    skip: !(dialog?.mode === 'create' && form.role === ROLES.RECEPTIONIST),
+  });
 
   const rows = (staff || []).filter((u) => filter === 'ALL' || u.role === filter);
   // A successor must hold no district of their own, or theirs would be orphaned.
@@ -49,10 +60,11 @@ export default function StaffView() {
 
   const open = (mode, user = null) => {
     setTransfer(null);
+    setErrors({});
     setDialog({ mode, user });
     setForm(
       mode === 'create'
-        ? { name: '', phone: '', role: ROLES.FIELD_AGENT, email: '', districtId: '', password: '' }
+        ? { name: '', phone: '', role: ROLES.FIELD_AGENT, email: '', districtId: '', hospitalId: '', password: '' }
         : { name: user?.name ?? '', phone: user?.phone ?? '', email: user?.email ?? '', districtId: user?.districtId ?? '' },
     );
   };
@@ -72,6 +84,7 @@ export default function StaffView() {
       if (e.details?.requiresTransfer) {
         setTransfer({ load: e.details.load, message: e.message });
       } else {
+        setErrors(serverFieldErrors(e));
         toast.error(e.message);
       }
       return null;
@@ -80,30 +93,49 @@ export default function StaffView() {
     }
   };
 
-  const create = () => run(
-    async () => unwrap(await api.post('/api/superadmin/staff', {
-      ...form,
-      districtId: form.districtId || undefined,
-      password: form.password || undefined,
-      email: form.email || undefined,
-    })),
-    (out) => out.temporaryPassword
-      ? `${out.user.name} created — temporary password: ${out.temporaryPassword}`
-      : `${out.user.name} created`,
-  );
+  const check = (isCreate) => {
+    const role = isCreate ? form.role : dialog?.user?.role;
+    const problems = collect({
+      name: nameError(form.name),
+      phone: phoneError(form.phone),
+      email: emailError(form.email),
+      districtId: role === ROLES.FIELD_AGENT && !form.districtId ? 'A field agent needs a district' : '',
+      hospitalId: isCreate && role === ROLES.RECEPTIONIST && !form.hospitalId ? 'Pick the clinic they work at' : '',
+      password: isCreate ? passwordError(form.password, { required: false }) : '',
+    });
+    setErrors(problems);
+    return !Object.keys(problems).length;
+  };
 
-  const save = () => run(
+  const create = async () => {
+    if (!check(true)) return;
+    const out = await run(
+      async () => unwrap(await api.post('/api/superadmin/staff', {
+        ...form,
+        districtId: form.districtId || undefined,
+        hospitalId: form.role === ROLES.RECEPTIONIST ? form.hospitalId : undefined,
+        password: form.password || undefined,
+        email: form.email || undefined,
+      })),
+      (o) => `${o.user.name} created`,
+    );
+    // The password goes into the copy / WhatsApp dialog, not a toast that is
+    // gone before anyone writes it down.
+    if (out?.user) {
+      setIssued({
+        credentials: [{
+          role: out.user.role, name: out.user.name, phone: out.user.phone, email: out.user.email,
+          tempPassword: out.temporaryPassword ?? form.password, signIn: 'TEMP_PASSWORD',
+        }],
+      });
+    }
+  };
+
+  const save = () => check(false) && run(
     () => api.patch(`/api/superadmin/staff/${dialog.user.id}`, {
       name: form.name, phone: form.phone, email: form.email || '', districtId: form.districtId || '',
     }),
     'Details updated',
-  );
-
-  const resetPassword = (user, viaWhatsapp) => run(
-    async () => unwrap(await api.post(`/api/superadmin/staff/${user.id}/password`, { viaWhatsapp })),
-    (out) => viaWhatsapp
-      ? `Reset code sent to ${out.phone}`
-      : `New temporary password for ${user.name}: ${out.temporaryPassword}`,
   );
 
   const deactivate = (user, transferToUserId) => run(
@@ -217,6 +249,12 @@ export default function StaffView() {
                         className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg">
                         <i className="fa-solid fa-key text-xs" />
                       </button>
+                      {u.isActive && u.role !== ROLES.SUPER_ADMIN && (
+                        <button type="button" title="Login as" onClick={() => loginAs({ userId: u.id, name: u.name, role: u.role })}
+                          className="p-1.5 text-slate-400 hover:text-mg-teal hover:bg-teal-50 rounded-lg">
+                          <i className="fa-solid fa-user-secret text-xs" />
+                        </button>
+                      )}
                       {u.isActive ? (
                         <button type="button" title="Deactivate" onClick={() => open('deactivate', u)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
@@ -251,15 +289,15 @@ export default function StaffView() {
         size="md"
       >
         <div className="space-y-4">
-          <Field label="Full name" required>
-            <Input value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Kabir Roy" />
+          <Field label="Full name" required error={errors.name}>
+            <Input error={errors.name} value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Kabir Roy" />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Mobile" required hint="Used to sign in">
-              <Input maxLength={10} value={form.phone ?? ''} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} placeholder="9000000013" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Mobile" required hint="Used to sign in" error={errors.phone}>
+              <Input error={errors.phone} inputMode="numeric" maxLength={10} value={form.phone ?? ''} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} placeholder="9000000013" />
             </Field>
-            <Field label="Email">
-              <Input value={form.email ?? ''} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="kabir@mediigo.com" />
+            <Field label="Email" error={errors.email}>
+              <Input error={errors.email} type="email" value={form.email ?? ''} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="kabir@mediigo.com" />
             </Field>
           </div>
 
@@ -276,6 +314,7 @@ export default function StaffView() {
           {[ROLES.EXEC_ADMIN, ROLES.FIELD_AGENT].includes(dialog?.mode === 'create' ? form.role : dialog?.user?.role) && (
             <Field
               label="District"
+              error={errors.districtId}
               required={form.role === ROLES.FIELD_AGENT}
               hint={form.role === ROLES.EXEC_ADMIN || dialog?.user?.role === ROLES.EXEC_ADMIN
                 ? 'Leave unassigned to create a successor before handing a district over'
@@ -288,9 +327,18 @@ export default function StaffView() {
             </Field>
           )}
 
+          {dialog?.mode === 'create' && form.role === ROLES.RECEPTIONIST && (
+            <Field label="Clinic" required error={errors.hospitalId}>
+              <Select value={form.hospitalId ?? ''} onChange={(e) => setForm({ ...form, hospitalId: e.target.value })}>
+                <option value="">Pick a clinic</option>
+                {(clinics || []).map((h) => <option key={h._id} value={h._id}>{h.name} ({h.code})</option>)}
+              </Select>
+            </Field>
+          )}
+
           {dialog?.mode === 'create' && (
-            <Field label="Password" hint="Leave blank to generate one — it is shown once">
-              <Input value={form.password ?? ''} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Auto-generate" />
+            <Field label="Password" hint="Leave blank to generate one — it is shown once" error={errors.password}>
+              <PasswordInput error={errors.password} autoComplete="new-password" value={form.password ?? ''} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Auto-generate" />
             </Field>
           )}
 
@@ -304,23 +352,8 @@ export default function StaffView() {
       </Modal>
 
       {/* ---- Password reset ---- */}
-      <Modal open={dialog?.mode === 'password'} onClose={() => setDialog(null)} title={`Reset password — ${dialog?.user?.name}`} size="sm">
-        <div className="space-y-4">
-          <p className="text-xs text-slate-600">Choose how they get a new password.</p>
-          <Button className="w-full" loading={busy} onClick={() => resetPassword(dialog.user, false)}>
-            <i className="fa-solid fa-key" /> Generate a temporary password
-          </Button>
-          <p className="text-[11px] text-slate-400 text-center">Shown once — pass it on yourself.</p>
-          <div className="border-t border-slate-100 pt-4">
-            <Button variant="secondary" className="w-full" loading={busy} onClick={() => resetPassword(dialog.user, true)}>
-              <i className="fa-brands fa-whatsapp" /> Send a reset code on WhatsApp
-            </Button>
-            <p className="text-[11px] text-slate-400 text-center mt-2">
-              Needs WABridge configured; while demo mode is on the code is the fixed demo one.
-            </p>
-          </div>
-        </div>
-      </Modal>
+      {dialog?.mode === 'password' && <ResetPasswordModal user={dialog.user} onClose={() => setDialog(null)} />}
+      <CredentialsModal title="Account created" result={issued} onClose={() => setIssued(null)} />
 
       {/* ---- Deactivate, with handover when the server demands one ---- */}
       <Modal open={dialog?.mode === 'deactivate'} onClose={() => setDialog(null)} title={`Deactivate ${dialog?.user?.name}?`} size="md">

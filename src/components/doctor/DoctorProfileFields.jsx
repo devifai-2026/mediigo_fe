@@ -10,14 +10,14 @@ import { LIST_FIELDS } from '../../lib/doctorProfile.js';
 const digits = (max) => (e) => ({ target: { value: e.target.value.replace(/\D/g, '').slice(0, max) } });
 
 /** Qualifications, experience, languages, chamber, consult timing. */
-export function DoctorBasicsFields({ form, set, disabled }) {
+export function DoctorBasicsFields({ form, set, disabled, errors = {} }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <Field label="Qualifications" hint="Comma separated, e.g. MBBS, MD">
         <Input value={form.qualifications} disabled={disabled} onChange={set('qualifications')} placeholder="MBBS, MD (General Medicine)" />
       </Field>
-      <Field label="Years of experience">
-        <Input value={form.experienceYears} disabled={disabled} inputMode="numeric" onChange={(e) => set('experienceYears')(digits(2)(e))} placeholder="8" />
+      <Field label="Years of experience" error={errors.experienceYears}>
+        <Input error={errors.experienceYears} value={form.experienceYears} disabled={disabled} inputMode="numeric" onChange={(e) => set('experienceYears')(digits(2)(e))} placeholder="8" />
       </Field>
       <Field label="Languages spoken" hint="Comma separated">
         <Input value={form.languages} disabled={disabled} onChange={set('languages')} placeholder="English, Hindi, Marathi" />
@@ -25,11 +25,11 @@ export function DoctorBasicsFields({ form, set, disabled }) {
       <Field label="Chamber / room" hint="Read out in every voice announcement">
         <Input value={form.chamberNumber} disabled={disabled} maxLength={20} onChange={set('chamberNumber')} placeholder="104" />
       </Field>
-      <Field label="Average consult (minutes)" hint="Sets online token slot times and wait estimates">
-        <Input value={form.avgConsultMinutes} disabled={disabled} inputMode="numeric" onChange={(e) => set('avgConsultMinutes')(digits(3)(e))} placeholder="8" />
+      <Field label="Average consult (minutes)" hint="Sets online token slot times and wait estimates" error={errors.avgConsultMinutes}>
+        <Input error={errors.avgConsultMinutes} value={form.avgConsultMinutes} disabled={disabled} inputMode="numeric" onChange={(e) => set('avgConsultMinutes')(digits(3)(e))} placeholder="8" />
       </Field>
-      <Field label="Follow-up window (days)" hint="A revisit within this many days is charged the follow-up fee">
-        <Input value={form.followupWindowDays} disabled={disabled} inputMode="numeric" onChange={(e) => set('followupWindowDays')(digits(2)(e))} placeholder="14" />
+      <Field label="Follow-up window (days)" hint="A revisit within this many days is charged the follow-up fee" error={errors.followupWindowDays}>
+        <Input error={errors.followupWindowDays} value={form.followupWindowDays} disabled={disabled} inputMode="numeric" onChange={(e) => set('followupWindowDays')(digits(2)(e))} placeholder="14" />
       </Field>
     </div>
   );
@@ -57,18 +57,18 @@ export function DoctorPublicProfileFields({ form, set, disabled }) {
  * Council, number and year. Editable at onboarding (and by a super admin);
  * everywhere else shown read-only, with why.
  */
-export function RegistrationFields({ form, set, locked }) {
+export function RegistrationFields({ form, set, locked, errors = {} }) {
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Field label="Medical council" required={!locked}>
-          <Input value={form.registrationCouncil} disabled={locked} onChange={set('registrationCouncil')} placeholder="Maharashtra Medical Council" />
+        <Field label="Medical council" required={!locked} error={errors.registrationCouncil}>
+          <Input error={errors.registrationCouncil} value={form.registrationCouncil} disabled={locked} onChange={set('registrationCouncil')} placeholder="Maharashtra Medical Council" />
         </Field>
-        <Field label="Registration no." required={!locked}>
-          <Input value={form.councilRegNo} disabled={locked} onChange={set('councilRegNo')} placeholder="MMC-20001" />
+        <Field label="Registration no." required={!locked} error={errors.councilRegNo}>
+          <Input error={errors.councilRegNo} value={form.councilRegNo} disabled={locked} onChange={set('councilRegNo')} placeholder="MMC-20001" />
         </Field>
-        <Field label="Year of registration">
-          <Input value={form.registrationYear} disabled={locked} inputMode="numeric" onChange={(e) => set('registrationYear')(digits(4)(e))} placeholder="2010" />
+        <Field label="Year of registration" error={errors.registrationYear}>
+          <Input error={errors.registrationYear} value={form.registrationYear} disabled={locked} inputMode="numeric" onChange={(e) => set('registrationYear')(digits(4)(e))} placeholder="2010" />
         </Field>
       </div>
       <p className="text-xs text-slate-500">

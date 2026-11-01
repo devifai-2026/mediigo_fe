@@ -4,6 +4,8 @@ import { api } from '../../lib/api.js';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { useApi } from '../../hooks/useApi.js';
+import { useSocketEvent } from '../../hooks/useSocketEvent.js';
+import { EVENTS } from '../../lib/socketEvents.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { DeskCard, EmptyNote, PageHeader, Pill, Segmented, StatTile } from '../../components/desk/ui.jsx';
 import { APPROVAL, span, hoursLabel } from './approvalStatus.js';
@@ -79,6 +81,8 @@ const PENDING = new Set(['SUBMITTED', 'UNDER_REVIEW', 'CHANGES_REQUESTED']);
 export default function AgentSubmissionsView() {
   const toast = useToast();
   const { data, loading, refetch } = useApi('/api/onboarding/submissions');
+  // An approval or rejection lands here live, not on the next manual refresh.
+  useSocketEvent(EVENTS.SUBMISSION_STATUS_CHANGED, () => refetch());
   const [sending, setSending] = useState(null);
 
   // A draft is left behind when sending failed (a licence clash, a dropped

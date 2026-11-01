@@ -4,11 +4,13 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useApi } from '../../hooks/useApi.js';
 import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
-import { Field, Input } from '../ui/Field.jsx';
+import { Field, Input, PasswordInput } from '../ui/Field.jsx';
+import { CredentialsModal } from '../onboarding/CredentialsModal.jsx';
+import { nameError, phoneError, passwordError, collect, serverFieldErrors } from '../../lib/validators.js';
 import { SpecialtyPicker } from '../ui/SpecialtyPicker.jsx';
 import { PhotoField } from '../ui/PhotoCropper.jsx';
 import { DoctorBasicsFields, DoctorPublicProfileFields, RegistrationFields } from '../doctor/DoctorProfileFields.jsx';
-import { BLANK_PROFILE, toProfilePayload } from '../../lib/doctorProfile.js';
+import { BLANK_PROFILE, toProfilePayload, doctorProfileErrors, feeErrors } from '../../lib/doctorProfile.js';
 
 /**
  * Add a doctor to an existing clinic.
@@ -29,7 +31,7 @@ import { BLANK_PROFILE, toProfilePayload } from '../../lib/doctorProfile.js';
 
 const BLANK = {
   ...BLANK_PROFILE,
-  name: '', phone: '',
+  name: '', phone: '', password: '',
   feeFresh: 500, feeFollowup: 250, feeEmergency: 900,
 };
 
@@ -40,29 +42,46 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
   const [specialtyIds, setSpecialtyIds] = useState([]);
   const [photo, setPhoto] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState({});
+  // The new login, shown once after the doctor is created.
+  const [issued, setIssued] = useState(null);
 
   // Clear on close, or the next doctor inherits this one's registration number
   // — which the unique index would then reject with a confusing error.
   useEffect(() => {
-    if (!open) { setForm(BLANK); setSpecialtyIds([]); setPhoto(null); }
+    if (!open) { setForm(BLANK); setSpecialtyIds([]); setPhoto(null); setErrors({}); }
   }, [open]);
 
+  if (issued) {
+    return <CredentialsModal result={issued} onClose={() => { setIssued(null); onClose?.(); }} />;
+  }
   if (!open) return null;
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    const { value } = e.target;
+    setForm((f) => ({ ...f, [k]: value }));
+    setErrors(({ [k]: _, ...rest }) => rest);
+  };
   const options = specialties ?? [];
   const primary = options.find((o) => o.id === specialtyIds[0]);
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { toast.error('Doctor name is required'); return; }
-    if (!/^\d{10}$/.test(form.phone.replace(/\D/g, '').slice(-10))) {
-      toast.error('Enter a valid 10-digit mobile number');
+    const problems = {
+      ...collect({
+        name: nameError(form.name.replace(/^\s*dr\.?\s*/i, ''), 'Doctor name'),
+        phone: phoneError(form.phone),
+        password: passwordError(form.password, { required: false }),
+        specialty: specialtyIds.length ? '' : 'Pick at least one specialty',
+      }),
+      ...doctorProfileErrors(form, { includeLocked: true }),
+      ...feeErrors(form),
+    };
+    setErrors(problems);
+    if (Object.keys(problems).length) {
+      toast.error(Object.values(problems)[0]);
       return;
     }
-    if (!specialtyIds.length) { toast.error('Pick at least one specialty'); return; }
-    if (!form.registrationCouncil.trim()) { toast.error('Medical council is required'); return; }
-    if (!form.councilRegNo.trim()) { toast.error('Council registration number is required'); return; }
 
     setBusy(true);
     try {
@@ -87,7 +106,7 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
         },
       }));
       await api.post(`/api/onboarding/submissions/${sub._id}/submit`);
-      const approved = unwrap(await api.post(`/api/admin/submissions/${sub._id}/approve`, {}));
+      const approved = unwrap(await api.post(`/api/admin/submissions/${sub._id}/approve`, form.password ? { password: form.password } : {}));
       const doctorId = approved?.doctor?._id;
 
       if (doctorId && photo) {
@@ -97,15 +116,14 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
           .catch(() => toast.warn('Doctor created, but the photo did not upload. Add it from their profile.'));
       }
 
-      toast.success(
-        approved?.tempPassword
-          ? `Dr. ${form.name.trim()} added — temporary password ${approved.tempPassword}`
-          : `Dr. ${form.name.trim()} added`,
-        { duration: 9000 },
-      );
+      toast.success(`Dr. ${form.name.trim()} added`);
       onDone?.();
-      onClose?.();
+      // The password is shown once, where it can be copied or sent on
+      // WhatsApp — a toast vanished before anyone could write it down.
+      if (approved?.credentials?.length) setIssued(approved);
+      else onClose?.();
     } catch (err) {
+      setErrors(serverFieldErrors(err));
       toast.error(err.message);
     } finally {
       setBusy(false);
@@ -114,9 +132,9 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
 
   return (
     <Modal open={open} onClose={() => !busy && onClose?.()} title="Add doctor" subtitle={hospitalName} size="lg">
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" noValidate>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Doctor name" required hint="Do not type “Dr.” — it is added automatically">
+          <Field label="Doctor name" required hint="Do not type “Dr.” — it is added automatically" error={errors.name}>
             {/* The prefix is shown as fixed text so nobody types it twice. */}
             <div className="flex items-center rounded-lg border border-slate-300 bg-white focus-within:border-mg-teal overflow-hidden">
               <span className="px-2.5 py-2 text-[11px] font-semibold text-slate-500 bg-slate-50 border-r border-slate-200 shrink-0">
@@ -131,8 +149,12 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
             </div>
           </Field>
 
-          <Field label="Mobile" required hint="Becomes their login">
-            <Input value={form.phone} onChange={set('phone')} placeholder="9000000101" inputMode="numeric" />
+          <Field label="Mobile" required hint="Becomes their login" error={errors.phone}>
+            <Input error={errors.phone} value={form.phone} onChange={set('phone')} placeholder="9000000101" inputMode="numeric" maxLength={13} />
+          </Field>
+
+          <Field label="Login password" hint="Leave blank to generate one — shown once after adding" error={errors.password} className="sm:col-span-2">
+            <PasswordInput error={errors.password} value={form.password} onChange={set('password')} placeholder="Auto-generate" autoComplete="new-password" />
           </Field>
         </div>
 
@@ -143,19 +165,20 @@ export function AddDoctorModal({ open, onClose, onDone, hospitalId, hospitalName
           required
           hint="The first is the primary and leads on the patient card. Only published specialties appear here."
         />
+        {errors.specialty && <p className="-mt-2 text-xs font-medium text-rose-600">{errors.specialty}</p>}
 
-        <RegistrationFields form={form} set={set} />
+        <RegistrationFields form={form} set={set} errors={errors} />
 
-        <DoctorBasicsFields form={form} set={set} />
+        <DoctorBasicsFields form={form} set={set} errors={errors} />
 
         {/* Fees are per doctor, never per specialty: two paediatricians at the
             same clinic routinely charge differently. */}
         <div>
           <p className="text-[11px] font-semibold text-slate-600 mb-1.5">Consultation fees (₹)</p>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Fresh"><Input value={form.feeFresh} onChange={set('feeFresh')} inputMode="numeric" /></Field>
-            <Field label="Follow-up"><Input value={form.feeFollowup} onChange={set('feeFollowup')} inputMode="numeric" /></Field>
-            <Field label="Emergency"><Input value={form.feeEmergency} onChange={set('feeEmergency')} inputMode="numeric" /></Field>
+            <Field label="Fresh" error={errors.feeFresh}><Input error={errors.feeFresh} value={form.feeFresh} onChange={set('feeFresh')} inputMode="decimal" /></Field>
+            <Field label="Follow-up" error={errors.feeFollowup}><Input error={errors.feeFollowup} value={form.feeFollowup} onChange={set('feeFollowup')} inputMode="decimal" /></Field>
+            <Field label="Emergency" error={errors.feeEmergency}><Input error={errors.feeEmergency} value={form.feeEmergency} onChange={set('feeEmergency')} inputMode="decimal" /></Field>
           </div>
         </div>
 

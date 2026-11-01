@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { useApi } from '../../hooks/useApi.js';
-import { api, unwrap } from '../../lib/api.js';
+import { api } from '../../lib/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useConfirm } from '../../context/ConfirmContext.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -9,6 +10,8 @@ import { StatusBadge } from '../../components/ui/StatusBadge.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { ROLES, ROLE_LABEL } from '../../lib/constants.js';
 import { phone as fmtPhone, shortDate, timeOf, initials } from '../../lib/format.js';
+import { ResetPasswordModal } from '../../components/superadmin/ResetPasswordModal.jsx';
+import { useLoginAs } from '../../hooks/useLoginAs.js';
 
 const ROLE_CHIP = {
   EXEC_ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -58,14 +61,8 @@ export default function StaffProfileView() {
   const confirm = useConfirm();
   const { data: user, loading, error, refetch } = useApi(`/api/superadmin/staff/${id}`);
 
-  const resetPassword = async () => {
-    try {
-      const out = unwrap(await api.post(`/api/superadmin/staff/${id}/password`, { viaWhatsapp: false }));
-      toast.success(`New temporary password for ${user.name}: ${out.temporaryPassword}`);
-    } catch (e) {
-      toast.error(e.message);
-    }
-  };
+  const loginAs = useLoginAs();
+  const [resetting, setResetting] = useState(false);
 
   const reactivate = async () => {
     if (!(await confirm({
@@ -137,9 +134,14 @@ export default function StaffProfileView() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="secondary" onClick={resetPassword}>
+            <Button variant="secondary" onClick={() => setResetting(true)}>
               <i className="fa-solid fa-key" /> Reset password
             </Button>
+            {user.isActive && user.role !== ROLES.SUPER_ADMIN && (
+              <Button variant="outline" onClick={() => loginAs({ userId: user.id, name: user.name, role: user.role })}>
+                <i className="fa-solid fa-user-secret" /> Login as
+              </Button>
+            )}
             {user.isActive ? (
               <Button variant="secondary" onClick={() => navigate('/super/staff')}>
                 <i className="fa-solid fa-pen" /> Manage
@@ -285,6 +287,7 @@ export default function StaffProfileView() {
           </div>
         </Section>
       </div>
+      {resetting && <ResetPasswordModal user={user} onClose={() => setResetting(false)} />}
     </section>
   );
 }

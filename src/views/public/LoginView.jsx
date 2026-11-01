@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, Input, PasswordInput } from '../../components/ui/Field.jsx';
+import { phoneError, passwordError, requiredError, collect } from '../../lib/validators.js';
 import { OtpInput } from '../../components/ui/OtpInput.jsx';
 import { LivePill } from '../../components/layout/DarkHero.jsx';
 import { ROLE_HOME, ROLES } from '../../lib/constants.js';
@@ -22,7 +23,7 @@ export default function LoginView({ audience }) {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
-  const { requestOtp, verifyOtp, staffLogin } = useAuth();
+  const { requestOtp, verifyOtp, staffLogin, resetPassword } = useAuth();
   useNoIndex(audience === 'staff' ? 'Clinic & staff sign in' : 'Sign in');
 
   /**
@@ -46,7 +47,12 @@ export default function LoginView({ audience }) {
   if (!servesPatient && !servesStaff) { servesPatient = portalPatient; servesStaff = portalStaff; }
 
   const [method, setMethod] = useState('password');   // password | otp
-  const [step, setStep] = useState('entry');          // entry | otp
+  const [step, setStep] = useState('entry');          // entry | otp | forgot | forgot-code
+  // The code's length comes from the server: 4 in demo mode, otherwise the
+  // Super Admin's setting. A fixed 4 cut longer real codes short.
+  const [otpLength, setOtpLength] = useState(4);
+  const [errors, setErrors] = useState({});
+  const [reset, setReset] = useState({ otp: '', next: '', confirm: '' });
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [otp, setOtp] = useState('');
@@ -70,6 +76,9 @@ export default function LoginView({ audience }) {
 
   const sendOtp = async (e) => {
     e?.preventDefault();
+    const problems = collect({ phone: phoneError(phone) });
+    setErrors(problems);
+    if (Object.keys(problems).length) return;
     setBusy(true);
     try {
       // PATIENT_LOGIN is the only purpose that creates an account when none
@@ -79,6 +88,7 @@ export default function LoginView({ audience }) {
       const purpose = servesPatient ? undefined : 'STAFF_LOGIN';
       const res = await requestOtp(phone, purpose);
       setOtpPurpose(purpose);
+      if (res?.otpLength) setOtpLength(res.otpLength);
       setStep('otp');
       // The server returns the code only in development demo mode.
       setHint(res?.debugCode ? `Demo mode — your code is ${res.debugCode}` : `Sent to ${phone} on WhatsApp`);
@@ -105,6 +115,12 @@ export default function LoginView({ audience }) {
 
   const submitPassword = async (e) => {
     e.preventDefault();
+    const problems = collect({
+      identifier: requiredError(identifier, 'Phone or email'),
+      password: requiredError(password, 'Password'),
+    });
+    setErrors(problems);
+    if (Object.keys(problems).length) return;
     setBusy(true);
     try {
       const res = await staffLogin({ identifier, password });
@@ -118,6 +134,7 @@ export default function LoginView({ audience }) {
         // against the account's number. Prefer what the server echoed back.
         setPhone(res.verifyPhone || identifier);
         setOtpPurpose(res.purpose);
+        if (res.otpLength) setOtpLength(res.otpLength);
         setStep('otp');
         setHint(`Two-factor is enabled for your role. Code sent to ${res.phone}`);
         toast.push('Enter the code sent on WhatsApp');
@@ -125,6 +142,59 @@ export default function LoginView({ audience }) {
         toast.success(`Welcome, ${res.user.name}`);
         goHome(res.user.role);
       }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startForgot = () => {
+    setErrors({});
+    setReset({ otp: '', next: '', confirm: '' });
+    // Carry a typed phone number across; an email cannot receive the code.
+    if (/^\d{10}$/.test(identifier.replace(/\D/g, '').slice(-10)) && !identifier.includes('@')) {
+      setPhone(identifier.replace(/\D/g, '').slice(-10));
+    }
+    setStep('forgot');
+  };
+
+  const sendResetCode = async (e) => {
+    e.preventDefault();
+    const problems = collect({ phone: phoneError(phone) });
+    setErrors(problems);
+    if (Object.keys(problems).length) return;
+    setBusy(true);
+    try {
+      const res = await requestOtp(phone, 'PASSWORD_RESET');
+      if (res?.otpLength) setOtpLength(res.otpLength);
+      setHint(res?.debugCode ? `Demo mode — your code is ${res.debugCode}` : `Sent to ${phone} on WhatsApp`);
+      setStep('forgot-code');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitReset = async (e) => {
+    e.preventDefault();
+    const problems = collect({
+      otp: reset.otp.length === otpLength ? '' : `Enter the ${otpLength}-digit code`,
+      next: passwordError(reset.next),
+      confirm: reset.next && reset.next !== reset.confirm ? 'Does not match the new password' : '',
+    });
+    setErrors(problems);
+    if (Object.keys(problems).length) return;
+    setBusy(true);
+    try {
+      await resetPassword({ phone, otp: reset.otp, newPassword: reset.next });
+      toast.success('Password reset — sign in with your new password');
+      setIdentifier(phone);
+      setPassword('');
+      setMethod('password');
+      setStep('entry');
+      setHint(null);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -189,7 +259,9 @@ export default function LoginView({ audience }) {
         <section className="mg-card p-6 sm:p-8 w-full max-w-md mx-auto lg:max-w-none">
           <div className="mb-6">
             <h1 className="mg-title">
-              {step === 'otp' ? 'Verify your number' : audience === 'staff' ? 'Clinic & staff sign in' : 'Sign in to Mediigo'}
+              {step === 'otp' ? 'Verify your number'
+                : step.startsWith('forgot') ? 'Reset your password'
+                  : audience === 'staff' ? 'Clinic & staff sign in' : 'Sign in to Mediigo'}
             </h1>
             <p className="text-xs text-mg-teal mt-1">
               {ACTIVE_PORTAL ? ACTIVE_PORTAL.label : 'Healthcare OPD & Clinic Network'}
@@ -217,13 +289,18 @@ export default function LoginView({ audience }) {
             </div>
 
             {method === 'password' ? (
-              <form onSubmit={submitPassword} className="space-y-4">
-                <Field label="Phone or email" required>
-                  <Input required value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Phone number or email" />
+              <form onSubmit={submitPassword} className="space-y-4" noValidate>
+                <Field label="Phone or email" required error={errors.identifier}>
+                  <Input error={errors.identifier} value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Phone number or email" />
                 </Field>
-                <Field label="Password" required>
-                  <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" />
+                <Field label="Password" required error={errors.password}>
+                  <PasswordInput error={errors.password} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" />
                 </Field>
+                <div className="-mt-2 text-right">
+                  <button type="button" onClick={startForgot} className="text-xs font-medium text-mg-blue hover:underline">
+                    Forgot password?
+                  </button>
+                </div>
                 <Button type="submit" loading={busy} className="w-full" size="lg">
                   <Icon name="shield" className="w-4 h-4" /> Sign in
                 </Button>
@@ -238,13 +315,13 @@ export default function LoginView({ audience }) {
                 </p>
               </form>
             ) : (
-              <form onSubmit={sendOtp} className="space-y-4">
-                <Field label="Mobile number" required>
+              <form onSubmit={sendOtp} className="space-y-4" noValidate>
+                <Field label="Mobile number" required error={errors.phone}>
                   <Input
                     type="tel"
                     inputMode="numeric"
                     maxLength={10}
-                    required
+                    error={errors.phone}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                     placeholder="9876543210"
@@ -290,8 +367,8 @@ export default function LoginView({ audience }) {
               <p className="text-sm font-medium text-slate-900">Enter the verification code</p>
               {hint && <p className="text-[11px] text-slate-500 mt-1">{hint}</p>}
             </div>
-            <OtpInput length={4} value={otp} onChange={setOtp} onComplete={submitOtp} />
-            <Button loading={busy} disabled={otp.length < 4} onClick={() => submitOtp()} className="w-full" size="lg">
+            <OtpInput length={otpLength} value={otp} onChange={setOtp} onComplete={submitOtp} />
+            <Button loading={busy} disabled={otp.length < otpLength} onClick={() => submitOtp()} className="w-full" size="lg">
               Verify &amp; continue
             </Button>
             <button
@@ -302,6 +379,41 @@ export default function LoginView({ audience }) {
               ← Use a different number
             </button>
           </div>
+        )}
+
+        {step === 'forgot' && (
+          <form onSubmit={sendResetCode} className="space-y-4" noValidate>
+            <p className="text-xs text-slate-600">We will send a code on WhatsApp to the mobile number on your account.</p>
+            <Field label="Mobile number" required error={errors.phone}>
+              <Input
+                type="tel" inputMode="numeric" maxLength={10} error={errors.phone}
+                value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="9876543210"
+              />
+            </Field>
+            <Button type="submit" loading={busy} className="w-full" size="lg">Send reset code</Button>
+            <button type="button" onClick={() => { setStep('entry'); setErrors({}); }} className="w-full text-xs font-medium text-mg-teal hover:text-mg-tealDark">
+              ← Back to sign in
+            </button>
+          </form>
+        )}
+
+        {step === 'forgot-code' && (
+          <form onSubmit={submitReset} className="space-y-4" noValidate>
+            {hint && <p className="text-[11px] text-slate-500 text-center">{hint}</p>}
+            <Field label="Code" required error={errors.otp}>
+              <OtpInput length={otpLength} value={reset.otp} onChange={(v) => setReset((r) => ({ ...r, otp: v }))} />
+            </Field>
+            <Field label="New password" required error={errors.next} hint="At least 8 characters">
+              <PasswordInput autoComplete="new-password" error={errors.next} value={reset.next} onChange={(e) => setReset((r) => ({ ...r, next: e.target.value }))} />
+            </Field>
+            <Field label="Confirm new password" required error={errors.confirm}>
+              <PasswordInput autoComplete="new-password" error={errors.confirm} value={reset.confirm} onChange={(e) => setReset((r) => ({ ...r, confirm: e.target.value }))} />
+            </Field>
+            <Button type="submit" loading={busy} className="w-full" size="lg">Reset password</Button>
+            <button type="button" onClick={() => { setStep('forgot'); setErrors({}); }} className="w-full text-xs font-medium text-mg-teal hover:text-mg-tealDark">
+              ← Use a different number
+            </button>
+          </form>
         )}
         </section>
       </main>

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useApi } from '../../hooks/useApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
-import { useConfirm } from '../../context/ConfirmContext.jsx';
 import { api } from '../../lib/api.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { Modal } from '../../components/ui/Modal.jsx';
@@ -11,50 +10,25 @@ import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { Icon } from '../../components/ui/Icon.jsx';
 import { directionsUrl } from '../../lib/maps.js';
 import { CredentialsModal } from '../../components/onboarding/CredentialsModal.jsx';
+import { ApproveDialog } from '../../components/onboarding/ApproveDialog.jsx';
 
 export default function ApprovalsView() {
   const { data, loading, refetch } = useApi('/api/admin/approvals');
-  // The trial ceiling is the platform's, not this screen's — read it rather
-  // than hardcode a number a Super Admin can change.
-  const { data: limits } = useApi('/api/admin/trial-limits');
   const toast = useToast();
-  const confirm = useConfirm();
   const [rejecting, setRejecting] = useState(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [issued, setIssued] = useState(null);
 
-  const approve = async (s) => {
-    const okToApprove = await confirm({
-      title: 'Approve and publish?',
-      message: `${s.payload?.name} will go live and become visible to patients searching nearby.`,
-      detail: s.payload?.doctors?.length
-        ? `Logins are created for the front desk and ${s.payload.doctors.length} doctor${s.payload.doctors.length === 1 ? '' : 's'}.`
-        : 'A front-desk login is created for the listed contact.',
-      confirmLabel: 'Approve & publish',
-    });
-    if (!okToApprove) return;
+  const [approving, setApproving] = useState(null);
 
-    // Free trial length, bounded by the platform maximum. The ceiling is read
-    // from the server rather than hardcoded: only Super Admin can move it, and
-    // a district admin must not be able to out-type it.
-    const maxDays = limits?.maxTrialDays ?? 90;
-    const input = window.prompt(
-      `Free trial for ${s.payload?.name} — days (0 for none, max ${maxDays}):`,
-      String(limits?.defaultTrialDays ?? 30),
-    );
-    if (input === null) return;
-    const trialDays = Number(input);
-    if (!Number.isInteger(trialDays) || trialDays < 0 || trialDays > maxDays) {
-      toast.error(`Trial must be a whole number between 0 and ${maxDays} days`);
-      return;
-    }
-
+  const approve = async ({ trialDays, password }) => {
     setBusy(true);
     try {
-      const r = await api.post(`/api/admin/submissions/${s._id}/approve`, { trialDays });
+      const r = await api.post(`/api/admin/submissions/${approving._id}/approve`, { trialDays, ...(password ? { password } : {}) });
       const trialNote = trialDays > 0 ? ` · ${trialDays}-day free trial` : ' · no trial';
       toast.success(`Approved and published${trialNote}`);
+      setApproving(null);
       // Every login it created, with the one-time passwords to hand over.
       if (r.data?.data?.credentials?.length) setIssued(r.data.data);
       refetch();
@@ -134,7 +108,7 @@ export default function ApprovalsView() {
                 <Button variant="outline" onClick={() => { setRejecting(s); setReason(''); }} className="text-rose-600 hover:bg-rose-50">
                   Reject
                 </Button>
-                <Button onClick={() => approve(s)} loading={busy} disabled={!s.geocodeResult?.lat}>
+                <Button onClick={() => setApproving(s)} loading={busy && approving?._id === s._id} disabled={!s.geocodeResult?.lat}>
                   Approve &amp; publish
                 </Button>
               </div>
@@ -157,6 +131,7 @@ export default function ApprovalsView() {
           </div>
         </div>
       </Modal>
+      <ApproveDialog submission={approving} busy={busy} onCancel={() => setApproving(null)} onApprove={approve} />
       <CredentialsModal result={issued} onClose={() => setIssued(null)} />
     </div>
   );

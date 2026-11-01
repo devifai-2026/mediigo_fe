@@ -9,6 +9,9 @@ import { inr } from '../../lib/format.js';
 import { Button } from '../ui/Button.jsx';
 import { RegistrationFields } from '../doctor/DoctorProfileFields.jsx';
 import { toProfileForm, toProfilePayload, BLANK_PROFILE } from '../../lib/doctorProfile.js';
+import { ResetPasswordModal } from './ResetPasswordModal.jsx';
+import { useLoginAs } from '../../hooks/useLoginAs.js';
+import { ROLES } from '../../lib/constants.js';
 
 const Stat = ({ label, value, tone = 'text-slate-900' }) => (
   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
@@ -20,6 +23,8 @@ const Stat = ({ label, value, tone = 'text-slate-900' }) => (
 export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
   const toast = useToast();
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const loginAs = useLoginAs();
   // The console's doctor rows carry photoUrl; keep a local copy so the drawer
   // updates the moment an upload lands rather than waiting for a console refetch.
   const [photoUrl, setPhotoUrl] = useState(doctor?.photoUrl ?? null);
@@ -105,6 +110,20 @@ export function DoctorProfile({ doctor, clinic, open, onClose, onChanged }) {
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-mg-navy">{doctor.specialty}</span>
           <span className="text-[10px] text-slate-400">Reg {doctor.regNo}</span>
         </div>
+
+        {doctor.userId && (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setResetting(true)}>
+              <i className="fa-solid fa-key" /> Reset password
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => loginAs({ userId: doctor.userId, name: doctor.doctorName, role: ROLES.DOCTOR })}>
+              <i className="fa-solid fa-user-secret" /> Login as doctor
+            </Button>
+          </div>
+        )}
+        {resetting && (
+          <ResetPasswordModal user={{ id: doctor.userId, name: doctor.doctorName }} onClose={() => setResetting(false)} />
+        )}
 
         {reg && (
           <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3 space-y-2">

@@ -7,7 +7,8 @@ import { VisitMixChart } from '../../components/superadmin/AdminCharts.jsx';
 import { FilterPills } from '../../components/ui/FilterPills.jsx';
 import { SkeletonRows } from '../../components/ui/Skeleton.jsx';
 import { inr, phone as fmtPhone, shortDate, timeOf, initials } from '../../lib/format.js';
-import { VISIT_LABEL } from '../../lib/constants.js';
+import { VISIT_LABEL, ROLES } from '../../lib/constants.js';
+import { useLoginAs } from '../../hooks/useLoginAs.js';
 
 /**
  * One patient's complete file.
@@ -60,6 +61,7 @@ export default function PatientProfileView() {
   // Which clinic's pin the map is showing. Defaults to the patient's own
   // location when we have one, so the page opens on where they are.
   const [mapClinic, setMapClinic] = useState(null);
+  const loginAs = useLoginAs();
 
   if (loading) return <SkeletonRows rows={8} />;
 
@@ -112,6 +114,15 @@ export default function PatientProfileView() {
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
                     WALK-IN · NO ACCOUNT
                   </span>
+                )}
+                {p.registered && p.isActive && (
+                  <button
+                    type="button"
+                    onClick={() => loginAs({ userId: p.patientId, name: p.name, role: ROLES.PATIENT })}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-mg-teal text-mg-tealDark hover:bg-mg-teal/5"
+                  >
+                    <i className="fa-solid fa-user-secret mr-1" />LOGIN AS
+                  </button>
                 )}
                 {p.aadhaarLinked && (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
