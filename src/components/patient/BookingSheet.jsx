@@ -71,6 +71,8 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
   const [grid, setGrid] = useState(null);
   const [gridLoading, setGridLoading] = useState(false);
   const [gridVersion, setGridVersion] = useState(0);
+  // The chosen sitting no longer exists (day marked off, sitting removed).
+  const [gridGone, setGridGone] = useState(false);
   const [tokenNumber, setTokenNumber] = useState(null);
   const [complaint, setComplaint] = useState('');
   const [conditions, setConditions] = useState([]);
@@ -143,6 +145,17 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
       .then((res) => {
         if (!alive) return;
         const g = unwrap(res);
+        // A sitting that is not on that date comes back as data: null, which
+        // unwrap turns into the whole { ok, data } body — and reading
+        // g.slots off that took the Explore page down. Anything without a
+        // slot list is "this sitting is gone", not a grid.
+        if (!Array.isArray(g?.slots)) {
+          setGrid(null);
+          setTokenNumber(null);
+          setGridGone(true);
+          return;
+        }
+        setGridGone(false);
         setGrid(g);
         setTokenNumber((cur) => (g.slots.some((x) => x.number === cur && x.status === 'free') ? cur : g.suggested));
       })
@@ -421,7 +434,11 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
           ) : gridLoading && !grid ? (
             <div className="h-32 rounded-xl bg-slate-100 animate-pulse" />
           ) : !grid ? (
-            <p className="text-xs text-slate-500">Choose a sitting to see its tokens.</p>
+            <p className="text-xs text-slate-500">
+              {gridGone
+                ? 'This sitting is no longer available — pick another day or sitting above.'
+                : 'Choose a sitting to see its tokens.'}
+            </p>
           ) : (
             <>
               <div className={clsx('grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-64 overflow-y-auto custom-scrollbar p-0.5', gridLoading && 'opacity-60')}>
