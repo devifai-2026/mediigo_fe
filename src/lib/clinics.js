@@ -20,7 +20,7 @@ export const groupByClinic = (rows = []) => {
   }
   return [...byId.values()].map((c) => {
     const fees = c.doctors.map((d) => d.fees?.fresh).filter((f) => f != null);
-    const bookable = c.doctors.filter((d) => d.session?.isBookingOpen && !d.session?.isOnBreak);
+    const bookable = c.doctors.filter(isLiveNow);
     return {
       ...c,
       // Open doctors first, so the one a patient can actually book leads.
@@ -33,7 +33,15 @@ export const groupByClinic = (rows = []) => {
   });
 };
 
-const rank = (d) => (d.session?.isBookingOpen ? (d.session?.isOnBreak ? 1 : 0) : 2);
+const rank = (d) => (isLiveNow(d) ? 0 : d.session?.isOnBreak ? 1 : 2);
+
+/**
+ * Is this doctor seeing patients right now? The server's isLiveNow knows the
+ * timetable; the bookings switch alone stays on overnight. The fallback keeps
+ * an older API (without the field) working as before.
+ */
+export const isLiveNow = (d) => d?.session?.isLiveNow
+  ?? Boolean(d?.session?.isBookingOpen && !d?.session?.isOnBreak);
 
 export const clinicKind = (c) => (String(c?.type || '').toUpperCase() === 'HOSPITAL' ? 'Hospital' : 'Clinic');
 
@@ -50,13 +58,13 @@ export const km = (d) => (d == null ? '' : `${Number(d) < 10 ? Number(d).toFixed
 /**
  * When a doctor next sits, from the /nearby row's `nextAvailable`:
  * "Now · till 1:00 PM", "Today · 6:00 PM", "Tomorrow · 10:00 AM", "17 Oct · …".
- * A doctor taking tokens right now is available now, whatever the weekly
- * pattern says — the desk can open a session outside it. Null when nothing in
- * the booking horizon has room.
+ * A sitting under way reads "Now"; otherwise the next sitting's day and
+ * time. A doctor with no weekly schedule is "Now" while taking tokens. Null
+ * when nothing in the booking horizon has room. (The bookings switch used to
+ * win outright, so a clinic closed for the night still read "Now".)
  */
 export const nextAvailableText = (n, session) => {
-  if (session?.isBookingOpen && !session?.isOnBreak) return 'Now';
-  if (!n) return null;
-  if (n.inProgress) return `Now · till ${time12(n.endTime)}`;
-  return `${relativeDay(n.date)} · ${time12(n.startTime)}`;
+  if (n?.inProgress) return `Now · till ${time12(n.endTime)}`;
+  if (n) return `${relativeDay(n.date)} · ${time12(n.startTime)}`;
+  return isLiveNow({ session }) ? 'Now' : null;
 };

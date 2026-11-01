@@ -460,6 +460,11 @@ export default function DoctorDetailView() {
 
   const anyBookableDay = days.some((x) => x.shifts.some((sh) => sh.isBookable));
   const bookable = days.length ? anyBookableDay : d.session?.isBookingOpen !== false;
+  // Seeing patients right now: a sitting under way, or — with no timetable —
+  // the bookings switch. The switch alone stays on overnight.
+  const liveNow = !d.session?.isOnBreak && (days.length
+    ? days.some((x) => x.shifts.some((sh) => sh.inProgress))
+    : Boolean(d.session?.isBookingOpen));
   const fees = d.fees || {};
   const queue = row?.queue;
   const selectedDay = days.find((x) => x.date === slot?.date);
@@ -671,7 +676,7 @@ export default function DoctorDetailView() {
               <div className="rounded-xl bg-mg-surface px-3 py-2.5">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Now serving</p>
                 <p className="mt-0.5 text-sm font-semibold text-mg-navy">
-                  {d.session?.isOnBreak ? 'On a break' : queue?.currentToken ? token(queue.currentToken) : d.session?.isBookingOpen ? 'Not started' : 'OPD closed'}
+                  {d.session?.isOnBreak ? 'On a break' : !liveNow ? 'OPD closed' : queue?.currentToken ? token(queue.currentToken) : 'Not started'}
                 </p>
               </div>
               <div className="rounded-xl bg-teal-50 px-3 py-2.5">

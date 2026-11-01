@@ -6,7 +6,7 @@ import { Modal } from '../ui/Modal.jsx';
 import { Icon } from '../ui/Icon.jsx';
 import { PhotoOrFallback } from '../ui/PhotoOrFallback.jsx';
 import { inr, initialsOf, phone, token } from '../../lib/format.js';
-import { clinicAddress, clinicDirections, clinicKind, km, nextAvailableText } from '../../lib/clinics.js';
+import { clinicAddress, clinicDirections, clinicKind, km, nextAvailableText, isLiveNow } from '../../lib/clinics.js';
 import { RatingBadge } from './RatingBadge.jsx';
 
 /**
@@ -29,13 +29,16 @@ function Stat({ label, value, tone = 'text-slate-900' }) {
 
 function DoctorRow({ doctor, onBook, onView }) {
   const { session, queue } = doctor;
-  const bookable = session?.isBookingOpen && !session?.isOnBreak;
+  const live = isLiveNow(doctor);
+  // A doctor with a timetable can be booked into their next sitting even
+  // while they are not seeing anyone; without one, only while live.
+  const bookable = doctor.hasSchedule ? Boolean(doctor.nextAvailable) : live;
   const next = nextAvailableText(doctor.nextAvailable, session);
   // The live line under the stats: why it is or is not bookable right now.
   const status = session?.isOnBreak
     ? { text: 'Doctor is on a break — queue paused', tone: 'text-amber-700 bg-amber-50' }
-    : !session?.isBookingOpen
-      ? { text: 'Not taking tokens right now', tone: 'text-slate-500 bg-slate-50' }
+    : !live
+      ? { text: next ? `Closed now · next sitting ${next}` : 'Not taking tokens right now', tone: 'text-slate-500 bg-slate-50' }
       : queue?.waiting > 0
         ? { text: `${queue.waiting} waiting · about ${queue.estimatedWaitMinutes} min`, tone: 'text-mg-tealDark bg-teal-50' }
         : { text: 'No queue — you’d be next', tone: 'text-emerald-700 bg-emerald-50' };
@@ -68,8 +71,10 @@ function DoctorRow({ doctor, onBook, onView }) {
       <dl className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.8fr)] divide-x divide-slate-200 rounded-xl bg-mg-surface">
         <Stat
           label="Now serving"
-          value={session?.isOnBreak ? 'Paused' : queue?.currentToken ? token(queue.currentToken) : session?.isBookingOpen ? 'None yet' : '—'}
-          tone={queue?.currentToken && !session?.isOnBreak ? 'text-mg-navy' : 'text-slate-500'}
+          // Only while a sitting is under way: a token left "in chamber" after
+          // hours is not someone being seen now.
+          value={session?.isOnBreak ? 'Paused' : !live ? '—' : queue?.currentToken ? token(queue.currentToken) : 'None yet'}
+          tone={live && queue?.currentToken ? 'text-mg-navy' : 'text-slate-500'}
         />
         <Stat label="Next available" value={next ?? 'No sittings'} tone={next === 'Now' ? 'text-emerald-700' : next ? 'text-slate-900' : 'text-slate-400'} />
         <Stat label="Fee" value={doctor.fees?.fresh != null ? inr(doctor.fees.fresh) : '—'} />
@@ -111,7 +116,7 @@ export function ClinicSheet({ clinic, choosing = false, filtered = false, onClos
   if (!clinic) return null;
 
   const doctors = allDoctors ?? clinic.doctors;
-  const openCount = doctors.filter((d) => d.session?.isBookingOpen && !d.session?.isOnBreak).length;
+  const openCount = doctors.filter(isLiveNow).length;
   const kind = clinicKind(clinic);
 
   const showAll = async () => {
