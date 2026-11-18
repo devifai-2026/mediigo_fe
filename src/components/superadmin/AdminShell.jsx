@@ -36,6 +36,7 @@ const AUDITS = [
   { to: '/super/financials', icon: 'fa-vault', label: 'Financial Audit' },
   { to: '/super/complaints', icon: 'fa-triangle-exclamation', label: 'Issue Tracker', badge: 'unreadTickets' },
   { to: '/super/security', icon: 'fa-shield-halved', label: 'Security & Messaging' },
+  { to: '/super/payments', icon: 'fa-credit-card', label: 'Payment Gateway' },
 ];
 
 const BADGE_CLASS = {

@@ -13,6 +13,7 @@ import { FamilyMemberForm } from './FamilyMemberForm.jsx';
 import { inr, token, time12, ageOf, initials } from '../../lib/format.js';
 import { VISIT_LABEL } from '../../lib/constants.js';
 import { asList } from '../../lib/list.js';
+import { openCheckout, confirmBookingPayment } from '../../lib/cashfree.js';
 
 const DAY_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SHIFT_LABEL = { MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Evening' };
@@ -84,7 +85,20 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
   const [tokenNumber, setTokenNumber] = useState(null);
   const [complaint, setComplaint] = useState('');
   const [conditions, setConditions] = useState([]);
+  // Online booking fee, set by Super Admin. Null until known; { required: false }
+  // when it is switched off, in which case booking stays free as before.
+  const [feeInfo, setFeeInfo] = useState(null);
   const stripRef = useRef(null);
+
+  useEffect(() => {
+    if (!doctor?.doctorId) return undefined;
+    let alive = true;
+    api.get('/api/payments/booking-fee')
+      .then((r) => { if (alive) setFeeInfo(unwrap(r)); })
+      .catch(() => { if (alive) setFeeInfo({ required: false, amountPaise: 0 }); });
+    return () => { alive = false; };
+  }, [doctor?.doctorId]);
+  const bookingFee = feeInfo?.required ? feeInfo.amountPaise / 100 : 0;
 
   // Reset every time the sheet opens for a different doctor.
   useEffect(() => {
@@ -190,10 +204,51 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
   const selectedDay = days.find((d) => d.date === slot?.date);
   const ready = Boolean(memberId || !members.length) && (!scheduled || (slot?.shift && tokenNumber)) && !already;
 
+  const issued = (created, paidFee = 0) => {
+    setTicket({ ...created, doctor, fee, bookingFee: paidFee, expectedAt: chosen?.time ?? null });
+    toast.success(`Token ${token(created.tokenNumber)} confirmed`);
+    loadMine();
+  };
+
+  /**
+   * Fee on: open a Cashfree order (the server first checks the booking would
+   * go through), take payment in Cashfree's modal, then ask the server for the
+   * outcome. The server issues the token only once Cashfree says it is paid.
+   */
+  const payAndBook = async (body) => {
+    const order = unwrap(await api.post('/api/payments/booking/order', body));
+    let result = null;
+    try {
+      result = await openCheckout({ paymentSessionId: order.paymentSessionId, mode: order.mode });
+    } catch (e) {
+      toast.error(e.message);
+      return;
+    }
+    // A redirect-based method navigated away; /p/payment-return finishes it.
+    if (result?.redirect) return;
+    const closedWithoutPaying = Boolean(result?.error);
+    const r = await confirmBookingPayment(order.orderId, closedWithoutPaying ? { attempts: 1 } : {});
+    if (r?.status === 'BOOKED' && r.token) { issued(r.token, order.amountPaise / 100); return; }
+    if (r?.status === 'REFUNDED') {
+      toast.error(`${r.failureReason || 'The booking could not be completed'}. Your ${inr(order.amountPaise / 100)} booking fee is being refunded.`);
+      setGridVersion((v) => v + 1);
+      return;
+    }
+    if (r?.status === 'REFUND_FAILED') {
+      toast.error(`The booking could not be completed and the refund needs our help — contact support with reference ${order.orderId}.`);
+      return;
+    }
+    if (closedWithoutPaying) {
+      toast.error(result.error?.message || 'Payment was not completed — no token was booked.');
+      return;
+    }
+    toast.error('Your payment is still being confirmed. Check My bookings in a minute — you will not be charged twice.');
+  };
+
   const confirm = async () => {
     setBusy(true);
     try {
-      const created = unwrap(await api.post('/api/queue/book', {
+      const body = {
         doctorId: doctor.doctorId,
         familyMemberId: memberId || null,
         visitType,
@@ -202,10 +257,9 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
         ...(scheduled && tokenNumber ? { tokenNumber } : {}),
         ...(complaint.trim() ? { complaint: complaint.trim() } : {}),
         ...(conditions.length ? { conditions } : {}),
-      }));
-      setTicket({ ...created, doctor, fee, expectedAt: chosen?.time ?? null });
-      toast.success(`Token ${token(created.tokenNumber)} confirmed`);
-      loadMine();
+      };
+      if (feeInfo?.required) await payAndBook(body);
+      else issued(unwrap(await api.post('/api/queue/book', body)));
     } catch (e) {
       toast.error(e.message);
       // Most likely someone took the number first: show the grid as it is now.
@@ -260,8 +314,14 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
               <p className="text-[10px] font-mono font-bold text-slate-500">{ticket._id}</p>
             </div>
 
+            {ticket.bookingFee > 0 && (
+              <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 flex items-center gap-1.5">
+                <Icon name="check" className="w-3.5 h-3.5 shrink-0" />
+                Booking fee of {inr(ticket.bookingFee)} paid online.
+              </p>
+            )}
             <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
-              Reach 10 minutes early and pay {inr(ticket.fee)} at the front desk. The live tracker tells you when your turn is close.
+              Reach 10 minutes early and pay the consultation fee of {inr(ticket.fee)} at the front desk. The live tracker tells you when your turn is close.
             </p>
 
             <div className="grid grid-cols-2 gap-2">
@@ -285,7 +345,12 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
       <div className="space-y-7">
         <p className="flex items-start gap-2 rounded-xl bg-mg-surface px-3 py-2.5 text-xs text-slate-600">
           <Icon name="info" className="w-4 h-4 text-mg-teal shrink-0" />
-          <span><span className="font-semibold text-slate-800">Online booking.</span> The consultation is at the clinic — pay at the front desk when you arrive.</span>
+          <span>
+            <span className="font-semibold text-slate-800">Online booking.</span>
+            {bookingFee > 0
+              ? <> A booking fee of {inr(bookingFee)} is paid now to confirm your token. The consultation fee is paid at the clinic.</>
+              : <> The consultation is at the clinic — pay at the front desk when you arrive.</>}
+          </span>
         </p>
 
         {/* ── 1. Who ─────────────────────────────────────────────────── */}
@@ -583,8 +648,14 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
               </p>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-[10px] uppercase tracking-wide text-slate-400">Pay at clinic</p>
-              <p className="text-lg font-bold text-mg-navy leading-tight">{inr(fee)}</p>
+              {bookingFee > 0 && (
+                <>
+                  <p className="text-[10px] uppercase tracking-wide text-slate-400">Pay now</p>
+                  <p className="text-lg font-bold text-mg-teal leading-tight">{inr(bookingFee)}</p>
+                </>
+              )}
+              <p className={clsx('text-[10px] uppercase tracking-wide text-slate-400', bookingFee > 0 && 'mt-1')}>Pay at clinic</p>
+              <p className={clsx('font-bold text-mg-navy leading-tight', bookingFee > 0 ? 'text-sm' : 'text-lg')}>{inr(fee)}</p>
             </div>
           </div>
           {already && (
@@ -598,8 +669,10 @@ export function BookingSheet({ doctor, initialSlot = null, onClose }) {
               </button>
             </div>
           )}
-          <Button onClick={confirm} loading={busy} disabled={!ready || adding} className="w-full h-12 !text-base !rounded-xl" size="lg">
-            {adding ? 'Save the new member first' : already ? `Already booked · ${token(already.tokenNumber)}` : 'Confirm booking'}
+          <Button onClick={confirm} loading={busy} disabled={!ready || adding || !feeInfo} className="w-full h-12 !text-base !rounded-xl" size="lg">
+            {adding ? 'Save the new member first'
+              : already ? `Already booked · ${token(already.tokenNumber)}`
+                : bookingFee > 0 ? `Pay ${inr(bookingFee)} & confirm` : 'Confirm booking'}
           </Button>
         </div>
       </div>

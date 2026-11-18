@@ -21,6 +21,7 @@ import ExploreView from './views/patient/ExploreView.jsx';
 import DoctorDetailView from './views/patient/DoctorDetailView.jsx';
 import TrackerView from './views/patient/TrackerView.jsx';
 import BookingsView from './views/patient/BookingsView.jsx';
+import PaymentReturnView from './views/patient/PaymentReturnView.jsx';
 import ProfileView from './views/patient/ProfileView.jsx';
 import RecordsView from './views/patient/RecordsView.jsx';
 
@@ -67,6 +68,7 @@ import MasterApprovalsView from './views/superadmin/MasterApprovalsView.jsx';
 import FinancialAuditView from './views/superadmin/FinancialAuditView.jsx';
 import ComplaintsView from './views/superadmin/ComplaintsView.jsx';
 import SecurityPolicyView from './views/superadmin/SecurityPolicyView.jsx';
+import PaymentGatewayView from './views/superadmin/PaymentGatewayView.jsx';
 import EnquiriesView from './views/superadmin/EnquiriesView.jsx';
 
 import DisplayView from './views/public/DisplayView.jsx';
@@ -206,6 +208,8 @@ export default function App() {
         <Route path="/p/doctors/:doctorId" element={<DoctorDetailView />} />
         <Route path="/p/tracker" element={<RequireAuth><TrackerView /></RequireAuth>} />
         <Route path="/p/bookings" element={<RequireAuth><BookingsView /></RequireAuth>} />
+        {/* Cashfree sends redirect-based payments (some UPI apps, netbanking) back here. */}
+        <Route path="/p/payment-return" element={<RequireAuth><PaymentReturnView /></RequireAuth>} />
         <Route path="/p/records" element={<RequireAuth><RecordsView /></RequireAuth>} />
         <Route path="/p/profile" element={<RequireAuth><ProfileView /></RequireAuth>} />
       </Route>
@@ -320,6 +324,7 @@ export default function App() {
         <Route path="/super/financials" element={<FinancialAuditView />} />
         <Route path="/super/complaints" element={<ComplaintsView />} />
         <Route path="/super/security" element={<SecurityPolicyView />} />
+        <Route path="/super/payments" element={<PaymentGatewayView />} />
         <Route path="/super/enquiries" element={<EnquiriesView />} />
       </Route>
 

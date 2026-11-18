@@ -5,9 +5,10 @@ import { SITE } from '../lib/site.js';
  * The website's legal and company pages.
  *
  * Written for how Mediigo actually works today: patients book OPD tokens and
- * pay the clinic directly; Mediigo bills clinics per token; there is no
- * teleconsultation and no online payment by patients. If any of that changes,
- * these pages must change with it.
+ * pay the consultation fee to the clinic directly; when Super Admin switches
+ * it on, patients also pay Mediigo a small online booking fee (Cashfree) to
+ * book in the app; Mediigo bills clinics per token; there is no
+ * teleconsultation. If any of that changes, these pages must change with it.
  *
  * This is a careful starting draft, not legal advice. Have it reviewed by a
  * lawyer familiar with the DPDP Act 2023 and the IT Rules before launch.
@@ -589,7 +590,9 @@ export const LEGAL_DOCS = [
       {
         id: 'patients', heading: 'For patients',
         body: <UL items={[
-          'Mediigo does not charge patients for booking a token. You pay the consultation fee directly to the clinic at the visit.',
+          'Booking a token in the Mediigo app may carry a small online booking fee, shown before you pay. It is paid to Mediigo, not the clinic. The consultation fee is separate and is paid directly to the clinic at the visit.',
+          'Your token is confirmed only after the booking fee is paid. If payment goes through but the token cannot be issued (for example, the slot was taken while you were paying), the booking fee is refunded automatically to the original payment method. Banks usually take 5–7 working days to show it.',
+          'Once your token is issued, the booking fee is not refunded if you cancel the booking.',
           'You can cancel a booking from My Bookings before your turn. There is no cancellation charge from Mediigo.',
           'If you already paid the clinic for a token, cancelling it does not automatically refund that fee. Any refund is at the clinic’s discretion under its own policy. If you need help reaching the clinic, contact us and we will help.',
           'If a clinic cancels a sitting, your token is cancelled and you can book another sitting or doctor.',
@@ -603,8 +606,8 @@ export const LEGAL_DOCS = [
         ]} />,
       },
       {
-        id: 'future', heading: 'If we introduce online payments',
-        body: <P>If Mediigo starts collecting any payment online, this policy will be updated before that happens to set out the refund terms and timelines.</P>,
+        id: 'online', heading: 'Online payments',
+        body: <P>Online booking fees are collected through Cashfree Payments. Mediigo never sees or stores your card, UPI PIN or bank login. If money was deducted but no token appears in My Bookings within an hour, contact us with the payment reference and we will resolve it.</P>,
       },
       {
         id: 'contact', heading: 'Contact',
